@@ -6,7 +6,9 @@ from __future__ import annotations
 import json
 import re
 import httpx
+from datetime import date
 import config
+from calibrate import inherit_abbrev_units
 
 RECOGNITION_PROMPT = """你是一张建材五金送货单的识别器。单据上只会出现以下建筑材料：
 
@@ -59,7 +61,10 @@ items = [
 2. 遇到"合计/小计/大写金额/收货/经办/备注"字样，不要输出为物品行
 3. 识别不出的字段用空字符串，不要填0；数量和单价必须是数字，必须从图片中准确读取
 4. 品名列只放品名，不要把规格（含数字/×/#的内容）放进 name
-5. 只输出JSON，不要其他文字
+5. 单位列遇形似冒号/分号的两个点记号（∶ ； ： 等，表示"与上一行单位相同"）时，
+   unit 必须输出"略写"两个字，严禁臆测成"个"或其他任何正常单位
+6. date 字段：年份优先按 202x 理解（当前 2026 年），禁止识别成 201x 等早期年代
+7. 只输出JSON，不要其他文字
 
 输出JSON格式：
 {
@@ -134,11 +139,16 @@ async def call_qwen(image_base64: str, model: str = None, api_key: str = None) -
     if parsed is None:
         return {"success": False, "error": "千问返回解析失败，请重试", "raw_response": content}
 
+    # 单位"略写"继承（识别返回前：略写记号静默填充为上方单位，"略写"不泄漏到前端）
+    items = inherit_abbrev_units(parsed.get("items", []))
+    date_str, date_suspicious = normalize_date(parsed.get("date", ""))
+
     return {
         "success": True,
         "receipt_no": parsed.get("receipt_no", ""),
-        "date": normalize_date(parsed.get("date", "")),
-        "items": parsed.get("items", []),
+        "date": date_str,
+        "date_suspicious": date_suspicious,
+        "items": items,
         "raw_response": content,
     }
 
@@ -234,15 +244,24 @@ def _parse_result(content: str) -> dict | None:
     return None
 
 
-def normalize_date(raw: str) -> str:
-    """'2025.6.20'/'2025年6月20日'/'2025/6/20' → '2025-06-20'；解析失败返回''"""
+def normalize_date(raw: str):
+    """
+    解析手写日期，返回 (date_str, suspicious)。
+    - '2025.6.20'/'2025年6月20日'/'2025/6/20' → '2025-06-20'
+    - 两位年份（如 '16.8.2'）→ 一律补 20xx（→ '2016-08-02'，交由人工核对）
+    - 四位年份与当前年份相差 5 年以上（含未来年份）→ suspicious=True，不自动改
+    - 解析失败 → ('', False)
+    """
     if not raw:
-        return ""
-    m = re.search(r'(\d{4})[年.\-/](\d{1,2})[月.\-/](\d{1,2})', str(raw))
-    if m:
-        y, mo, d = m.groups()
-        return f"{y}-{int(mo):02d}-{int(d):02d}"
-    return ""
+        return "", False
+    m = re.search(r'(\d{4}|\d{1,2})[年.\-/](\d{1,2})[月.\-/](\d{1,2})', str(raw))
+    if not m:
+        return "", False
+    y_raw, mo, d = m.groups()
+    year = 2000 + int(y_raw) if len(y_raw) == 2 else int(y_raw)
+    date_str = f"{year}-{int(mo):02d}-{int(d):02d}"
+    suspicious = abs(year - date.today().year) > 5
+    return date_str, suspicious
 
 
 def _normalize_items(items: list) -> list:

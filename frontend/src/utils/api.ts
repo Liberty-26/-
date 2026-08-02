@@ -40,7 +40,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 export async function recognizeImage(imageBase64: string, receiptNo?: string, date?: string) {
   // 从 localStorage 读当前选的识图模型，传给后端优先使用（后端未传时用 .env 默认）
   const model = localStorage.getItem('steel_vision_model') || undefined;
-  return request<{ receipt_no: string; date: string; image_path: string; items: import('../types').ReceiptItem[] }>(
+  return request<{ receipt_no: string; date: string; date_suspicious?: boolean; image_path: string; items: import('../types').ReceiptItem[] }>(
     'POST', '/recognize', { image_base64: imageBase64, receipt_no: receiptNo, date, model }
   );
 }

@@ -16,6 +16,8 @@ export default function UploadPage() {
   const [imagePath, setImagePath] = useState('');
   const [receiptNo, setReceiptNo] = useState('');
   const [receiptDate, setReceiptDate] = useState('');
+  // 识别日期疑似异常标记（如 2016 等 10 年代/超 5 年偏差年份），黄标提示人工核对，不阻断保存
+  const [dateSuspicious, setDateSuspicious] = useState(false);
   // 保存必填校验错误（单号/日期为空时提示）
   const [errors, setErrors] = useState<{ date?: string; no?: string }>({});
   const [recognizing, setRecognizing] = useState(false);
@@ -34,6 +36,8 @@ export default function UploadPage() {
   const [headerRows, setHeaderRows] = useState<number[]>([]);
   const [savedReceipt, setSavedReceipt] = useState<Record<string, unknown> | null>(null);
   const [recentHistory, setRecentHistory] = useState<ReceiptSummary[]>([]);
+  // 表格多选状态重置信号：识别新图/重新审核/清空图片/加载历史时 +1，ResultTable 据此清空多选
+  const [tableReset, setTableReset] = useState(0);
 
   // 校准摘要（已修正/异常/表头行计数）
   const summary = useMemo(() => {
@@ -52,21 +56,21 @@ export default function UploadPage() {
   useEffect(() => { loadRecentHistory(); }, [loadRecentHistory]);
 
   const handleImageReady = useCallback((b64: string, filename: string) => {
-    setImageBase64(b64); setImageFilename(filename); setImagePath(''); setItems([]); setHeaderRows([]); setSavedReceipt(null);
+    setImageBase64(b64); setImageFilename(filename); setImagePath(''); setItems([]); setHeaderRows([]); setSavedReceipt(null); setDateSuspicious(false); setTableReset(s => s + 1);
   }, []);
   const handleClearImage = useCallback(() => {
-    setImageBase64(null); setImageFilename(''); setImagePath(''); setItems([]); setHeaderRows([]); setSavedReceipt(null);
+    setImageBase64(null); setImageFilename(''); setImagePath(''); setItems([]); setHeaderRows([]); setSavedReceipt(null); setDateSuspicious(false); setTableReset(s => s + 1);
   }, []);
 
   const handleRecognize = useCallback(async () => {
     if (!imageBase64 || recognizing) return;
-    setRecognizing(true); setSavedReceipt(null); setHeaderRows([]);
+    setRecognizing(true); setSavedReceipt(null); setHeaderRows([]); setDateSuspicious(false); setTableReset(s => s + 1);
     const res = await recognizeImage(imageBase64, receiptNo || undefined, receiptDate || undefined);
     setRecognizing(false);
     if (res.success && res.data) {
       setItems(res.data.items || []); setImagePath(res.data.image_path || '');
       if (res.data.receipt_no) setReceiptNo(res.data.receipt_no);
-      if (res.data.date) setReceiptDate(res.data.date);
+      if (res.data.date) { setReceiptDate(res.data.date); setDateSuspicious(!!res.data.date_suspicious); }
       showToast('识别完成', 'success');
     } else { showToast(res.error || '识别失败', 'error'); }
   }, [imageBase64, recognizing, receiptNo, receiptDate, showToast]);
@@ -74,7 +78,7 @@ export default function UploadPage() {
   // AI 校准（SSE 流式）
   const handleCalibrate = useCallback(async () => {
     if (!canCalibrate) return;
-    setCalibrating(true); setSavedReceipt(null); setCalibrateProgress({ step: 1, label: '文本归一化', done: false });
+    setCalibrating(true); setSavedReceipt(null); setCalibrateProgress({ step: 1, label: '文本归一化', done: false }); setTableReset(s => s + 1);
     try {
       const resp = await fetch('/api/recognize/calibrate', {
         method: 'POST',
@@ -147,9 +151,10 @@ export default function UploadPage() {
   }, [savedReceipt, showToast]);
 
   const handleLoadHistory = useCallback(async (id: number) => {
+    setTableReset(s => s + 1);
     const res = await getReceiptDetail(id);
     if (res.success && res.data) {
-      setItems(res.data.items || []); setReceiptNo(res.data.receipt_no); setReceiptDate(res.data.date); setSavedReceipt(null);
+      setItems(res.data.items || []); setReceiptNo(res.data.receipt_no); setReceiptDate(res.data.date); setSavedReceipt(null); setDateSuspicious(false);
       if (res.data.image_path) {
         setImagePath(res.data.image_path); setImageFilename(res.data.image_path);
         try {
@@ -170,7 +175,18 @@ export default function UploadPage() {
           <UploadZone onImageReady={handleImageReady} disabled={recognizing} />
           <div className="flex flex-col gap-2">
             <label className="text-[10px] uppercase text-on-surface-variant font-medium">单据日期</label>
-            <input type="date" value={receiptDate} onChange={e => { setReceiptDate(e.target.value); setErrors(prev => ({ ...prev, date: undefined })); }} className="w-full bg-surface-container-low border border-outline-variant rounded px-3 py-1.5 text-label-sm text-on-surface focus:border-primary outline-none" />
+            <input type="date" value={receiptDate} onChange={e => { setReceiptDate(e.target.value); setDateSuspicious(false); setErrors(prev => ({ ...prev, date: undefined })); }}
+              className={`w-full border rounded px-3 py-1.5 text-label-sm text-on-surface outline-none ${
+                dateSuspicious
+                  ? 'bg-amber-50 border-amber-400 focus:border-amber-500'
+                  : 'bg-surface-container-low border-outline-variant focus:border-primary'
+              }`} />
+            {dateSuspicious && (
+              <p className="text-amber-700 text-[11px] mt-1 font-medium flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs">warning</span>
+                日期疑似异常，请核对
+              </p>
+            )}
             {errors.date && <p className="text-error text-[11px] mt-1">{errors.date}</p>}
             <label className="text-[10px] uppercase text-on-surface-variant font-medium mt-1">单据单号</label>
             <input type="text" value={receiptNo} onChange={e => { setReceiptNo(e.target.value); setErrors(prev => ({ ...prev, no: undefined })); }} placeholder="例如: DN-8892" className="w-full bg-surface-container-low border border-outline-variant rounded px-3 py-1.5 text-label-sm text-on-surface focus:border-primary outline-none" />
@@ -234,7 +250,7 @@ export default function UploadPage() {
               疑似表头 <span className="text-on-surface-variant font-semibold">{summary.headers}</span> 行
             </div>
           )}
-          <div className="flex-1 overflow-hidden flex flex-col"><ResultTable items={items} onChange={setItems} headerRows={headerRows} /></div>
+          <div className="flex-1 overflow-hidden flex flex-col"><ResultTable items={items} onChange={setItems} headerRows={headerRows} resetSignal={tableReset} /></div>
           <div className="mt-stack-md pt-stack-md border-t border-outline-variant flex justify-between items-center shrink-0">
             <div className="text-label-sm text-on-surface-variant">{items.length > 0 && `${items.length} 项`}</div>
             <div className="flex gap-2">

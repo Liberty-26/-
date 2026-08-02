@@ -103,6 +103,8 @@ async def recognize(req: RecognizeRequest):
         "data": {
             "receipt_no": result.get("receipt_no") or req.receipt_no or "",
             "date": result.get("date") or req.date or "",
+            # 日期疑似异常标记：仅当日期来自识别结果时透传（识别不出日期、走前端传入值时无标记）
+            "date_suspicious": bool(result.get("date_suspicious")) if result.get("date") else False,
             "image_path": image_path,
             "items": items,
             "raw_response": result.get("raw_response", ""),

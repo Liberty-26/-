@@ -164,6 +164,35 @@ def structural_decompose(items: list) -> list:
     return result
 
 
+# ---- 单位"略写"记号继承（纯代码，静默填充） ----
+
+# 略写记号：形似冒号/分号的两个点，表示"与上一行单位相同"。
+# 含全角变体（归一化前可能未转半角）和模型可能输出的"略写"二字。
+ABBREV_UNIT_MARKS = {"略写", ":", ";", "∶", "：", "；", "∷"}
+
+
+def is_abbrev_unit(unit: str) -> bool:
+    """unit 是否为略写记号（两个点/冒号/分号形似记号）"""
+    return str(unit or "").strip() in ABBREV_UNIT_MARKS
+
+
+def inherit_abbrev_units(items: list) -> list:
+    """
+    单位略写继承：unit 为略写记号的行，静默继承上方最近一个非略写单位的单位；
+    连续略写逐级传递（第二行略写继承的仍是同一单位）；
+    上方无可用单位时置空（交给品名库补全 / "unit: 缺失单位"标记），不硬造。
+    静默填充：不加 corrections/issues（用户明确不需要任何提示/标记）。
+    """
+    last_unit = ""
+    for it in items:
+        unit = str(it.get("unit", "")).strip()
+        if is_abbrev_unit(unit):
+            it["unit"] = last_unit
+        elif unit:
+            last_unit = unit
+    return items
+
+
 # ---- 品名库注入 ----
 
 def _build_materials_block() -> str:
@@ -369,6 +398,8 @@ def calibrate_items(items: list, receipt_no: str = "", date: str = "") -> dict:
 
     # 2. 结构化解构（新：识别后、模型前）
     normalized = structural_decompose(normalized)
+    # 单位"略写"继承（模型前：输入中不含略写记号，杜绝模型臆测）
+    normalized = inherit_abbrev_units(normalized)
 
     # 2. DeepSeek 语义校准（prompt v2，不含继承规则）
     api_key = config.AGENT_API_KEY
@@ -448,9 +479,11 @@ def calibrate_items(items: list, receipt_no: str = "", date: str = "") -> dict:
             item["not_in_library"] = False
             result_items.append(item)
 
-    # 5. 代码兜底：名称规格拆分 + 继承补刀 + 规则校验
+    # 5. 代码兜底：名称规格拆分 + 继承补刀 + 略写兜底 + 规则校验
     result_items = _split_name_spec(result_items, materials)
     result_items = _fill_down_names(result_items)
+    # 单位"略写"兜底（模型输出残留的略写记号，静默继承，"略写"绝不泄漏）
+    result_items = inherit_abbrev_units(result_items)
     result_items = [_code_fallback(it, materials) for it in result_items]
 
     # 表头行（0-based，过滤越界）
@@ -483,6 +516,8 @@ def calibrate_items_progress(items: list, receipt_no: str = "", date: str = ""):
             "price": _to_float(it.get("price", 0)),
         }
         normalized.append(norm)
+    # 单位"略写"继承（模型前：输入中不含略写记号，杜绝模型臆测）
+    normalized = inherit_abbrev_units(normalized)
     yield {"step": 1, "label": "文本归一化", "done": True}
 
     # 2. DeepSeek 语义校准
@@ -491,7 +526,6 @@ def calibrate_items_progress(items: list, receipt_no: str = "", date: str = ""):
     if not api_key:
         yield {"step": 0, "done": False, "error": "Agent API Key 未配置，无法校准"}
         return
-
     materials_block = _build_materials_block()
     prompt = CALIBRATE_PROMPT_TEMPLATE.format(
         materials=materials_block,
@@ -565,6 +599,8 @@ def calibrate_items_progress(items: list, receipt_no: str = "", date: str = ""):
 
     result_items = _split_name_spec(result_items, materials)
     result_items = _fill_down_names(result_items)
+    # 单位"略写"兜底（模型输出残留的略写记号，静默继承，"略写"绝不泄漏）
+    result_items = inherit_abbrev_units(result_items)
     result_items = [_code_fallback(it, materials) for it in result_items]
     header_rows = [r for r in model_header_rows if isinstance(r, int) and 0 <= r < len(result_items)]
     yield {"step": 3, "label": "代码规则兜底", "done": True}
