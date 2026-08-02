@@ -1,0 +1,144 @@
+{
+ "model": "qwen-vl-plus",
+ "img": "unknown_1785499654.jpg",
+ "round1": {
+  "rows": 7,
+  "items": [
+   {
+    "name": "镀锌钢丝网",
+    "spec": "",
+    "unit": "卷",
+    "qty": 15.0,
+    "price": 80.0
+   },
+   {
+    "name": "PVC线缆",
+    "spec": "半",
+    "unit": "米",
+    "qty": 200.0,
+    "price": 0.8
+   },
+   {
+    "name": "滴水线缆",
+    "spec": "半",
+    "unit": "米",
+    "qty": 1000.0,
+    "price": 0.6
+   },
+   {
+    "name": "拉杆",
+    "spec": "25#",
+    "unit": "套",
+    "qty": 48.0,
+    "price": 22.0
+   },
+   {
+    "name": "照明灯",
+    "spec": "",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 260.0
+   },
+   {
+    "name": "V型卡",
+    "spec": "530",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 16.0
+   },
+   {
+    "name": "扎带",
+    "spec": "",
+    "unit": "包",
+    "qty": 50000.0,
+    "price": 0.11
+   }
+  ],
+  "sec": 5.8
+ },
+ "round2": {
+  "rows": 7,
+  "items": [
+   {
+    "name": "镀锌钢丝网",
+    "spec": "",
+    "unit": "卷",
+    "qty": 15.0,
+    "price": 80.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "PVC电线管",
+    "spec": "半",
+    "unit": "米",
+    "qty": 200.0,
+    "price": 0.8,
+    "issues": [],
+    "corrections": [
+     "name: PVC线缆→PVC电线管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "滴水线条",
+    "spec": "半",
+    "unit": "米",
+    "qty": 1000.0,
+    "price": 0.6,
+    "issues": [],
+    "corrections": [
+     "name: 滴水线缆→滴水线条"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "拉杆",
+    "spec": "25#",
+    "unit": "套",
+    "qty": 48.0,
+    "price": 22.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "照明灯",
+    "spec": "",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 260.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "v型卡",
+    "spec": "530",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 16.0,
+    "issues": [],
+    "corrections": [
+     "name: V型卡→v型卡"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "扎带",
+    "spec": "",
+    "unit": "包",
+    "qty": 50000.0,
+    "price": 0.11,
+    "issues": [
+     "qty: 数量超出范围"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   }
+  ],
+  "sec": 3.0
+ },
+ "truncated": false
+}

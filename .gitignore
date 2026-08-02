@@ -1,0 +1,21 @@
+# 敏感信息
+backend/.env
+*.env
+
+# 数据与上传文件
+backend/data.db
+backend/data.db-wal
+backend/data.db-shm
+backend/uploads/
+
+# 依赖与构建产物
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 系统文件
+Thumbs.db
+.DS_Store

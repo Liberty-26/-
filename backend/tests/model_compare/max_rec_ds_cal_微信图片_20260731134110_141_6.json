@@ -1,0 +1,302 @@
+{
+ "img": "微信图片_20260731134110_141_6.jpg",
+ "model_rec": "qwen-vl-max",
+ "model_cal": "deepseek-v4-flash",
+ "round1": {
+  "rows": 16,
+  "items": [
+   {
+    "name": "穿筋盒",
+    "spec": "一通",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 1.5
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "二通",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 1.5
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "对通",
+    "unit": "只",
+    "qty": 400.0,
+    "price": 1.5
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "三通",
+    "unit": "只",
+    "qty": 200.0,
+    "price": 1.5
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "四通",
+    "unit": "只",
+    "qty": 200.0,
+    "price": 1.5
+   },
+   {
+    "name": "预埋套管",
+    "spec": "75",
+    "unit": "只",
+    "qty": 280.0,
+    "price": 3.5
+   },
+   {
+    "name": "50h线管",
+    "spec": "20",
+    "unit": "米",
+    "qty": 4000.0,
+    "price": 4.4
+   },
+   {
+    "name": "直接",
+    "spec": "22",
+    "unit": "只",
+    "qty": 2000.0,
+    "price": 0.45
+   },
+   {
+    "name": "直接",
+    "spec": "20",
+    "unit": "只",
+    "qty": 2000.0,
+    "price": 0.35
+   },
+   {
+    "name": "弯头",
+    "spec": "22",
+    "unit": "只",
+    "qty": 1000.0,
+    "price": 0.45
+   },
+   {
+    "name": "弯头",
+    "spec": "20",
+    "unit": "只",
+    "qty": 1000.0,
+    "price": 0.35
+   },
+   {
+    "name": "密闭盒",
+    "spec": "150×180×12",
+    "unit": "只",
+    "qty": 60.0,
+    "price": 35.0
+   },
+   {
+    "name": "热浸镀锌管",
+    "spec": "25",
+    "unit": "卷",
+    "qty": 20.0,
+    "price": 60.0
+   },
+   {
+    "name": "PVC直接",
+    "spec": "20",
+    "unit": "只",
+    "qty": 8000.0,
+    "price": 0.16
+   },
+   {
+    "name": "镀锌管",
+    "spec": "15",
+    "unit": "米",
+    "qty": 1014.0,
+    "price": 6.5
+   },
+   {
+    "name": "镀锌管",
+    "spec": "20",
+    "unit": "米",
+    "qty": 420.0,
+    "price": 11.5
+   }
+  ],
+  "sec": 19.9
+ },
+ "round2": {
+  "rows": 16,
+  "items": [
+   {
+    "name": "穿筋盒",
+    "spec": "一通",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "二通",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "对通",
+    "unit": "只",
+    "qty": 400.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "三通",
+    "unit": "只",
+    "qty": 200.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "四通",
+    "unit": "只",
+    "qty": 200.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "预埋套筒",
+    "spec": "75",
+    "unit": "只",
+    "qty": 280.0,
+    "price": 3.5,
+    "issues": [],
+    "corrections": [
+     "name: 预埋套管→预埋套筒"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "JDG线管",
+    "spec": "20",
+    "unit": "米",
+    "qty": 4000.0,
+    "price": 4.4,
+    "issues": [],
+    "corrections": [
+     "name: 50h线管→JDG线管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "JDG直接",
+    "spec": "22",
+    "unit": "只",
+    "qty": 2000.0,
+    "price": 0.45,
+    "issues": [],
+    "corrections": [
+     "name: 直接→JDG直接"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "JDG直接",
+    "spec": "20",
+    "unit": "只",
+    "qty": 2000.0,
+    "price": 0.35,
+    "issues": [],
+    "corrections": [
+     "name: 直接→JDG直接"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "弯头",
+    "spec": "22",
+    "unit": "只",
+    "qty": 1000.0,
+    "price": 0.45,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "弯头",
+    "spec": "20",
+    "unit": "只",
+    "qty": 1000.0,
+    "price": 0.35,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭盒",
+    "spec": "150×180×12",
+    "unit": "只",
+    "qty": 60.0,
+    "price": 35.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "25",
+    "unit": "卷",
+    "qty": 20.0,
+    "price": 60.0,
+    "issues": [
+     "unit: 单位异常"
+    ],
+    "corrections": [
+     "name: 热浸镀锌管→镀锌管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "PVC直接",
+    "spec": "20",
+    "unit": "只",
+    "qty": 8000.0,
+    "price": 0.16,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "15",
+    "unit": "米",
+    "qty": 1014.0,
+    "price": 6.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "20",
+    "unit": "米",
+    "qty": 420.0,
+    "price": 11.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   }
+  ],
+  "sec": 6.1
+ },
+ "truncated": false
+}

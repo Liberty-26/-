@@ -1,0 +1,76 @@
+{
+  "unknown_1785501223.jpg": {
+    "receipt_no": "0000500",
+    "items": [
+      {"name": "镀锌扁钢", "spec": "4#", "unit": "支", "qty": 30, "price": 58},
+      {"name": "镀锌管", "spec": "150", "unit": "支", "qty": 5, "price": 668},
+      {"name": "镀锌弯头", "spec": "80", "unit": "只", "qty": 16, "price": 26}
+    ]
+  },
+  "unknown_1785402093.jpg": {
+    "receipt_no": "0001379",
+    "items": [
+      {"name": "清扫口", "spec": "110", "unit": "只", "qty": 1, "price": 8.03},
+      {"name": "斜三通", "spec": "110*75", "unit": "只", "qty": 1, "price": 14.79},
+      {"name": "顺水三通", "spec": "75*50", "unit": "只", "qty": 1, "price": 3.36},
+      {"name": "PE管", "spec": "75", "unit": "米", "qty": 36, "price": 18},
+      {"name": "铝合金方管", "spec": "60*20", "unit": "米", "qty": 60, "price": 36},
+      {"name": "镀锌管", "spec": "80", "unit": "米", "qty": 96, "price": 61},
+      {"name": "三通", "spec": "80", "unit": "只", "qty": 31, "price": 37},
+      {"name": "弯头", "spec": "80", "unit": "只", "qty": 34, "price": 24},
+      {"name": "三通", "spec": "50", "unit": "只", "qty": 10, "price": 16},
+      {"name": "弯头", "spec": "50", "unit": "只", "qty": 10, "price": 12},
+      {"name": "丝口三通", "spec": "114*50", "unit": "只", "qty": 10, "price": 42},
+      {"name": "三通", "spec": "114", "unit": "只", "qty": 10, "price": 40},
+      {"name": "大小头", "spec": "114*50", "unit": "只", "qty": 5, "price": 18},
+      {"name": "弯头", "spec": "65*50", "unit": "只", "qty": 10, "price": 18},
+      {"name": "液体生料带", "spec": "", "unit": "瓶", "qty": 20, "price": 14},
+      {"name": "铜球阀", "spec": "22", "unit": "只", "qty": 2, "price": 60},
+      {"name": "PPR萝卜丝直接", "spec": "40*32", "unit": "只", "qty": 2, "price": 37.5}
+    ]
+  },
+  "unknown_1785499654.jpg": {
+    "receipt_no": "0001396",
+    "items": [
+      {"name": "镀锌钢丝网", "spec": "", "unit": "卷", "qty": 15, "price": 80},
+      {"name": "PVC线条", "spec": "", "unit": "米", "qty": 200, "price": 0.8},
+      {"name": "滴水线条", "spec": "", "unit": "米", "qty": 1000, "price": 0.6},
+      {"name": "拉杆", "spec": "25#", "unit": "套", "qty": 48, "price": 22},
+      {"name": "照明灯", "spec": "", "unit": "只", "qty": 2, "price": 260},
+      {"name": "V型管", "spec": "530", "unit": "只", "qty": 600, "price": 16},
+      {"name": "扎带", "spec": "", "unit": "只", "qty": 50000, "price": 0.11}
+    ]
+  },
+  "unknown_1785400400.jpg": {
+    "receipt_no": "0000026",
+    "items": [
+      {"name": "镀锌管", "spec": "15", "unit": "米", "qty": 2028, "price": 6.5},
+      {"name": "热缩管", "spec": "25", "unit": "卷", "qty": 10, "price": 60},
+      {"name": "干壁钉", "spec": "3*30", "unit": "箱", "qty": 1, "price": 240},
+      {"name": "预埋盒", "spec": "200*200*12", "unit": "只", "qty": 280, "price": 5.5},
+      {"name": "LEB等电位", "spec": "", "unit": "只", "qty": 200, "price": 21},
+      {"name": "86型填充泡沫", "spec": "", "unit": "只", "qty": 3840, "price": 0.3},
+      {"name": "气罐", "spec": "", "unit": "瓶", "qty": 48, "price": 12},
+      {"name": "气罐枪头", "spec": "", "unit": "只", "qty": 5, "price": 40},
+      {"name": "镀锌扁钢", "spec": "4*40", "unit": "支", "qty": 20, "price": 56},
+      {"name": "镀锌槽钢", "spec": "6", "unit": "支", "qty": 7, "price": 250},
+      {"name": "水管卡", "spec": "", "unit": "只", "qty": 45, "price": 6},
+      {"name": "螺丝", "spec": "8*40", "unit": "套", "qty": 100, "price": 0.5},
+      {"name": "HDPE雨水管", "spec": "100", "unit": "只", "qty": 6, "price": 65},
+      {"name": "电熔直接", "spec": "100", "unit": "只", "qty": 6, "price": 40},
+      {"name": "电熔阀头", "spec": "200", "unit": "只", "qty": 2, "price": 260},
+      {"name": "布胶布", "spec": "", "unit": "箱", "qty": 1, "price": 300}
+    ]
+  },
+  "unknown_1785505765.jpg": {
+    "receipt_no": "0000746",
+    "items": [
+      {"name": "人防通风套管", "spec": "664*50", "unit": "只", "qty": 15, "price": 414},
+      {"name": "人防电气套管", "spec": "2*150+6*100+6*50", "unit": "套", "qty": 2, "price": 708},
+      {"name": "拉力片", "spec": "", "unit": "片", "qty": 40, "price": 11},
+      {"name": "穿筋盒", "spec": "双通", "unit": "只", "qty": 800, "price": 1.5},
+      {"name": "八角灯头盒", "spec": "对通", "unit": "只", "qty": 600, "price": 1.5},
+      {"name": "预埋盒", "spec": "200*100", "unit": "只", "qty": 270, "price": 5}
+    ]
+  }
+}

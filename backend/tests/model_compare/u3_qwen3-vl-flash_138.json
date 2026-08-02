@@ -1,0 +1,351 @@
+{
+ "model": "qwen3-vl-flash",
+ "img": "微信图片_20260731134102_138_6.jpg",
+ "receipt_no": "0001377",
+ "round1": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "法兰罗塞",
+    "spec": "16×60",
+    "unit": "套",
+    "qty": 160.0,
+    "price": 2.0
+   },
+   {
+    "name": "V型卡",
+    "spec": "65",
+    "unit": "只",
+    "qty": 50.0,
+    "price": 1.5
+   },
+   {
+    "name": "V型卡",
+    "spec": "2",
+    "unit": "只",
+    "qty": 50.0,
+    "price": 2.5
+   },
+   {
+    "name": "内膨防尘罩",
+    "spec": "8×80",
+    "unit": "只",
+    "qty": 640.0,
+    "price": 0.8
+   },
+   {
+    "name": "木薯钢网",
+    "spec": "8#",
+    "unit": "块",
+    "qty": 12.0,
+    "price": 5.5
+   },
+   {
+    "name": "防结水嘴",
+    "spec": "50",
+    "unit": "串",
+    "qty": 60.0,
+    "price": 16.0
+   },
+   {
+    "name": "密封条",
+    "spec": "50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 3.5
+   },
+   {
+    "name": "三通",
+    "spec": "50×32",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 6.5
+   },
+   {
+    "name": "内丝管头",
+    "spec": "32",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 2.3
+   },
+   {
+    "name": "弯头",
+    "spec": "32",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 2.0
+   },
+   {
+    "name": "黄铜",
+    "spec": "32",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 2.0
+   },
+   {
+    "name": "给水管",
+    "spec": "32",
+    "unit": "米",
+    "qty": 12.0,
+    "price": 7.0
+   },
+   {
+    "name": "HOPP雨水管",
+    "spec": "110",
+    "unit": "米",
+    "qty": 60.0,
+    "price": 28.76
+   },
+   {
+    "name": "大弯管头",
+    "spec": "110",
+    "unit": "只",
+    "qty": 20.0,
+    "price": 51.6
+   },
+   {
+    "name": "伸缩节",
+    "spec": "110",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 55.35
+   },
+   {
+    "name": "木鱼蓝口",
+    "spec": "110",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 75.33
+   },
+   {
+    "name": "镀锌弯头",
+    "spec": "110",
+    "unit": "只",
+    "qty": 14.0,
+    "price": 4.3
+   },
+   {
+    "name": "墙井",
+    "spec": "110",
+    "unit": "只",
+    "qty": 30.0,
+    "price": 9.0
+   }
+  ],
+  "sec": 9.8
+ },
+ "round2": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "法兰罗塞",
+    "spec": "16×60",
+    "unit": "套",
+    "qty": 160.0,
+    "price": 2.0,
+    "issues": [
+     "name: 疑似名称规格混写"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "v型卡",
+    "spec": "65",
+    "unit": "只",
+    "qty": 50.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [
+     "name: V型卡→v型卡"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "v型卡",
+    "spec": "2",
+    "unit": "只",
+    "qty": 50.0,
+    "price": 2.5,
+    "issues": [],
+    "corrections": [
+     "name: V型卡→v型卡"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "内膨防尘罩",
+    "spec": "8×80",
+    "unit": "只",
+    "qty": 640.0,
+    "price": 0.8,
+    "issues": [
+     "name: 疑似名称规格混写"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "木薯钢网",
+    "spec": "8#",
+    "unit": "块",
+    "qty": 12.0,
+    "price": 5.5,
+    "issues": [
+     "name: 疑似名称规格混写"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "防结水嘴",
+    "spec": "50",
+    "unit": "串",
+    "qty": 60.0,
+    "price": 16.0,
+    "issues": [
+     "name: 疑似名称规格混写",
+     "unit: 单位不在常见单位集合"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "密封条",
+    "spec": "50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 3.5,
+    "issues": [
+     "name: 疑似名称规格混写"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "三通",
+    "spec": "50×32",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 6.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "内丝管头",
+    "spec": "32",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 2.3,
+    "issues": [
+     "name: 疑似名称规格混写"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "弯头",
+    "spec": "32",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 2.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "黄铜",
+    "spec": "32",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 2.0,
+    "issues": [
+     "name: 疑似名称规格混写"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "给水管",
+    "spec": "32",
+    "unit": "米",
+    "qty": 12.0,
+    "price": 7.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "HDPE雨水管",
+    "spec": "110",
+    "unit": "米",
+    "qty": 60.0,
+    "price": 28.76,
+    "issues": [],
+    "corrections": [
+     "name: HOPP雨水管→HDPE雨水管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "大弯弯头",
+    "spec": "110",
+    "unit": "只",
+    "qty": 20.0,
+    "price": 51.6,
+    "issues": [],
+    "corrections": [
+     "name: 大弯管头→大弯弯头"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "伸缩节",
+    "spec": "110",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 55.35,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "木鱼蓝口",
+    "spec": "110",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 75.33,
+    "issues": [
+     "name: 疑似名称规格混写"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "镀锌弯头",
+    "spec": "110",
+    "unit": "只",
+    "qty": 14.0,
+    "price": 4.3,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "墙井",
+    "spec": "110",
+    "unit": "只",
+    "qty": 30.0,
+    "price": 9.0,
+    "issues": [
+     "name: 疑似名称规格混写"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   }
+  ],
+  "sec": 6.5
+ },
+ "truncated": false
+}

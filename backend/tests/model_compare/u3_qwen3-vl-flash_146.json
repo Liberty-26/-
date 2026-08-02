@@ -1,0 +1,331 @@
+{
+ "model": "qwen3-vl-flash",
+ "img": "微信图片_20260731134125_146_6.jpg",
+ "receipt_no": "0001393",
+ "round1": {
+  "rows": 16,
+  "items": [
+   {
+    "name": "抄式甲",
+    "spec": "6.2米×17支",
+    "unit": "米",
+    "qty": 105.4,
+    "price": 2.0
+   },
+   {
+    "name": "6.5米×12支",
+    "spec": "",
+    "unit": "米",
+    "qty": 78.0,
+    "price": 2.0
+   },
+   {
+    "name": "6.4米×39支",
+    "spec": "",
+    "unit": "米",
+    "qty": 2404.6,
+    "price": 2.0
+   },
+   {
+    "name": "6.2米×57支",
+    "spec": "",
+    "unit": "米",
+    "qty": 316.2,
+    "price": 2.0
+   },
+   {
+    "name": "3.7米×57支",
+    "spec": "",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 2.0
+   },
+   {
+    "name": "3.5米×54支",
+    "spec": "",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 2.0
+   },
+   {
+    "name": "3.4米×30支",
+    "spec": "",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 2.0
+   },
+   {
+    "name": "3.2米×105支",
+    "spec": "",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 2.0
+   },
+   {
+    "name": "法兰",
+    "spec": "100",
+    "unit": "只",
+    "qty": 102.0,
+    "price": 20.0
+   },
+   {
+    "name": "隔震弹簧",
+    "spec": "",
+    "unit": "套",
+    "qty": 336.0,
+    "price": 20.0
+   },
+   {
+    "name": "12×200×300",
+    "spec": "",
+    "unit": "根",
+    "qty": 740.0,
+    "price": 51.5
+   },
+   {
+    "name": "24×400×400",
+    "spec": "",
+    "unit": "根",
+    "qty": 127.0,
+    "price": 3.5
+   },
+   {
+    "name": "24×420×470",
+    "spec": "",
+    "unit": "根",
+    "qty": 13.0,
+    "price": 4.0
+   },
+   {
+    "name": "24×450×450",
+    "spec": "",
+    "unit": "根",
+    "qty": 13.0,
+    "price": 4.5
+   },
+   {
+    "name": "消防钢塑复合管",
+    "spec": "Φ30",
+    "unit": "套",
+    "qty": 208.0,
+    "price": 30.0
+   },
+   {
+    "name": "沼气罐",
+    "spec": "",
+    "unit": "只",
+    "qty": 3000.0,
+    "price": 1.0
+   }
+  ],
+  "sec": 10.5
+ },
+ "round2": {
+  "rows": 16,
+  "items": [
+   {
+    "name": "抄式甲",
+    "spec": "6.2米×17支",
+    "unit": "米",
+    "qty": 105.4,
+    "price": 2.0,
+    "issues": [
+     "name: 疑似名称规格混写"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "6.5米×12支",
+    "spec": "",
+    "unit": "米",
+    "qty": 78.0,
+    "price": 2.0,
+    "issues": [
+     "name: 疑似名称规格混写",
+     "name: 疑似名称规格混写，请人工确认"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "6.4米×39支",
+    "spec": "",
+    "unit": "米",
+    "qty": 2404.6,
+    "price": 2.0,
+    "issues": [
+     "name: 疑似名称规格混写",
+     "name: 疑似名称规格混写，请人工确认"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "6.2米×57支",
+    "spec": "",
+    "unit": "米",
+    "qty": 316.2,
+    "price": 2.0,
+    "issues": [
+     "name: 疑似名称规格混写",
+     "name: 疑似名称规格混写，请人工确认"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "3.7米×57支",
+    "spec": "",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 2.0,
+    "issues": [
+     "name: 疑似名称规格混写",
+     "name: 疑似名称规格混写，请人工确认"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "3.5米×54支",
+    "spec": "",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 2.0,
+    "issues": [
+     "name: 疑似名称规格混写",
+     "name: 疑似名称规格混写，请人工确认"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "3.4米×30支",
+    "spec": "",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 2.0,
+    "issues": [
+     "name: 疑似名称规格混写",
+     "name: 疑似名称规格混写，请人工确认"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "3.2米×105支",
+    "spec": "",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 2.0,
+    "issues": [
+     "name: 疑似名称规格混写",
+     "name: 疑似名称规格混写，请人工确认"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "法兰",
+    "spec": "100",
+    "unit": "只",
+    "qty": 102.0,
+    "price": 20.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "隔震弹簧",
+    "spec": "",
+    "unit": "套",
+    "qty": 336.0,
+    "price": 20.0,
+    "issues": [
+     "name: 未入库"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "12×200×300",
+    "spec": "",
+    "unit": "根",
+    "qty": 740.0,
+    "price": 51.5,
+    "issues": [
+     "name: 疑似名称规格混写",
+     "name: 疑似名称规格混写，请人工确认"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "24×400×400",
+    "spec": "",
+    "unit": "根",
+    "qty": 127.0,
+    "price": 3.5,
+    "issues": [
+     "name: 疑似名称规格混写",
+     "name: 疑似名称规格混写，请人工确认"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "24×420×470",
+    "spec": "",
+    "unit": "根",
+    "qty": 13.0,
+    "price": 4.0,
+    "issues": [
+     "name: 疑似名称规格混写",
+     "name: 疑似名称规格混写，请人工确认"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "24×450×450",
+    "spec": "",
+    "unit": "根",
+    "qty": 13.0,
+    "price": 4.5,
+    "issues": [
+     "name: 疑似名称规格混写",
+     "name: 疑似名称规格混写，请人工确认"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "消防钢塑复合管",
+    "spec": "Φ30",
+    "unit": "套",
+    "qty": 208.0,
+    "price": 30.0,
+    "issues": [
+     "name: 未入库"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "沼气罐",
+    "spec": "",
+    "unit": "只",
+    "qty": 3000.0,
+    "price": 1.0,
+    "issues": [
+     "name: 未入库"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   }
+  ],
+  "sec": 6.3
+ },
+ "truncated": false
+}

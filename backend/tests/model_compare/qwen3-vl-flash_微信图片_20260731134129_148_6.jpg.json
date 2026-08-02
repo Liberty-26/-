@@ -1,0 +1,140 @@
+{
+ "model": "qwen3-vl-flash",
+ "img": "微信图片_20260731134129_148_6.jpg",
+ "round1": {
+  "rows": 7,
+  "items": [
+   {
+    "name": "镀锌钢丝网",
+    "spec": "卷",
+    "unit": "卷",
+    "qty": 15.0,
+    "price": 80.0
+   },
+   {
+    "name": "PV（线盒）",
+    "spec": "半",
+    "unit": "半",
+    "qty": 200.0,
+    "price": 0.8
+   },
+   {
+    "name": "滴水线条",
+    "spec": "米",
+    "unit": "米",
+    "qty": 1000.0,
+    "price": 0.6
+   },
+   {
+    "name": "拉杆",
+    "spec": "25#",
+    "unit": "套",
+    "qty": 48.0,
+    "price": 2.2
+   },
+   {
+    "name": "四孔明火卡子",
+    "spec": "只",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 260.0
+   },
+   {
+    "name": "V型卡",
+    "spec": "530",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 16.0
+   },
+   {
+    "name": "扎带",
+    "spec": "只",
+    "unit": "只",
+    "qty": 50000.0,
+    "price": 0.11
+   }
+  ],
+  "sec": 5.9
+ },
+ "round2": {
+  "rows": 7,
+  "items": [
+   {
+    "name": "镀锌钢丝网",
+    "spec": "卷",
+    "unit": "卷",
+    "qty": 15.0,
+    "price": 80.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "PVC线管",
+    "spec": "半",
+    "unit": "半",
+    "qty": 200.0,
+    "price": 0.8,
+    "issues": [
+     "unit: 单位不在常见单位集合"
+    ],
+    "corrections": [
+     "name: PV（线盒）→ PVC线管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "滴水线条",
+    "spec": "米",
+    "unit": "米",
+    "qty": 1000.0,
+    "price": 0.6,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "拉杆",
+    "spec": "25#",
+    "unit": "套",
+    "qty": 48.0,
+    "price": 2.2,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "四孔明火卡子",
+    "spec": "只",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 260.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "V型卡",
+    "spec": "530",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 16.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "扎带",
+    "spec": "只",
+    "unit": "只",
+    "qty": 50000.0,
+    "price": 0.11,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   }
+  ],
+  "sec": 6.8,
+  "completion_tokens": 501
+ }
+}

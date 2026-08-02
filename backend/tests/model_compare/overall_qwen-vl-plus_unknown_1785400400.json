@@ -1,0 +1,343 @@
+{
+ "model": "qwen-vl-plus",
+ "img": "unknown_1785400400.jpg",
+ "round1": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "镀锋管",
+    "spec": "15",
+    "unit": "半",
+    "qty": 2028.0,
+    "price": 6.5
+   },
+   {
+    "name": "热镀锌管",
+    "spec": "25",
+    "unit": "卷",
+    "qty": 10.0,
+    "price": 60.0
+   },
+   {
+    "name": "干壁钉",
+    "spec": "3×30",
+    "unit": "箱",
+    "qty": 1.0,
+    "price": 240.0
+   },
+   {
+    "name": "强理盒",
+    "spec": "700×200×12",
+    "unit": "只",
+    "qty": 280.0,
+    "price": 5.5
+   },
+   {
+    "name": "强理盒",
+    "spec": "600×200×150",
+    "unit": "只",
+    "qty": 100.0,
+    "price": 20.0
+   },
+   {
+    "name": "LEB等电位",
+    "spec": "",
+    "unit": "只",
+    "qty": 200.0,
+    "price": 21.0
+   },
+   {
+    "name": "86型接线泡沫",
+    "spec": "",
+    "unit": "只",
+    "qty": 3840.0,
+    "price": 0.3
+   },
+   {
+    "name": "金全螺",
+    "spec": "",
+    "unit": "瓶",
+    "qty": 48.0,
+    "price": 12.0
+   },
+   {
+    "name": "金全螺母头",
+    "spec": "",
+    "unit": "只",
+    "qty": 5.0,
+    "price": 40.0
+   },
+   {
+    "name": "镀锌扁钢",
+    "spec": "4×40",
+    "unit": "支",
+    "qty": 20.0,
+    "price": 56.0
+   },
+   {
+    "name": "镀锌槽钢",
+    "spec": "6#",
+    "unit": "支",
+    "qty": 7.0,
+    "price": 250.0
+   },
+   {
+    "name": "水管卡",
+    "spec": "",
+    "unit": "只",
+    "qty": 45.0,
+    "price": 6.0
+   },
+   {
+    "name": "螺丝",
+    "spec": "8×40",
+    "unit": "套",
+    "qty": 100.0,
+    "price": 0.5
+   },
+   {
+    "name": "螺丝",
+    "spec": "8×60",
+    "unit": "套",
+    "qty": 100.0,
+    "price": 0.8
+   },
+   {
+    "name": "HOPE伸缩节",
+    "spec": "100",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 65.0
+   },
+   {
+    "name": "电焊直接",
+    "spec": "100",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 40.0
+   },
+   {
+    "name": "弯头",
+    "spec": "200",
+    "unit": "个",
+    "qty": 2.0,
+    "price": 260.0
+   },
+   {
+    "name": "布风袋布",
+    "spec": "通口",
+    "unit": "",
+    "qty": 1.0,
+    "price": 300.0
+   }
+  ],
+  "sec": 10.6
+ },
+ "round2": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "镀锌管",
+    "spec": "15",
+    "unit": "半",
+    "qty": 2028.0,
+    "price": 6.5,
+    "issues": [
+     "unit: 缺失单位",
+     "unit: 单位不在常见单位集合"
+    ],
+    "corrections": [
+     "name: 镀锋管→镀锌管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "热镀锌管",
+    "spec": "25",
+    "unit": "卷",
+    "qty": 10.0,
+    "price": 60.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "干壁钉",
+    "spec": "3×30",
+    "unit": "箱",
+    "qty": 1.0,
+    "price": 240.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "强理盒",
+    "spec": "700×200×12",
+    "unit": "只",
+    "qty": 280.0,
+    "price": 5.5,
+    "issues": [
+     "name: 疑似名称规格混写"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "强理盒",
+    "spec": "600×200×150",
+    "unit": "只",
+    "qty": 100.0,
+    "price": 20.0,
+    "issues": [
+     "name: 疑似名称规格混写"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "LEB等电位",
+    "spec": "",
+    "unit": "只",
+    "qty": 200.0,
+    "price": 21.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "86型填充泡沫",
+    "spec": "",
+    "unit": "只",
+    "qty": 3840.0,
+    "price": 0.3,
+    "issues": [],
+    "corrections": [
+     "name: 86型接线泡沫→86型填充泡沫",
+     "name: 拆分→86型填充泡沫"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "金全螺",
+    "spec": "",
+    "unit": "瓶",
+    "qty": 48.0,
+    "price": 12.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "金全螺母头",
+    "spec": "",
+    "unit": "只",
+    "qty": 5.0,
+    "price": 40.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "镀锌扁钢",
+    "spec": "4×40",
+    "unit": "支",
+    "qty": 20.0,
+    "price": 56.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌槽钢",
+    "spec": "6#",
+    "unit": "支",
+    "qty": 7.0,
+    "price": 250.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "水管卡",
+    "spec": "",
+    "unit": "只",
+    "qty": 45.0,
+    "price": 6.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "螺丝",
+    "spec": "8×40",
+    "unit": "套",
+    "qty": 100.0,
+    "price": 0.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "螺丝",
+    "spec": "8×60",
+    "unit": "套",
+    "qty": 100.0,
+    "price": 0.8,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "HOPE伸缩节",
+    "spec": "100",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 65.0,
+    "issues": [
+     "name: 校准修正未命中品名库，已保留原名"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "电熔直接",
+    "spec": "100",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 40.0,
+    "issues": [],
+    "corrections": [
+     "name: 电焊直接→电熔直接"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "弯头",
+    "spec": "200",
+    "unit": "个",
+    "qty": 2.0,
+    "price": 260.0,
+    "issues": [
+     "unit: 单位不在常见单位集合"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "布风袋布",
+    "spec": "通口",
+    "unit": "",
+    "qty": 1.0,
+    "price": 300.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   }
+  ],
+  "sec": 6.1
+ },
+ "truncated": false
+}

@@ -1,0 +1,356 @@
+{
+ "model": "qwen-vl-max",
+ "img": "unknown_1785505765.jpg",
+ "round1": {
+  "rows": 17,
+  "items": [
+   {
+    "name": "防通风套管",
+    "spec": "664×50",
+    "unit": "只",
+    "qty": 15.0,
+    "price": 414.0
+   },
+   {
+    "name": "防通风套管",
+    "spec": "150×130",
+    "unit": "只",
+    "qty": 76.0,
+    "price": 198.0
+   },
+   {
+    "name": "防爆套管",
+    "spec": "2×150+6×100+6×50",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 708.0
+   },
+   {
+    "name": "防爆套管",
+    "spec": "2×100+8×50",
+    "unit": "",
+    "qty": 11.0,
+    "price": 366.0
+   },
+   {
+    "name": "防爆套管",
+    "spec": "8×50",
+    "unit": "",
+    "qty": 5.0,
+    "price": 240.0
+   },
+   {
+    "name": "防爆套管",
+    "spec": "2×150+8×65",
+    "unit": "",
+    "qty": 1.0,
+    "price": 394.0
+   },
+   {
+    "name": "防爆套管",
+    "spec": "12×50",
+    "unit": "",
+    "qty": 3.0,
+    "price": 355.0
+   },
+   {
+    "name": "防爆套管",
+    "spec": "8×150+2×50+6×50",
+    "unit": "",
+    "qty": 2.0,
+    "price": 948.0
+   },
+   {
+    "name": "防爆套管",
+    "spec": "6×100+6×50",
+    "unit": "",
+    "qty": 2.0,
+    "price": 528.0
+   },
+   {
+    "name": "防爆套管",
+    "spec": "4×50",
+    "unit": "",
+    "qty": 31.0,
+    "price": 120.0
+   },
+   {
+    "name": "防爆套管",
+    "spec": "2×50",
+    "unit": "",
+    "qty": 4.0,
+    "price": 67.0
+   },
+   {
+    "name": "挡水片",
+    "spec": "",
+    "unit": "片",
+    "qty": 40.0,
+    "price": 11.0
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "双通",
+    "unit": "只",
+    "qty": 800.0,
+    "price": 1.5
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "一通",
+    "unit": "",
+    "qty": 400.0,
+    "price": 1.5
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "对通",
+    "unit": "",
+    "qty": 600.0,
+    "price": 1.5
+   },
+   {
+    "name": "人字形灯盒",
+    "spec": "对通",
+    "unit": "",
+    "qty": 600.0,
+    "price": 1.5
+   },
+   {
+    "name": "预埋盒",
+    "spec": "200×100",
+    "unit": "",
+    "qty": 270.0,
+    "price": 5.0
+   }
+  ],
+  "sec": 21.8
+ },
+ "round2": {
+  "rows": 17,
+  "items": [
+   {
+    "name": "人防通风套管",
+    "spec": "664×50",
+    "unit": "只",
+    "qty": 15.0,
+    "price": 414.0,
+    "issues": [],
+    "corrections": [
+     "name: 防通风套管→人防通风套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "150×130",
+    "unit": "只",
+    "qty": 76.0,
+    "price": 198.0,
+    "issues": [],
+    "corrections": [
+     "name: 防通风套管→人防通风套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "人防电气套管",
+    "spec": "2×150+6×100+6×50",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 708.0,
+    "issues": [],
+    "corrections": [
+     "name: 防爆套管→人防电气套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "人防电气套管",
+    "spec": "2×100+8×50",
+    "unit": "",
+    "qty": 11.0,
+    "price": 366.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [
+     "name: 防爆套管→人防电气套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "人防电气套管",
+    "spec": "8×50",
+    "unit": "",
+    "qty": 5.0,
+    "price": 240.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [
+     "name: 防爆套管→人防电气套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "人防电气套管",
+    "spec": "2×150+8×65",
+    "unit": "",
+    "qty": 1.0,
+    "price": 394.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [
+     "name: 防爆套管→人防电气套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "人防电气套管",
+    "spec": "12×50",
+    "unit": "",
+    "qty": 3.0,
+    "price": 355.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [
+     "name: 防爆套管→人防电气套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "人防电气套管",
+    "spec": "8×150+2×50+6×50",
+    "unit": "",
+    "qty": 2.0,
+    "price": 948.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [
+     "name: 防爆套管→人防电气套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "人防电气套管",
+    "spec": "6×100+6×50",
+    "unit": "",
+    "qty": 2.0,
+    "price": 528.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [
+     "name: 防爆套管→人防电气套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "人防电气套管",
+    "spec": "4×50",
+    "unit": "",
+    "qty": 31.0,
+    "price": 120.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [
+     "name: 防爆套管→人防电气套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "人防电气套管",
+    "spec": "2×50",
+    "unit": "",
+    "qty": 4.0,
+    "price": 67.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [
+     "name: 防爆套管→人防电气套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "止水片",
+    "spec": "",
+    "unit": "片",
+    "qty": 40.0,
+    "price": 11.0,
+    "issues": [],
+    "corrections": [
+     "name: 挡水片→止水片"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "双通",
+    "unit": "只",
+    "qty": 800.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "一通",
+    "unit": "",
+    "qty": 400.0,
+    "price": 1.5,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "对通",
+    "unit": "",
+    "qty": 600.0,
+    "price": 1.5,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "对通",
+    "unit": "",
+    "qty": 600.0,
+    "price": 1.5,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [
+     "name: 人字形灯盒→穿筋盒"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "预埋盒",
+    "spec": "200×100",
+    "unit": "",
+    "qty": 270.0,
+    "price": 5.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   }
+  ],
+  "sec": 6.8
+ },
+ "truncated": false
+}

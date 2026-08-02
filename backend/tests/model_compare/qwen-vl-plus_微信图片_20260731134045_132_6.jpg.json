@@ -1,0 +1,306 @@
+{
+ "model": "qwen-vl-plus",
+ "img": "微信图片_20260731134045_132_6.jpg",
+ "round1": {
+  "rows": 17,
+  "items": [
+   {
+    "name": "密闭套管",
+    "spec": "150×29",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 76.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "150×60",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 114.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "100×29",
+    "unit": "套",
+    "qty": 3.0,
+    "price": 50.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "200×29",
+    "unit": "套",
+    "qty": 9.0,
+    "price": 124.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "200×60",
+    "unit": "套",
+    "qty": 3.0,
+    "price": 190.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "200×60",
+    "unit": "套",
+    "qty": 1.0,
+    "price": 190.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "100×29",
+    "unit": "套",
+    "qty": 1.0,
+    "price": 50.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "6×150×30",
+    "unit": "组",
+    "qty": 6.0,
+    "price": 1184.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "4×150×30",
+    "unit": "组",
+    "qty": 1.0,
+    "price": 794.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "2×150×30",
+    "unit": "组",
+    "qty": 3.0,
+    "price": 988.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "400×50",
+    "unit": "套",
+    "qty": 4.0,
+    "price": 247.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "500×50",
+    "unit": "套",
+    "qty": 6.0,
+    "price": 307.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "15×50",
+    "unit": "套",
+    "qty": 8.0,
+    "price": 47.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "32×50",
+    "unit": "套",
+    "qty": 4.0,
+    "price": 47.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "50×50",
+    "unit": "套",
+    "qty": 30.0,
+    "price": 47.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "250×50",
+    "unit": "套",
+    "qty": 14.0,
+    "price": 220.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "750×50",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 480.0
+   }
+  ],
+  "sec": 15.3
+ },
+ "round2": {
+  "rows": 17,
+  "items": [
+   {
+    "name": "密闭套管",
+    "spec": "150×29",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 76.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "150×60",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 114.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "100×29",
+    "unit": "套",
+    "qty": 3.0,
+    "price": 50.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "200×29",
+    "unit": "套",
+    "qty": 9.0,
+    "price": 124.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "200×60",
+    "unit": "套",
+    "qty": 3.0,
+    "price": 190.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "200×60",
+    "unit": "套",
+    "qty": 1.0,
+    "price": 190.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "100×29",
+    "unit": "套",
+    "qty": 1.0,
+    "price": 50.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "6×150×30",
+    "unit": "组",
+    "qty": 6.0,
+    "price": 1184.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "4×150×30",
+    "unit": "组",
+    "qty": 1.0,
+    "price": 794.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "2×150×30",
+    "unit": "组",
+    "qty": 3.0,
+    "price": 988.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "400×50",
+    "unit": "套",
+    "qty": 4.0,
+    "price": 247.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "500×50",
+    "unit": "套",
+    "qty": 6.0,
+    "price": 307.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "15×50",
+    "unit": "套",
+    "qty": 8.0,
+    "price": 47.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "32×50",
+    "unit": "套",
+    "qty": 4.0,
+    "price": 47.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "50×50",
+    "unit": "套",
+    "qty": 30.0,
+    "price": 47.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "250×50",
+    "unit": "套",
+    "qty": 14.0,
+    "price": 220.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "750×50",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 480.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   }
+  ],
+  "sec": 17.3,
+  "completion_tokens": 1240
+ }
+}

@@ -1,0 +1,119 @@
+{
+ "model": "qwen3-vl-flash",
+ "img": "unknown_1785501223.jpg",
+ "round1": {
+  "rows": 6,
+  "items": [
+   {
+    "name": "镀锌扁钢",
+    "spec": "4#",
+    "unit": "支",
+    "qty": 30.0,
+    "price": 58.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "150",
+    "unit": "支",
+    "qty": 5.0,
+    "price": 668.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "80",
+    "unit": "支",
+    "qty": 10.0,
+    "price": 354.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "50",
+    "unit": "支",
+    "qty": 5.0,
+    "price": 226.0
+   },
+   {
+    "name": "镀锌弯头",
+    "spec": "80",
+    "unit": "只",
+    "qty": 16.0,
+    "price": 26.0
+   },
+   {
+    "name": "镀锌弯头",
+    "spec": "50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 15.0
+   }
+  ],
+  "sec": 4.2
+ },
+ "round2": {
+  "rows": 6,
+  "items": [
+   {
+    "name": "镀锌扁钢",
+    "spec": "4#",
+    "unit": "支",
+    "qty": 30.0,
+    "price": 58.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "150",
+    "unit": "支",
+    "qty": 5.0,
+    "price": 668.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "80",
+    "unit": "支",
+    "qty": 10.0,
+    "price": 354.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "50",
+    "unit": "支",
+    "qty": 5.0,
+    "price": 226.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌弯头",
+    "spec": "80",
+    "unit": "只",
+    "qty": 16.0,
+    "price": 26.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌弯头",
+    "spec": "50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 15.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   }
+  ],
+  "sec": 3.1
+ },
+ "truncated": false
+}

@@ -1,0 +1,328 @@
+{
+ "model": "qwen-vl-max",
+ "img": "微信图片_20260731134102_138_6.jpg",
+ "receipt_no": "0001377",
+ "round1": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "法兰螺栓",
+    "spec": "16×60",
+    "unit": "套",
+    "qty": 160.0,
+    "price": 2.0
+   },
+   {
+    "name": "V型卡",
+    "spec": "65",
+    "unit": "只",
+    "qty": 50.0,
+    "price": 1.5
+   },
+   {
+    "name": "V型卡",
+    "spec": "100",
+    "unit": "只",
+    "qty": 50.0,
+    "price": 2.5
+   },
+   {
+    "name": "内膨胀螺栓",
+    "spec": "8×80",
+    "unit": "只",
+    "qty": 640.0,
+    "price": 0.8
+   },
+   {
+    "name": "木垫钢圈",
+    "spec": "8#",
+    "unit": "米",
+    "qty": 12.0,
+    "price": 5.5
+   },
+   {
+    "name": "PE给水管",
+    "spec": "50",
+    "unit": "米",
+    "qty": 60.0,
+    "price": 16.0
+   },
+   {
+    "name": "直插头",
+    "spec": "50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 3.5
+   },
+   {
+    "name": "三通",
+    "spec": "50×32",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 6.5
+   },
+   {
+    "name": "内丝弯头",
+    "spec": "32",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 2.3
+   },
+   {
+    "name": "弯头",
+    "spec": "32",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 2.0
+   },
+   {
+    "name": "直插头",
+    "spec": "32",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 1.5
+   },
+   {
+    "name": "给水管",
+    "spec": "32",
+    "unit": "米",
+    "qty": 12.0,
+    "price": 7.0
+   },
+   {
+    "name": "HDPE雨水管",
+    "spec": "110",
+    "unit": "米",
+    "qty": 60.0,
+    "price": 25.76
+   },
+   {
+    "name": "大弯管头",
+    "spec": "110",
+    "unit": "只",
+    "qty": 20.0,
+    "price": 51.6
+   },
+   {
+    "name": "伸缩节",
+    "spec": "110",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 55.35
+   },
+   {
+    "name": "检查井",
+    "spec": "110",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 75.33
+   },
+   {
+    "name": "45度弯头",
+    "spec": "110",
+    "unit": "只",
+    "qty": 14.0,
+    "price": 43.0
+   },
+   {
+    "name": "堵头",
+    "spec": "110",
+    "unit": "只",
+    "qty": 30.0,
+    "price": 9.0
+   }
+  ],
+  "sec": 20.6
+ },
+ "round2": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "法兰螺栓",
+    "spec": "16×60",
+    "unit": "套",
+    "qty": 160.0,
+    "price": 2.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "V型卡",
+    "spec": "65",
+    "unit": "只",
+    "qty": 50.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "V型卡",
+    "spec": "100",
+    "unit": "只",
+    "qty": 50.0,
+    "price": 2.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "膨胀螺丝",
+    "spec": "8×80",
+    "unit": "只",
+    "qty": 640.0,
+    "price": 0.8,
+    "issues": [],
+    "corrections": [
+     "name: 内膨胀螺栓→膨胀螺丝"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "木垫钢圈",
+    "spec": "8#",
+    "unit": "米",
+    "qty": 12.0,
+    "price": 5.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "PE给水管",
+    "spec": "50",
+    "unit": "米",
+    "qty": 60.0,
+    "price": 16.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "直插头",
+    "spec": "50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 3.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "三通",
+    "spec": "50×32",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 6.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "内丝弯头",
+    "spec": "32",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 2.3,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "弯头",
+    "spec": "32",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 2.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "直插头",
+    "spec": "32",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "给水管",
+    "spec": "32",
+    "unit": "米",
+    "qty": 12.0,
+    "price": 7.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "HDPE雨水管",
+    "spec": "110",
+    "unit": "米",
+    "qty": 60.0,
+    "price": 25.76,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "大弯弯头",
+    "spec": "110",
+    "unit": "只",
+    "qty": 20.0,
+    "price": 51.6,
+    "issues": [],
+    "corrections": [
+     "name: 大弯管头→大弯弯头"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "伸缩节",
+    "spec": "110",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 55.35,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "检查井",
+    "spec": "110",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 75.33,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "45度弯头",
+    "spec": "110",
+    "unit": "只",
+    "qty": 14.0,
+    "price": 43.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "堵头",
+    "spec": "110",
+    "unit": "只",
+    "qty": 30.0,
+    "price": 9.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": true
+   }
+  ],
+  "sec": 6.3
+ },
+ "truncated": false
+}

@@ -1,0 +1,323 @@
+{
+ "model": "qwen3-vl-flash",
+ "img": "unknown_1785407181.jpg",
+ "round1": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "密闭套管",
+    "spec": "150×29",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 76.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "150×60",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 114.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "100×29",
+    "unit": "只",
+    "qty": 3.0,
+    "price": 50.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "100×29",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 50.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "200×29",
+    "unit": "只",
+    "qty": 9.0,
+    "price": 124.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "200×60",
+    "unit": "只",
+    "qty": 3.0,
+    "price": 190.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "200×60",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 190.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "100×29",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 50.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "6×150×130",
+    "unit": "组",
+    "qty": 6.0,
+    "price": 1184.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "4×150×130",
+    "unit": "组",
+    "qty": 1.0,
+    "price": 794.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "2×150×130",
+    "unit": "组",
+    "qty": 1.0,
+    "price": 400.0
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "400×50",
+    "unit": "只",
+    "qty": 4.0,
+    "price": 247.0
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "500×50",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 307.0
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "15×50",
+    "unit": "只",
+    "qty": 8.0,
+    "price": 47.0
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "32×50",
+    "unit": "只",
+    "qty": 4.0,
+    "price": 47.0
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "50×50",
+    "unit": "只",
+    "qty": 30.0,
+    "price": 47.0
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "250×50",
+    "unit": "只",
+    "qty": 14.0,
+    "price": 220.0
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "750×50",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 480.0
+   }
+  ],
+  "sec": 11.2
+ },
+ "round2": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "密闭套管",
+    "spec": "150×29",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 76.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "150×60",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 114.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "100×29",
+    "unit": "只",
+    "qty": 3.0,
+    "price": 50.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "100×29",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 50.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "200×29",
+    "unit": "只",
+    "qty": 9.0,
+    "price": 124.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "200×60",
+    "unit": "只",
+    "qty": 3.0,
+    "price": 190.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "200×60",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 190.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "100×29",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 50.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "6×150×130",
+    "unit": "组",
+    "qty": 6.0,
+    "price": 1184.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "4×150×130",
+    "unit": "组",
+    "qty": 1.0,
+    "price": 794.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "2×150×130",
+    "unit": "组",
+    "qty": 1.0,
+    "price": 400.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "400×50",
+    "unit": "只",
+    "qty": 4.0,
+    "price": 247.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "500×50",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 307.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "15×50",
+    "unit": "只",
+    "qty": 8.0,
+    "price": 47.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "32×50",
+    "unit": "只",
+    "qty": 4.0,
+    "price": 47.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "50×50",
+    "unit": "只",
+    "qty": 30.0,
+    "price": 47.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "250×50",
+    "unit": "只",
+    "qty": 14.0,
+    "price": 220.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "750×50",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 480.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   }
+  ],
+  "sec": 5.9
+ },
+ "truncated": false
+}

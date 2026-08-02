@@ -1,0 +1,2967 @@
+[
+ {
+  "model": "qwen-vl-plus",
+  "img": "微信图片_20260731134058_136_6.jpg",
+  "receipt_no": "0001379",
+  "round1": {
+   "rows": 17,
+   "items": [
+    {
+     "name": "清扣2",
+     "spec": "",
+     "unit": "",
+     "qty": 1.0,
+     "price": 8.03
+    },
+    {
+     "name": "镀锌管",
+     "spec": "110×75",
+     "unit": "",
+     "qty": 1.0,
+     "price": 1479.15
+    },
+    {
+     "name": "水管三通",
+     "spec": "75×50",
+     "unit": "",
+     "qty": 1.0,
+     "price": 3.36
+    },
+    {
+     "name": "防管",
+     "spec": "75",
+     "unit": "米",
+     "qty": 36.0,
+     "price": 18.0
+    },
+    {
+     "name": "镀锌方管",
+     "spec": "60×20",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 36.0
+    },
+    {
+     "name": "镀锌管",
+     "spec": "80",
+     "unit": "米",
+     "qty": 96.0,
+     "price": 61.0
+    },
+    {
+     "name": "镀锌管",
+     "spec": "",
+     "unit": "米",
+     "qty": 50.0,
+     "price": 36.0
+    },
+    {
+     "name": "镀锌管",
+     "spec": "",
+     "unit": "",
+     "qty": 80.0,
+     "price": 80.0
+    },
+    {
+     "name": "镀锌管",
+     "spec": "",
+     "unit": "",
+     "qty": 80.0,
+     "price": 80.0
+    },
+    {
+     "name": "镀锌管",
+     "spec": "",
+     "unit": "",
+     "qty": 50.0,
+     "price": 50.0
+    },
+    {
+     "name": "丝纹管",
+     "spec": "114×50",
+     "unit": "",
+     "qty": 50.0,
+     "price": 120.0
+    },
+    {
+     "name": "三通",
+     "spec": "114",
+     "unit": "",
+     "qty": 10.0,
+     "price": 420.0
+    },
+    {
+     "name": "大小头",
+     "spec": "114×50",
+     "unit": "",
+     "qty": 10.0,
+     "price": 400.0
+    },
+    {
+     "name": "弯头",
+     "spec": "65×50",
+     "unit": "个",
+     "qty": 10.0,
+     "price": 18.0
+    },
+    {
+     "name": "活接",
+     "spec": "DN100",
+     "unit": "个",
+     "qty": 20.0,
+     "price": 280.0
+    },
+    {
+     "name": "活接球阀",
+     "spec": "22",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 60.0
+    },
+    {
+     "name": "PPR热熔直接",
+     "spec": "20×100",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 37.5
+    }
+   ],
+   "sec": 8.7
+  },
+  "round2": {
+   "rows": 17,
+   "items": [
+    {
+     "name": "清扣2",
+     "spec": "",
+     "unit": "",
+     "qty": 1.0,
+     "price": 8.03,
+     "issues": [
+      "unit: 缺失单位",
+      "name: 疑似名称规格混写，请人工确认"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "镀锌管",
+     "spec": "110×75",
+     "unit": "",
+     "qty": 1.0,
+     "price": 1479.15,
+     "issues": [
+      "unit: 缺失单位"
+     ],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "三通",
+     "spec": "75×50",
+     "unit": "",
+     "qty": 1.0,
+     "price": 3.36,
+     "issues": [
+      "unit: 缺失单位"
+     ],
+     "corrections": [
+      "name: 水管三通→三通"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "防管",
+     "spec": "75",
+     "unit": "米",
+     "qty": 36.0,
+     "price": 18.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "镀锌方管",
+     "spec": "60×20",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 36.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "镀锌管",
+     "spec": "80",
+     "unit": "米",
+     "qty": 96.0,
+     "price": 61.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "镀锌管",
+     "spec": "",
+     "unit": "米",
+     "qty": 50.0,
+     "price": 36.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "镀锌管",
+     "spec": "",
+     "unit": "",
+     "qty": 80.0,
+     "price": 80.0,
+     "issues": [
+      "unit: 缺失单位"
+     ],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "镀锌管",
+     "spec": "",
+     "unit": "",
+     "qty": 80.0,
+     "price": 80.0,
+     "issues": [
+      "unit: 缺失单位"
+     ],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "镀锌管",
+     "spec": "",
+     "unit": "",
+     "qty": 50.0,
+     "price": 50.0,
+     "issues": [
+      "unit: 缺失单位"
+     ],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "丝纹管",
+     "spec": "114×50",
+     "unit": "",
+     "qty": 50.0,
+     "price": 120.0,
+     "issues": [
+      "unit: 缺失单位"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "三通",
+     "spec": "114",
+     "unit": "",
+     "qty": 10.0,
+     "price": 420.0,
+     "issues": [
+      "unit: 缺失单位"
+     ],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "大小头",
+     "spec": "114×50",
+     "unit": "",
+     "qty": 10.0,
+     "price": 400.0,
+     "issues": [
+      "unit: 缺失单位"
+     ],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "弯头",
+     "spec": "65×50",
+     "unit": "个",
+     "qty": 10.0,
+     "price": 18.0,
+     "issues": [
+      "unit: 单位不在常见单位集合"
+     ],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "活接",
+     "spec": "DN100",
+     "unit": "个",
+     "qty": 20.0,
+     "price": 280.0,
+     "issues": [
+      "unit: 单位不在常见单位集合"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "活接球阀",
+     "spec": "22",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 60.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "PPR热熔直接",
+     "spec": "20×100",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 37.5,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": true
+    }
+   ],
+   "sec": 7.0
+  },
+  "truncated": false
+ },
+ {
+  "model": "qwen-vl-plus",
+  "img": "微信图片_20260731134102_138_6.jpg",
+  "receipt_no": "0001377",
+  "round1": {
+   "rows": 17,
+   "items": [
+    {
+     "name": "法兰螺栓",
+     "spec": "16×60",
+     "unit": "套",
+     "qty": 160.0,
+     "price": 2.0
+    },
+    {
+     "name": "V型卡",
+     "spec": "65",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 50.0
+    },
+    {
+     "name": "膨胀螺栓",
+     "spec": "8×80",
+     "unit": "只",
+     "qty": 100.0,
+     "price": 640.0
+    },
+    {
+     "name": "木曹钢",
+     "spec": "8井",
+     "unit": "米",
+     "qty": 12.0,
+     "price": 55.0
+    },
+    {
+     "name": "P给水管",
+     "spec": "50",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 16.0
+    },
+    {
+     "name": "密封",
+     "spec": "50",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 10.0
+    },
+    {
+     "name": "三通",
+     "spec": "50×32",
+     "unit": "√",
+     "qty": 8.0,
+     "price": 6.5
+    },
+    {
+     "name": "内丝管头",
+     "spec": "32",
+     "unit": "√",
+     "qty": 9.0,
+     "price": 6.5
+    },
+    {
+     "name": "弯头",
+     "spec": "32",
+     "unit": "√",
+     "qty": 10.0,
+     "price": 2.0
+    },
+    {
+     "name": "盖罩",
+     "spec": "32",
+     "unit": "√",
+     "qty": 11.0,
+     "price": 2.0
+    },
+    {
+     "name": "给水管",
+     "spec": "32",
+     "unit": "√",
+     "qty": 12.0,
+     "price": 12.0
+    },
+    {
+     "name": "HOPF雨水管",
+     "spec": "110",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 25.76
+    },
+    {
+     "name": "大弯管头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 20.0,
+     "price": 51.6
+    },
+    {
+     "name": "伸缩节",
+     "spec": "110",
+     "unit": "只",
+     "qty": 6.0,
+     "price": 55.35
+    },
+    {
+     "name": "检查口",
+     "spec": "110",
+     "unit": "只",
+     "qty": 16.0,
+     "price": 75.33
+    },
+    {
+     "name": "45度弯头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 12.0,
+     "price": 45.98
+    },
+    {
+     "name": "墙中",
+     "spec": "110",
+     "unit": "只",
+     "qty": 18.0,
+     "price": 110.0
+    }
+   ],
+   "sec": 12.5
+  },
+  "round2": {
+   "rows": 17,
+   "items": [
+    {
+     "name": "法兰螺栓",
+     "spec": "16×60",
+     "unit": "套",
+     "qty": 160.0,
+     "price": 2.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "V型卡",
+     "spec": "65",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 50.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "膨胀螺栓",
+     "spec": "8×80",
+     "unit": "只",
+     "qty": 100.0,
+     "price": 640.0,
+     "issues": [
+      "price: 单价超出范围"
+     ],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "木曹钢",
+     "spec": "8井",
+     "unit": "米",
+     "qty": 12.0,
+     "price": 55.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "PE给水管",
+     "spec": "50",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 16.0,
+     "issues": [],
+     "corrections": [
+      "name: P给水管→PE给水管"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "密封",
+     "spec": "50",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 10.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "三通",
+     "spec": "50×32",
+     "unit": "√",
+     "qty": 8.0,
+     "price": 6.5,
+     "issues": [
+      "unit: 单位异常",
+      "unit: 单位不在常见单位集合"
+     ],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "内丝弯头",
+     "spec": "32",
+     "unit": "√",
+     "qty": 9.0,
+     "price": 6.5,
+     "issues": [
+      "unit: 单位异常",
+      "unit: 单位不在常见单位集合"
+     ],
+     "corrections": [
+      "name: 内丝管头→内丝弯头"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "弯头",
+     "spec": "32",
+     "unit": "√",
+     "qty": 10.0,
+     "price": 2.0,
+     "issues": [
+      "unit: 单位异常",
+      "unit: 单位不在常见单位集合"
+     ],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "盖罩",
+     "spec": "32",
+     "unit": "√",
+     "qty": 11.0,
+     "price": 2.0,
+     "issues": [
+      "unit: 单位异常",
+      "unit: 单位不在常见单位集合"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "给水管",
+     "spec": "32",
+     "unit": "√",
+     "qty": 12.0,
+     "price": 12.0,
+     "issues": [
+      "unit: 单位异常",
+      "unit: 单位不在常见单位集合"
+     ],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "HDPE雨水管",
+     "spec": "110",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 25.76,
+     "issues": [],
+     "corrections": [
+      "name: HOPF雨水管→HDPE雨水管"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "大弯弯头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 20.0,
+     "price": 51.6,
+     "issues": [],
+     "corrections": [
+      "name: 大弯管头→大弯弯头"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "伸缩节",
+     "spec": "110",
+     "unit": "只",
+     "qty": 6.0,
+     "price": 55.35,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "检查口",
+     "spec": "110",
+     "unit": "只",
+     "qty": 16.0,
+     "price": 75.33,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "45度弯头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 12.0,
+     "price": 45.98,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "墙中",
+     "spec": "110",
+     "unit": "只",
+     "qty": 18.0,
+     "price": 110.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": true
+    }
+   ],
+   "sec": 6.3
+  },
+  "truncated": false
+ },
+ {
+  "model": "qwen-vl-plus",
+  "img": "微信图片_20260731134125_146_6.jpg",
+  "receipt_no": "0001393",
+  "round1": {
+   "rows": 16,
+   "items": [
+    {
+     "name": "拉杆",
+     "spec": "6.5米×17米",
+     "unit": "米",
+     "qty": 105.4,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "6.5米×12米",
+     "unit": "米",
+     "qty": 78.0,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "6.4米×39米",
+     "unit": "米",
+     "qty": 246.6,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "6.2米×51米",
+     "unit": "米",
+     "qty": 316.2,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.7米×57米",
+     "unit": "米",
+     "qty": 210.9,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.5米×54米",
+     "unit": "米",
+     "qty": 189.0,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.4米×30米",
+     "unit": "米",
+     "qty": 102.0,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.2米×105米",
+     "unit": "米",
+     "qty": 336.0,
+     "price": 20.0
+    },
+    {
+     "name": "法兰",
+     "spec": "100",
+     "unit": "",
+     "qty": 21.0,
+     "price": 7665.0
+    },
+    {
+     "name": "强埋件",
+     "spec": "12×200×300",
+     "unit": "",
+     "qty": 13.0,
+     "price": 740.0
+    },
+    {
+     "name": "强埋件",
+     "spec": "4×400×400",
+     "unit": "",
+     "qty": 1.0,
+     "price": 38110.0
+    },
+    {
+     "name": "强埋件",
+     "spec": "4×420×420",
+     "unit": "",
+     "qty": 13.0,
+     "price": 40.0
+    },
+    {
+     "name": "地脚螺栓",
+     "spec": "中30",
+     "unit": "套",
+     "qty": 208.0,
+     "price": 30.0
+    },
+    {
+     "name": "强埋件",
+     "spec": "2×450×450",
+     "unit": "",
+     "qty": 13.0,
+     "price": 45.0
+    },
+    {
+     "name": "强埋件",
+     "spec": "地脚螺栓",
+     "unit": "套",
+     "qty": 3000.0,
+     "price": 1.0
+    },
+    {
+     "name": "强埋件",
+     "spec": "3000",
+     "unit": "",
+     "qty": 3000.0,
+     "price": 1.0
+    }
+   ],
+   "sec": 10.7
+  },
+  "round2": {
+   "rows": 16,
+   "items": [
+    {
+     "name": "拉杆",
+     "spec": "6.5米×17米",
+     "unit": "米",
+     "qty": 105.4,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "6.5米×12米",
+     "unit": "米",
+     "qty": 78.0,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "6.4米×39米",
+     "unit": "米",
+     "qty": 246.6,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "6.2米×51米",
+     "unit": "米",
+     "qty": 316.2,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.7米×57米",
+     "unit": "米",
+     "qty": 210.9,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.5米×54米",
+     "unit": "米",
+     "qty": 189.0,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.4米×30米",
+     "unit": "米",
+     "qty": 102.0,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.2米×105米",
+     "unit": "米",
+     "qty": 336.0,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "法兰",
+     "spec": "100",
+     "unit": "",
+     "qty": 21.0,
+     "price": 7665.0,
+     "issues": [
+      "unit: 缺失单位"
+     ],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "强埋件",
+     "spec": "12×200×300",
+     "unit": "",
+     "qty": 13.0,
+     "price": 740.0,
+     "issues": [
+      "unit: 缺失单位",
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "强埋件",
+     "spec": "4×400×400",
+     "unit": "",
+     "qty": 1.0,
+     "price": 38110.0,
+     "issues": [
+      "unit: 缺失单位",
+      "name: 疑似名称规格混写",
+      "price: 单价超出范围"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "强埋件",
+     "spec": "4×420×420",
+     "unit": "",
+     "qty": 13.0,
+     "price": 40.0,
+     "issues": [
+      "unit: 缺失单位",
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "地脚螺栓",
+     "spec": "中30",
+     "unit": "套",
+     "qty": 208.0,
+     "price": 30.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "强埋件",
+     "spec": "2×450×450",
+     "unit": "",
+     "qty": 13.0,
+     "price": 45.0,
+     "issues": [
+      "unit: 缺失单位",
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "强埋件",
+     "spec": "地脚螺栓",
+     "unit": "套",
+     "qty": 3000.0,
+     "price": 1.0,
+     "issues": [
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "强埋件",
+     "spec": "3000",
+     "unit": "",
+     "qty": 3000.0,
+     "price": 1.0,
+     "issues": [
+      "unit: 缺失单位",
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    }
+   ],
+   "sec": 5.8
+  },
+  "truncated": false
+ },
+ {
+  "model": "qwen-vl-max",
+  "img": "微信图片_20260731134058_136_6.jpg",
+  "receipt_no": "0001379",
+  "round1": {
+   "rows": 18,
+   "items": [
+    {
+     "name": "清打口",
+     "spec": "110",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 8.03
+    },
+    {
+     "name": "斜三通",
+     "spec": "110×75",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 147.9
+    },
+    {
+     "name": "补强三通",
+     "spec": "75×50",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 3.36
+    },
+    {
+     "name": "PE管",
+     "spec": "75",
+     "unit": "米",
+     "qty": 36.0,
+     "price": 18.0
+    },
+    {
+     "name": "镀锌钢管",
+     "spec": "60×20",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 36.0
+    },
+    {
+     "name": "镀锌管",
+     "spec": "80",
+     "unit": "米",
+     "qty": 96.0,
+     "price": 61.0
+    },
+    {
+     "name": "镀锌管",
+     "spec": "50",
+     "unit": "米",
+     "qty": 36.0,
+     "price": 38.5
+    },
+    {
+     "name": "三通",
+     "spec": "80",
+     "unit": "只",
+     "qty": 31.0,
+     "price": 37.0
+    },
+    {
+     "name": "弯头",
+     "spec": "80",
+     "unit": "只",
+     "qty": 34.0,
+     "price": 24.0
+    },
+    {
+     "name": "三通",
+     "spec": "50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 16.0
+    },
+    {
+     "name": "弯头",
+     "spec": "50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 12.0
+    },
+    {
+     "name": "丝扣三通",
+     "spec": "114×50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 42.0
+    },
+    {
+     "name": "三通",
+     "spec": "114",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 40.0
+    },
+    {
+     "name": "大小头",
+     "spec": "114×50",
+     "unit": "只",
+     "qty": 5.0,
+     "price": 18.0
+    },
+    {
+     "name": "弯头",
+     "spec": "65×50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 18.0
+    },
+    {
+     "name": "消火栓护罩",
+     "spec": "",
+     "unit": "片",
+     "qty": 20.0,
+     "price": 14.0
+    },
+    {
+     "name": "钢制球阀",
+     "spec": "22",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 60.0
+    },
+    {
+     "name": "PPR截止阀门",
+     "spec": "20×25",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 37.5
+    }
+   ],
+   "sec": 19.3
+  },
+  "round2": {
+   "rows": 18,
+   "items": [
+    {
+     "name": "清扫口",
+     "spec": "110",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 8.03,
+     "issues": [],
+     "corrections": [
+      "name: 清打口→清扫口"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "斜三通",
+     "spec": "110×75",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 147.9,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "补强三通",
+     "spec": "75×50",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 3.36,
+     "issues": [
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "PE管",
+     "spec": "75",
+     "unit": "米",
+     "qty": 36.0,
+     "price": 18.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "镀锌钢管",
+     "spec": "60×20",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 36.0,
+     "issues": [
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "镀锌管",
+     "spec": "80",
+     "unit": "米",
+     "qty": 96.0,
+     "price": 61.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "镀锌管",
+     "spec": "50",
+     "unit": "米",
+     "qty": 36.0,
+     "price": 38.5,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "三通",
+     "spec": "80",
+     "unit": "只",
+     "qty": 31.0,
+     "price": 37.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "弯头",
+     "spec": "80",
+     "unit": "只",
+     "qty": 34.0,
+     "price": 24.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "三通",
+     "spec": "50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 16.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "弯头",
+     "spec": "50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 12.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "丝口三通",
+     "spec": "114×50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 42.0,
+     "issues": [],
+     "corrections": [
+      "name: 丝扣三通→丝口三通"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "三通",
+     "spec": "114",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 40.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "大小头",
+     "spec": "114×50",
+     "unit": "只",
+     "qty": 5.0,
+     "price": 18.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "弯头",
+     "spec": "65×50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 18.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "消火栓护罩",
+     "spec": "",
+     "unit": "片",
+     "qty": 20.0,
+     "price": 14.0,
+     "issues": [
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "钢制球阀",
+     "spec": "22",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 60.0,
+     "issues": [
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "PPR截止阀门",
+     "spec": "20×25",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 37.5,
+     "issues": [
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    }
+   ],
+   "sec": 6.2
+  },
+  "truncated": false
+ },
+ {
+  "model": "qwen-vl-max",
+  "img": "微信图片_20260731134102_138_6.jpg",
+  "receipt_no": "0001377",
+  "round1": {
+   "rows": 18,
+   "items": [
+    {
+     "name": "法兰螺栓",
+     "spec": "16×60",
+     "unit": "套",
+     "qty": 160.0,
+     "price": 2.0
+    },
+    {
+     "name": "V型卡",
+     "spec": "65",
+     "unit": "只",
+     "qty": 50.0,
+     "price": 1.5
+    },
+    {
+     "name": "V型卡",
+     "spec": "100",
+     "unit": "只",
+     "qty": 50.0,
+     "price": 2.5
+    },
+    {
+     "name": "内膨胀螺栓",
+     "spec": "8×80",
+     "unit": "只",
+     "qty": 640.0,
+     "price": 0.8
+    },
+    {
+     "name": "木垫钢圈",
+     "spec": "8#",
+     "unit": "米",
+     "qty": 12.0,
+     "price": 5.5
+    },
+    {
+     "name": "PE给水管",
+     "spec": "50",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 16.0
+    },
+    {
+     "name": "直插头",
+     "spec": "50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 3.5
+    },
+    {
+     "name": "三通",
+     "spec": "50×32",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 6.5
+    },
+    {
+     "name": "内丝弯头",
+     "spec": "32",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 2.3
+    },
+    {
+     "name": "弯头",
+     "spec": "32",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 2.0
+    },
+    {
+     "name": "直插头",
+     "spec": "32",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 1.5
+    },
+    {
+     "name": "给水管",
+     "spec": "32",
+     "unit": "米",
+     "qty": 12.0,
+     "price": 7.0
+    },
+    {
+     "name": "HDPE雨水管",
+     "spec": "110",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 25.76
+    },
+    {
+     "name": "大弯管头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 20.0,
+     "price": 51.6
+    },
+    {
+     "name": "伸缩节",
+     "spec": "110",
+     "unit": "只",
+     "qty": 6.0,
+     "price": 55.35
+    },
+    {
+     "name": "检查井",
+     "spec": "110",
+     "unit": "只",
+     "qty": 6.0,
+     "price": 75.33
+    },
+    {
+     "name": "45度弯头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 14.0,
+     "price": 43.0
+    },
+    {
+     "name": "堵头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 30.0,
+     "price": 9.0
+    }
+   ],
+   "sec": 20.6
+  },
+  "round2": {
+   "rows": 18,
+   "items": [
+    {
+     "name": "法兰螺栓",
+     "spec": "16×60",
+     "unit": "套",
+     "qty": 160.0,
+     "price": 2.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "V型卡",
+     "spec": "65",
+     "unit": "只",
+     "qty": 50.0,
+     "price": 1.5,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "V型卡",
+     "spec": "100",
+     "unit": "只",
+     "qty": 50.0,
+     "price": 2.5,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "膨胀螺丝",
+     "spec": "8×80",
+     "unit": "只",
+     "qty": 640.0,
+     "price": 0.8,
+     "issues": [],
+     "corrections": [
+      "name: 内膨胀螺栓→膨胀螺丝"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "木垫钢圈",
+     "spec": "8#",
+     "unit": "米",
+     "qty": 12.0,
+     "price": 5.5,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "PE给水管",
+     "spec": "50",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 16.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "直插头",
+     "spec": "50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 3.5,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "三通",
+     "spec": "50×32",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 6.5,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "内丝弯头",
+     "spec": "32",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 2.3,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "弯头",
+     "spec": "32",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 2.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "直插头",
+     "spec": "32",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 1.5,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "给水管",
+     "spec": "32",
+     "unit": "米",
+     "qty": 12.0,
+     "price": 7.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "HDPE雨水管",
+     "spec": "110",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 25.76,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "大弯弯头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 20.0,
+     "price": 51.6,
+     "issues": [],
+     "corrections": [
+      "name: 大弯管头→大弯弯头"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "伸缩节",
+     "spec": "110",
+     "unit": "只",
+     "qty": 6.0,
+     "price": 55.35,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "检查井",
+     "spec": "110",
+     "unit": "只",
+     "qty": 6.0,
+     "price": 75.33,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "45度弯头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 14.0,
+     "price": 43.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "堵头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 30.0,
+     "price": 9.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": true
+    }
+   ],
+   "sec": 6.3
+  },
+  "truncated": false
+ },
+ {
+  "model": "qwen-vl-max",
+  "img": "微信图片_20260731134125_146_6.jpg",
+  "receipt_no": "0001393",
+  "round1": {
+   "rows": 15,
+   "items": [
+    {
+     "name": "拉杆",
+     "spec": "6.2米×17支",
+     "unit": "米",
+     "qty": 105.4,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "6.5米×12支",
+     "unit": "米",
+     "qty": 78.0,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "6.4米×39支",
+     "unit": "米",
+     "qty": 249.6,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "6.2米×51支",
+     "unit": "米",
+     "qty": 316.2,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.7米×57支",
+     "unit": "米",
+     "qty": 210.9,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.5米×54支",
+     "unit": "米",
+     "qty": 189.0,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.4米×30支",
+     "unit": "米",
+     "qty": 102.0,
+     "price": 20.0
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.2米×105支",
+     "unit": "米",
+     "qty": 336.0,
+     "price": 20.0
+    },
+    {
+     "name": "法兰",
+     "spec": "100",
+     "unit": "只",
+     "qty": 20.0,
+     "price": 21.0
+    },
+    {
+     "name": "预埋件",
+     "spec": "12×200×300",
+     "unit": "只",
+     "qty": 740.0,
+     "price": 51.5
+    },
+    {
+     "name": "预埋件",
+     "spec": "4×400×400",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 35.0
+    },
+    {
+     "name": "预埋件",
+     "spec": "24×420×470",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 40.0
+    },
+    {
+     "name": "预埋件",
+     "spec": "24×420×450",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 45.0
+    },
+    {
+     "name": "地脚螺栓",
+     "spec": "M30",
+     "unit": "套",
+     "qty": 208.0,
+     "price": 30.0
+    },
+    {
+     "name": "预埋套",
+     "spec": "",
+     "unit": "只",
+     "qty": 3000.0,
+     "price": 1.0
+    }
+   ],
+   "sec": 19.1
+  },
+  "round2": {
+   "rows": 15,
+   "items": [
+    {
+     "name": "拉杆",
+     "spec": "6.2米×17支",
+     "unit": "米",
+     "qty": 105.4,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "6.5米×12支",
+     "unit": "米",
+     "qty": 78.0,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "6.4米×39支",
+     "unit": "米",
+     "qty": 249.6,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "6.2米×51支",
+     "unit": "米",
+     "qty": 316.2,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.7米×57支",
+     "unit": "米",
+     "qty": 210.9,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.5米×54支",
+     "unit": "米",
+     "qty": 189.0,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.4米×30支",
+     "unit": "米",
+     "qty": 102.0,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "拉杆",
+     "spec": "3.2米×105支",
+     "unit": "米",
+     "qty": 336.0,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "法兰",
+     "spec": "100",
+     "unit": "只",
+     "qty": 20.0,
+     "price": 21.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "预埋件",
+     "spec": "12×200×300",
+     "unit": "只",
+     "qty": 740.0,
+     "price": 51.5,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "预埋件",
+     "spec": "4×400×400",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 35.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "预埋件",
+     "spec": "24×420×470",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 40.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "预埋件",
+     "spec": "24×420×450",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 45.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "地脚螺栓",
+     "spec": "M30",
+     "unit": "套",
+     "qty": 208.0,
+     "price": 30.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "预埋套",
+     "spec": "",
+     "unit": "只",
+     "qty": 3000.0,
+     "price": 1.0,
+     "issues": [
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    }
+   ],
+   "sec": 5.5
+  },
+  "truncated": false
+ },
+ {
+  "model": "qwen3-vl-flash",
+  "img": "微信图片_20260731134058_136_6.jpg",
+  "receipt_no": "0001379",
+  "round1": {
+   "rows": 19,
+   "items": [
+    {
+     "name": "镀锌打口",
+     "spec": "",
+     "unit": "只",
+     "qty": 3.0,
+     "price": 8.03
+    },
+    {
+     "name": "余平三通",
+     "spec": "110×75",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 14.79
+    },
+    {
+     "name": "川字水三通",
+     "spec": "75×50",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 3.36
+    },
+    {
+     "name": "Y型管",
+     "spec": "",
+     "unit": "米",
+     "qty": 36.0,
+     "price": 6.48
+    },
+    {
+     "name": "铝合金盖帽",
+     "spec": "60×70",
+     "unit": "套",
+     "qty": 60.0,
+     "price": 21.6
+    },
+    {
+     "name": "镀锌铁管",
+     "spec": "80",
+     "unit": "米",
+     "qty": 96.0,
+     "price": 5.856
+    },
+    {
+     "name": "五通",
+     "spec": "",
+     "unit": "只",
+     "qty": 50.0,
+     "price": 13.86
+    },
+    {
+     "name": "弯头",
+     "spec": "",
+     "unit": "只",
+     "qty": 80.0,
+     "price": 38.5
+    },
+    {
+     "name": "三通",
+     "spec": "",
+     "unit": "只",
+     "qty": 31.0,
+     "price": 11.47
+    },
+    {
+     "name": "三通",
+     "spec": "",
+     "unit": "只",
+     "qty": 34.0,
+     "price": 8.16
+    },
+    {
+     "name": "弯头",
+     "spec": "",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 16.42
+    },
+    {
+     "name": "弯头",
+     "spec": "",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 12.48
+    },
+    {
+     "name": "丝口三通",
+     "spec": "114×50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 42.0
+    },
+    {
+     "name": "三通",
+     "spec": "",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 24.0
+    },
+    {
+     "name": "大小头",
+     "spec": "114×50",
+     "unit": "只",
+     "qty": 5.0,
+     "price": 9.0
+    },
+    {
+     "name": "弯头",
+     "spec": "65×50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 1.8
+    },
+    {
+     "name": "双金属球阀",
+     "spec": "",
+     "unit": "只",
+     "qty": 20.0,
+     "price": 2.8
+    },
+    {
+     "name": "铜制球阀",
+     "spec": "",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 12.0
+    },
+    {
+     "name": "PPR外丝直接",
+     "spec": "20×20",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 7.5
+    }
+   ],
+   "sec": 11.9
+  },
+  "round2": {
+   "rows": 19,
+   "items": [
+    {
+     "name": "镀锌打口",
+     "spec": "",
+     "unit": "只",
+     "qty": 3.0,
+     "price": 8.03,
+     "issues": [
+      "name: 疑似名称规格混写",
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "三通",
+     "spec": "110×75",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 14.79,
+     "issues": [
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [
+      "name: 余平三通→三通"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "三通",
+     "spec": "75×50",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 3.36,
+     "issues": [
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [
+      "name: 川字水三通→三通"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "V型管",
+     "spec": "",
+     "unit": "米",
+     "qty": 36.0,
+     "price": 6.48,
+     "issues": [],
+     "corrections": [
+      "name: Y型管→V型管"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "铝合金盖帽",
+     "spec": "60×70",
+     "unit": "套",
+     "qty": 60.0,
+     "price": 21.6,
+     "issues": [
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "镀锌管",
+     "spec": "80",
+     "unit": "米",
+     "qty": 96.0,
+     "price": 5.856,
+     "issues": [
+      "price: 单价超出范围"
+     ],
+     "corrections": [
+      "name: 镀锌铁管→镀锌管"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "五通",
+     "spec": "",
+     "unit": "只",
+     "qty": 50.0,
+     "price": 13.86,
+     "issues": [
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "弯头",
+     "spec": "",
+     "unit": "只",
+     "qty": 80.0,
+     "price": 38.5,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "三通",
+     "spec": "",
+     "unit": "只",
+     "qty": 31.0,
+     "price": 11.47,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "三通",
+     "spec": "",
+     "unit": "只",
+     "qty": 34.0,
+     "price": 8.16,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "弯头",
+     "spec": "",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 16.42,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "弯头",
+     "spec": "",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 12.48,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "丝口三通",
+     "spec": "114×50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 42.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "三通",
+     "spec": "",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 24.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "大小头",
+     "spec": "114×50",
+     "unit": "只",
+     "qty": 5.0,
+     "price": 9.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "弯头",
+     "spec": "65×50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 1.8,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "双金属球阀",
+     "spec": "",
+     "unit": "只",
+     "qty": 20.0,
+     "price": 2.8,
+     "issues": [
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "铜球阀",
+     "spec": "",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 12.0,
+     "issues": [],
+     "corrections": [
+      "name: 铜制球阀→铜球阀"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "PPR外丝直接",
+     "spec": "20×20",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 7.5,
+     "issues": [
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    }
+   ],
+   "sec": 6.9
+  },
+  "truncated": false
+ },
+ {
+  "model": "qwen3-vl-flash",
+  "img": "微信图片_20260731134102_138_6.jpg",
+  "receipt_no": "0001377",
+  "round1": {
+   "rows": 18,
+   "items": [
+    {
+     "name": "法兰罗塞",
+     "spec": "16×60",
+     "unit": "套",
+     "qty": 160.0,
+     "price": 2.0
+    },
+    {
+     "name": "V型卡",
+     "spec": "65",
+     "unit": "只",
+     "qty": 50.0,
+     "price": 1.5
+    },
+    {
+     "name": "V型卡",
+     "spec": "2",
+     "unit": "只",
+     "qty": 50.0,
+     "price": 2.5
+    },
+    {
+     "name": "内膨防尘罩",
+     "spec": "8×80",
+     "unit": "只",
+     "qty": 640.0,
+     "price": 0.8
+    },
+    {
+     "name": "木薯钢网",
+     "spec": "8#",
+     "unit": "块",
+     "qty": 12.0,
+     "price": 5.5
+    },
+    {
+     "name": "防结水嘴",
+     "spec": "50",
+     "unit": "串",
+     "qty": 60.0,
+     "price": 16.0
+    },
+    {
+     "name": "密封条",
+     "spec": "50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 3.5
+    },
+    {
+     "name": "三通",
+     "spec": "50×32",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 6.5
+    },
+    {
+     "name": "内丝管头",
+     "spec": "32",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 2.3
+    },
+    {
+     "name": "弯头",
+     "spec": "32",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 2.0
+    },
+    {
+     "name": "黄铜",
+     "spec": "32",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 2.0
+    },
+    {
+     "name": "给水管",
+     "spec": "32",
+     "unit": "米",
+     "qty": 12.0,
+     "price": 7.0
+    },
+    {
+     "name": "HOPP雨水管",
+     "spec": "110",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 28.76
+    },
+    {
+     "name": "大弯管头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 20.0,
+     "price": 51.6
+    },
+    {
+     "name": "伸缩节",
+     "spec": "110",
+     "unit": "只",
+     "qty": 6.0,
+     "price": 55.35
+    },
+    {
+     "name": "木鱼蓝口",
+     "spec": "110",
+     "unit": "只",
+     "qty": 6.0,
+     "price": 75.33
+    },
+    {
+     "name": "镀锌弯头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 14.0,
+     "price": 4.3
+    },
+    {
+     "name": "墙井",
+     "spec": "110",
+     "unit": "只",
+     "qty": 30.0,
+     "price": 9.0
+    }
+   ],
+   "sec": 9.8
+  },
+  "round2": {
+   "rows": 18,
+   "items": [
+    {
+     "name": "法兰罗塞",
+     "spec": "16×60",
+     "unit": "套",
+     "qty": 160.0,
+     "price": 2.0,
+     "issues": [
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "v型卡",
+     "spec": "65",
+     "unit": "只",
+     "qty": 50.0,
+     "price": 1.5,
+     "issues": [],
+     "corrections": [
+      "name: V型卡→v型卡"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "v型卡",
+     "spec": "2",
+     "unit": "只",
+     "qty": 50.0,
+     "price": 2.5,
+     "issues": [],
+     "corrections": [
+      "name: V型卡→v型卡"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "内膨防尘罩",
+     "spec": "8×80",
+     "unit": "只",
+     "qty": 640.0,
+     "price": 0.8,
+     "issues": [
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "木薯钢网",
+     "spec": "8#",
+     "unit": "块",
+     "qty": 12.0,
+     "price": 5.5,
+     "issues": [
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "防结水嘴",
+     "spec": "50",
+     "unit": "串",
+     "qty": 60.0,
+     "price": 16.0,
+     "issues": [
+      "name: 疑似名称规格混写",
+      "unit: 单位不在常见单位集合"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "密封条",
+     "spec": "50",
+     "unit": "只",
+     "qty": 10.0,
+     "price": 3.5,
+     "issues": [
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "三通",
+     "spec": "50×32",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 6.5,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "内丝管头",
+     "spec": "32",
+     "unit": "只",
+     "qty": 1.0,
+     "price": 2.3,
+     "issues": [
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "弯头",
+     "spec": "32",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 2.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "黄铜",
+     "spec": "32",
+     "unit": "只",
+     "qty": 2.0,
+     "price": 2.0,
+     "issues": [
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "给水管",
+     "spec": "32",
+     "unit": "米",
+     "qty": 12.0,
+     "price": 7.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "HDPE雨水管",
+     "spec": "110",
+     "unit": "米",
+     "qty": 60.0,
+     "price": 28.76,
+     "issues": [],
+     "corrections": [
+      "name: HOPP雨水管→HDPE雨水管"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "大弯弯头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 20.0,
+     "price": 51.6,
+     "issues": [],
+     "corrections": [
+      "name: 大弯管头→大弯弯头"
+     ],
+     "not_in_library": false
+    },
+    {
+     "name": "伸缩节",
+     "spec": "110",
+     "unit": "只",
+     "qty": 6.0,
+     "price": 55.35,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "木鱼蓝口",
+     "spec": "110",
+     "unit": "只",
+     "qty": 6.0,
+     "price": 75.33,
+     "issues": [
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "镀锌弯头",
+     "spec": "110",
+     "unit": "只",
+     "qty": 14.0,
+     "price": 4.3,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "墙井",
+     "spec": "110",
+     "unit": "只",
+     "qty": 30.0,
+     "price": 9.0,
+     "issues": [
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    }
+   ],
+   "sec": 6.5
+  },
+  "truncated": false
+ },
+ {
+  "model": "qwen3-vl-flash",
+  "img": "微信图片_20260731134125_146_6.jpg",
+  "receipt_no": "0001393",
+  "round1": {
+   "rows": 16,
+   "items": [
+    {
+     "name": "抄式甲",
+     "spec": "6.2米×17支",
+     "unit": "米",
+     "qty": 105.4,
+     "price": 2.0
+    },
+    {
+     "name": "6.5米×12支",
+     "spec": "",
+     "unit": "米",
+     "qty": 78.0,
+     "price": 2.0
+    },
+    {
+     "name": "6.4米×39支",
+     "spec": "",
+     "unit": "米",
+     "qty": 2404.6,
+     "price": 2.0
+    },
+    {
+     "name": "6.2米×57支",
+     "spec": "",
+     "unit": "米",
+     "qty": 316.2,
+     "price": 2.0
+    },
+    {
+     "name": "3.7米×57支",
+     "spec": "",
+     "unit": "米",
+     "qty": 2.0,
+     "price": 2.0
+    },
+    {
+     "name": "3.5米×54支",
+     "spec": "",
+     "unit": "米",
+     "qty": 2.0,
+     "price": 2.0
+    },
+    {
+     "name": "3.4米×30支",
+     "spec": "",
+     "unit": "米",
+     "qty": 2.0,
+     "price": 2.0
+    },
+    {
+     "name": "3.2米×105支",
+     "spec": "",
+     "unit": "米",
+     "qty": 2.0,
+     "price": 2.0
+    },
+    {
+     "name": "法兰",
+     "spec": "100",
+     "unit": "只",
+     "qty": 102.0,
+     "price": 20.0
+    },
+    {
+     "name": "隔震弹簧",
+     "spec": "",
+     "unit": "套",
+     "qty": 336.0,
+     "price": 20.0
+    },
+    {
+     "name": "12×200×300",
+     "spec": "",
+     "unit": "根",
+     "qty": 740.0,
+     "price": 51.5
+    },
+    {
+     "name": "24×400×400",
+     "spec": "",
+     "unit": "根",
+     "qty": 127.0,
+     "price": 3.5
+    },
+    {
+     "name": "24×420×470",
+     "spec": "",
+     "unit": "根",
+     "qty": 13.0,
+     "price": 4.0
+    },
+    {
+     "name": "24×450×450",
+     "spec": "",
+     "unit": "根",
+     "qty": 13.0,
+     "price": 4.5
+    },
+    {
+     "name": "消防钢塑复合管",
+     "spec": "Φ30",
+     "unit": "套",
+     "qty": 208.0,
+     "price": 30.0
+    },
+    {
+     "name": "沼气罐",
+     "spec": "",
+     "unit": "只",
+     "qty": 3000.0,
+     "price": 1.0
+    }
+   ],
+   "sec": 10.5
+  },
+  "round2": {
+   "rows": 16,
+   "items": [
+    {
+     "name": "抄式甲",
+     "spec": "6.2米×17支",
+     "unit": "米",
+     "qty": 105.4,
+     "price": 2.0,
+     "issues": [
+      "name: 疑似名称规格混写"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "6.5米×12支",
+     "spec": "",
+     "unit": "米",
+     "qty": 78.0,
+     "price": 2.0,
+     "issues": [
+      "name: 疑似名称规格混写",
+      "name: 疑似名称规格混写，请人工确认"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "6.4米×39支",
+     "spec": "",
+     "unit": "米",
+     "qty": 2404.6,
+     "price": 2.0,
+     "issues": [
+      "name: 疑似名称规格混写",
+      "name: 疑似名称规格混写，请人工确认"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "6.2米×57支",
+     "spec": "",
+     "unit": "米",
+     "qty": 316.2,
+     "price": 2.0,
+     "issues": [
+      "name: 疑似名称规格混写",
+      "name: 疑似名称规格混写，请人工确认"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "3.7米×57支",
+     "spec": "",
+     "unit": "米",
+     "qty": 2.0,
+     "price": 2.0,
+     "issues": [
+      "name: 疑似名称规格混写",
+      "name: 疑似名称规格混写，请人工确认"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "3.5米×54支",
+     "spec": "",
+     "unit": "米",
+     "qty": 2.0,
+     "price": 2.0,
+     "issues": [
+      "name: 疑似名称规格混写",
+      "name: 疑似名称规格混写，请人工确认"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "3.4米×30支",
+     "spec": "",
+     "unit": "米",
+     "qty": 2.0,
+     "price": 2.0,
+     "issues": [
+      "name: 疑似名称规格混写",
+      "name: 疑似名称规格混写，请人工确认"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "3.2米×105支",
+     "spec": "",
+     "unit": "米",
+     "qty": 2.0,
+     "price": 2.0,
+     "issues": [
+      "name: 疑似名称规格混写",
+      "name: 疑似名称规格混写，请人工确认"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "法兰",
+     "spec": "100",
+     "unit": "只",
+     "qty": 102.0,
+     "price": 20.0,
+     "issues": [],
+     "corrections": [],
+     "not_in_library": false
+    },
+    {
+     "name": "隔震弹簧",
+     "spec": "",
+     "unit": "套",
+     "qty": 336.0,
+     "price": 20.0,
+     "issues": [
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "12×200×300",
+     "spec": "",
+     "unit": "根",
+     "qty": 740.0,
+     "price": 51.5,
+     "issues": [
+      "name: 疑似名称规格混写",
+      "name: 疑似名称规格混写，请人工确认"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "24×400×400",
+     "spec": "",
+     "unit": "根",
+     "qty": 127.0,
+     "price": 3.5,
+     "issues": [
+      "name: 疑似名称规格混写",
+      "name: 疑似名称规格混写，请人工确认"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "24×420×470",
+     "spec": "",
+     "unit": "根",
+     "qty": 13.0,
+     "price": 4.0,
+     "issues": [
+      "name: 疑似名称规格混写",
+      "name: 疑似名称规格混写，请人工确认"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "24×450×450",
+     "spec": "",
+     "unit": "根",
+     "qty": 13.0,
+     "price": 4.5,
+     "issues": [
+      "name: 疑似名称规格混写",
+      "name: 疑似名称规格混写，请人工确认"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "消防钢塑复合管",
+     "spec": "Φ30",
+     "unit": "套",
+     "qty": 208.0,
+     "price": 30.0,
+     "issues": [
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    },
+    {
+     "name": "沼气罐",
+     "spec": "",
+     "unit": "只",
+     "qty": 3000.0,
+     "price": 1.0,
+     "issues": [
+      "name: 未入库"
+     ],
+     "corrections": [],
+     "not_in_library": true
+    }
+   ],
+   "sec": 6.3
+  },
+  "truncated": false
+ }
+]

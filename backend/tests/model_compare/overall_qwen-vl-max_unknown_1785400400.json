@@ -1,0 +1,340 @@
+{
+ "model": "qwen-vl-max",
+ "img": "unknown_1785400400.jpg",
+ "round1": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "镀锌管",
+    "spec": "15",
+    "unit": "米",
+    "qty": 2028.0,
+    "price": 6.5
+   },
+   {
+    "name": "热缩管",
+    "spec": "25",
+    "unit": "卷",
+    "qty": 10.0,
+    "price": 60.0
+   },
+   {
+    "name": "平垫钉",
+    "spec": "3×30",
+    "unit": "箱",
+    "qty": 1.0,
+    "price": 240.0
+   },
+   {
+    "name": "预埋盒",
+    "spec": "200×200×12",
+    "unit": "只",
+    "qty": 280.0,
+    "price": 5.5
+   },
+   {
+    "name": "预埋盒",
+    "spec": "600×200×150",
+    "unit": "只",
+    "qty": 100.0,
+    "price": 20.0
+   },
+   {
+    "name": "LFB等电位",
+    "spec": "",
+    "unit": "只",
+    "qty": 200.0,
+    "price": 21.0
+   },
+   {
+    "name": "86型接线盒体",
+    "spec": "",
+    "unit": "只",
+    "qty": 3840.0,
+    "price": 0.3
+   },
+   {
+    "name": "气罐",
+    "spec": "",
+    "unit": "瓶",
+    "qty": 48.0,
+    "price": 12.0
+   },
+   {
+    "name": "气罐接头",
+    "spec": "",
+    "unit": "只",
+    "qty": 5.0,
+    "price": 40.0
+   },
+   {
+    "name": "镀锌扁钢",
+    "spec": "4×40",
+    "unit": "支",
+    "qty": 20.0,
+    "price": 56.0
+   },
+   {
+    "name": "镀锌槽钢",
+    "spec": "6#",
+    "unit": "支",
+    "qty": 7.0,
+    "price": 250.0
+   },
+   {
+    "name": "水管卡",
+    "spec": "",
+    "unit": "只",
+    "qty": 45.0,
+    "price": 6.0
+   },
+   {
+    "name": "焊丝",
+    "spec": "8×40",
+    "unit": "套",
+    "qty": 100.0,
+    "price": 0.5
+   },
+   {
+    "name": "焊丝",
+    "spec": "8×60",
+    "unit": "套",
+    "qty": 100.0,
+    "price": 0.8
+   },
+   {
+    "name": "HDPE伸缩节",
+    "spec": "100",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 65.0
+   },
+   {
+    "name": "电线管封堵",
+    "spec": "100",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 40.0
+   },
+   {
+    "name": "电线管闷头",
+    "spec": "200",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 260.0
+   },
+   {
+    "name": "布网胶布",
+    "spec": "",
+    "unit": "卷",
+    "qty": 1.0,
+    "price": 300.0
+   }
+  ],
+  "sec": 21.2
+ },
+ "round2": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "镀锌管",
+    "spec": "15",
+    "unit": "米",
+    "qty": 2028.0,
+    "price": 6.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "热缩管",
+    "spec": "25",
+    "unit": "卷",
+    "qty": 10.0,
+    "price": 60.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "平垫钉",
+    "spec": "3×30",
+    "unit": "箱",
+    "qty": 1.0,
+    "price": 240.0,
+    "issues": [
+     "name: 未入库"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "预埋盒",
+    "spec": "200×200×12",
+    "unit": "只",
+    "qty": 280.0,
+    "price": 5.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "预埋盒",
+    "spec": "600×200×150",
+    "unit": "只",
+    "qty": 100.0,
+    "price": 20.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "等电位",
+    "spec": "",
+    "unit": "只",
+    "qty": 200.0,
+    "price": 21.0,
+    "issues": [],
+    "corrections": [
+     "name: LFB等电位→等电位"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "86方盒",
+    "spec": "",
+    "unit": "只",
+    "qty": 3840.0,
+    "price": 0.3,
+    "issues": [],
+    "corrections": [
+     "name: 86型接线盒体→86方盒",
+     "name: 拆分→86方盒"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "气罐",
+    "spec": "",
+    "unit": "瓶",
+    "qty": 48.0,
+    "price": 12.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "气罐枪头",
+    "spec": "",
+    "unit": "只",
+    "qty": 5.0,
+    "price": 40.0,
+    "issues": [],
+    "corrections": [
+     "name: 气罐接头→气罐枪头"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌扁钢",
+    "spec": "4×40",
+    "unit": "支",
+    "qty": 20.0,
+    "price": 56.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌槽钢",
+    "spec": "6#",
+    "unit": "支",
+    "qty": 7.0,
+    "price": 250.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "水管卡",
+    "spec": "",
+    "unit": "只",
+    "qty": 45.0,
+    "price": 6.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "焊丝",
+    "spec": "8×40",
+    "unit": "套",
+    "qty": 100.0,
+    "price": 0.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "焊丝",
+    "spec": "8×60",
+    "unit": "套",
+    "qty": 100.0,
+    "price": 0.8,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "伸缩节",
+    "spec": "100",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 65.0,
+    "issues": [],
+    "corrections": [
+     "name: HDPE伸缩节→伸缩节"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "电线管封堵",
+    "spec": "100",
+    "unit": "只",
+    "qty": 6.0,
+    "price": 40.0,
+    "issues": [
+     "name: 未入库"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "电线管闷头",
+    "spec": "200",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 260.0,
+    "issues": [
+     "name: 未入库"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "布胶带",
+    "spec": "",
+    "unit": "卷",
+    "qty": 1.0,
+    "price": 300.0,
+    "issues": [],
+    "corrections": [
+     "name: 布网胶布→布胶带"
+    ],
+    "not_in_library": false
+   }
+  ],
+  "sec": 6.2
+ },
+ "truncated": false
+}

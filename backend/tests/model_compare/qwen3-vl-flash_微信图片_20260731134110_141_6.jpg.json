@@ -1,0 +1,291 @@
+{
+ "model": "qwen3-vl-flash",
+ "img": "微信图片_20260731134110_141_6.jpg",
+ "round1": {
+  "rows": 16,
+  "items": [
+   {
+    "name": "穿筋盒",
+    "spec": "一通",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 1.5
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "二通",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 1.5
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "对通",
+    "unit": "只",
+    "qty": 400.0,
+    "price": 1.5
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "三通",
+    "unit": "只",
+    "qty": 200.0,
+    "price": 1.5
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "四通",
+    "unit": "只",
+    "qty": 200.0,
+    "price": 1.5
+   },
+   {
+    "name": "强电套管",
+    "spec": "75",
+    "unit": "只",
+    "qty": 280.0,
+    "price": 3.5
+   },
+   {
+    "name": "PVC线管",
+    "spec": "20",
+    "unit": "米",
+    "qty": 2000.0,
+    "price": 4.4
+   },
+   {
+    "name": "鱼撑",
+    "spec": "22",
+    "unit": "只",
+    "qty": 2000.0,
+    "price": 0.45
+   },
+   {
+    "name": "鱼撑",
+    "spec": "20",
+    "unit": "只",
+    "qty": 2000.0,
+    "price": 0.35
+   },
+   {
+    "name": "鱼撑",
+    "spec": "22",
+    "unit": "只",
+    "qty": 1000.0,
+    "price": 0.45
+   },
+   {
+    "name": "鱼撑",
+    "spec": "20",
+    "unit": "只",
+    "qty": 1000.0,
+    "price": 0.35
+   },
+   {
+    "name": "弯头",
+    "spec": "150×180×12",
+    "unit": "只",
+    "qty": 60.0,
+    "price": 3.5
+   },
+   {
+    "name": "热镀锌",
+    "spec": "25",
+    "unit": "卷",
+    "qty": 20.0,
+    "price": 60.0
+   },
+   {
+    "name": "PVC支托",
+    "spec": "20",
+    "unit": "只",
+    "qty": 8000.0,
+    "price": 0.16
+   },
+   {
+    "name": "镀锌角钢",
+    "spec": "15",
+    "unit": "米",
+    "qty": 1014.0,
+    "price": 6.5
+   },
+   {
+    "name": "A型柔性套管",
+    "spec": "300*300",
+    "unit": "块",
+    "qty": 420.0,
+    "price": 11.5
+   }
+  ],
+  "sec": 11.9
+ },
+ "round2": {
+  "rows": 16,
+  "items": [
+   {
+    "name": "穿筋盒",
+    "spec": "一通",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "二通",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "对通",
+    "unit": "只",
+    "qty": 400.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "三通",
+    "unit": "只",
+    "qty": 200.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "四通",
+    "unit": "只",
+    "qty": 200.0,
+    "price": 1.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "人防电气套管",
+    "spec": "75",
+    "unit": "只",
+    "qty": 280.0,
+    "price": 3.5,
+    "issues": [],
+    "corrections": [
+     "name: 强电套管→人防电气套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "PVC线管",
+    "spec": "20",
+    "unit": "米",
+    "qty": 2000.0,
+    "price": 4.4,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "鱼撑",
+    "spec": "22",
+    "unit": "只",
+    "qty": 2000.0,
+    "price": 0.45,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "鱼撑",
+    "spec": "20",
+    "unit": "只",
+    "qty": 2000.0,
+    "price": 0.35,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "鱼撑",
+    "spec": "22",
+    "unit": "只",
+    "qty": 1000.0,
+    "price": 0.45,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "鱼撑",
+    "spec": "20",
+    "unit": "只",
+    "qty": 1000.0,
+    "price": 0.35,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "弯头",
+    "spec": "150×180×12",
+    "unit": "只",
+    "qty": 60.0,
+    "price": 3.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "热镀锌",
+    "spec": "25",
+    "unit": "卷",
+    "qty": 20.0,
+    "price": 60.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "PVC支托",
+    "spec": "20",
+    "unit": "只",
+    "qty": 8000.0,
+    "price": 0.16,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌角钢",
+    "spec": "15",
+    "unit": "米",
+    "qty": 1014.0,
+    "price": 6.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "A型柔性套管",
+    "spec": "300*300",
+    "unit": "块",
+    "qty": 420.0,
+    "price": 11.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   }
+  ],
+  "sec": 16.9,
+  "completion_tokens": 1127
+ }
+}

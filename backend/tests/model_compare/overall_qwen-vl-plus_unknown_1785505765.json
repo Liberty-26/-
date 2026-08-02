@@ -1,0 +1,340 @@
+{
+ "model": "qwen-vl-plus",
+ "img": "unknown_1785505765.jpg",
+ "round1": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "防通风套管",
+    "spec": "664×50",
+    "unit": "套",
+    "qty": 15.0,
+    "price": 414.0
+   },
+   {
+    "name": "防通风套管",
+    "spec": "150×130",
+    "unit": "套",
+    "qty": 76.0,
+    "price": 198.0
+   },
+   {
+    "name": "次降虫套管",
+    "spec": "",
+    "unit": "",
+    "qty": 3.0,
+    "price": 1508.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "2×150+6×100+6×50",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 708.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "2×100+8×50",
+    "unit": "套",
+    "qty": 11.0,
+    "price": 366.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "8×50",
+    "unit": "套",
+    "qty": 5.0,
+    "price": 240.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "2×150*8×63",
+    "unit": "套",
+    "qty": 1.0,
+    "price": 394.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "12×50",
+    "unit": "套",
+    "qty": 3.0,
+    "price": 355.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "8×150*2×50+6×50",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 948.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "6×150*6×50",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 528.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "4×50",
+    "unit": "套",
+    "qty": 31.0,
+    "price": 120.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "2×50",
+    "unit": "套",
+    "qty": 4.0,
+    "price": 67.0
+   },
+   {
+    "name": "方力片",
+    "spec": "",
+    "unit": "片",
+    "qty": 40.0,
+    "price": 11.0
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "双通",
+    "unit": "只",
+    "qty": 40.0,
+    "price": 800.0
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "一通",
+    "unit": "只",
+    "qty": 8.0,
+    "price": 400.0
+   },
+   {
+    "name": "对通",
+    "spec": "",
+    "unit": "",
+    "qty": 600.0,
+    "price": 1.5
+   },
+   {
+    "name": "八角灯九盒",
+    "spec": "对通",
+    "unit": "",
+    "qty": 600.0,
+    "price": 1.5
+   },
+   {
+    "name": "预埋盒",
+    "spec": "200×100",
+    "unit": "",
+    "qty": 270.0,
+    "price": 5.0
+   }
+  ],
+  "sec": 9.7
+ },
+ "round2": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "人防通风套管",
+    "spec": "664×50",
+    "unit": "套",
+    "qty": 15.0,
+    "price": 414.0,
+    "issues": [],
+    "corrections": [
+     "name: 防通风套管→人防通风套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "150×130",
+    "unit": "套",
+    "qty": 76.0,
+    "price": 198.0,
+    "issues": [],
+    "corrections": [
+     "name: 防通风套管→人防通风套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "次降虫套管",
+    "spec": "",
+    "unit": "",
+    "qty": 3.0,
+    "price": 1508.0,
+    "issues": [
+     "unit: 缺失单位",
+     "name: 疑似名称规格混写"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "镀锌管",
+    "spec": "2×150+6×100+6×50",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 708.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "2×100+8×50",
+    "unit": "套",
+    "qty": 11.0,
+    "price": 366.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "8×50",
+    "unit": "套",
+    "qty": 5.0,
+    "price": 240.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "2×150×8×63",
+    "unit": "套",
+    "qty": 1.0,
+    "price": 394.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "12×50",
+    "unit": "套",
+    "qty": 3.0,
+    "price": 355.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "8×150×2×50+6×50",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 948.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "6×150×6×50",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 528.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "4×50",
+    "unit": "套",
+    "qty": 31.0,
+    "price": 120.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "2×50",
+    "unit": "套",
+    "qty": 4.0,
+    "price": 67.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "拉力片",
+    "spec": "",
+    "unit": "片",
+    "qty": 40.0,
+    "price": 11.0,
+    "issues": [],
+    "corrections": [
+     "name: 方力片→拉力片"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "双通",
+    "unit": "只",
+    "qty": 40.0,
+    "price": 800.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "一通",
+    "unit": "只",
+    "qty": 8.0,
+    "price": 400.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "对通",
+    "spec": "",
+    "unit": "",
+    "qty": 600.0,
+    "price": 1.5,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "八角灯头盒",
+    "spec": "对通",
+    "unit": "",
+    "qty": 600.0,
+    "price": 1.5,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [
+     "name: 八角灯九盒→八角灯头盒"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "预埋盒",
+    "spec": "200×100",
+    "unit": "",
+    "qty": 270.0,
+    "price": 5.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   }
+  ],
+  "sec": 6.5
+ },
+ "truncated": false
+}

@@ -1,0 +1,53 @@
+=== uploads/unknown_1785400336.jpg 11 exp vs 11 act ===
+  row10: name: PVC排中管 != PVC排水管
+=== uploads/unknown_1785501223.jpg 6 exp vs 6 act ===
+=== uploads/unknown_1785407181.jpg 18 exp vs 18 act ===
+=== uploads/unknown_1785402093.jpg 18 exp vs 18 act ===
+  row3: name: 防管 != PE管
+  row10: price: 12.2 != 12
+  row15: name: 镀锌铁牛带 != 液体生料带
+=== uploads/unknown_1785499654.jpg 7 exp vs 7 act ===
+  row1: name: PVC线盒 != PVC线条 | unit: 个 != 米
+  row4: name: 黑明水 != 照明灯
+  row5: name: v型卡 != V型卡
+  row6: unit: 只 != 包
+=== uploads/unknown_1785400400.jpg 18 exp vs 0 act ===
+  row0: missing 镀锌管
+  row1: missing 热镀锌管
+  row2: missing 平壁钉
+  row3: missing 预埋盒
+  row4: missing 预埋盒
+  row5: missing LEB等电位
+  row6: missing 86型接线盒体
+  row7: missing 气锌盖
+  row8: missing 气罐枪头
+  row9: missing 镀锌扁钢
+  row10: missing 镀锌槽钢
+  row11: missing 水管卡
+  row12: missing 螺丝
+  row13: missing 螺丝
+  row14: missing HDPE伸缩节
+  row15: missing 出水弯直接
+  row16: missing 出水弯闷头
+  row17: missing 布胶布
+=== uploads/unknown_1785505765.jpg 17 exp vs 0 act ===
+  row0: missing 人防通风套管
+  row1: missing 人防通风套管
+  row2: missing 人防电气套管
+  row3: missing 人防电气套管
+  row4: missing 人防电气套管
+  row5: missing 人防电气套管
+  row6: missing 人防电气套管
+  row7: missing 人防电气套管
+  row8: missing 人防电气套管
+  row9: missing 人防电气套管
+  row10: missing 人防电气套管
+  row11: missing 拉力片
+  row12: missing 穿筋盒
+  row13: missing 穿筋盒
+  row14: missing 穿筋盒
+  row15: missing 八角灯头盒
+  row16: missing 预埋盒
+=== uploads/unknown_1785407105.jpg 5 exp vs 5 act ===
+  row3: unit: 盘 != 箱
+Accuracy: 315/500 = 63.0%

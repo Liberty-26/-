@@ -1,0 +1,332 @@
+{
+ "model": "qwen-vl-plus",
+ "img": "微信图片_20260731134058_136_6.jpg",
+ "receipt_no": "0001379",
+ "round1": {
+  "rows": 17,
+  "items": [
+   {
+    "name": "清扣2",
+    "spec": "",
+    "unit": "",
+    "qty": 1.0,
+    "price": 8.03
+   },
+   {
+    "name": "镀锌管",
+    "spec": "110×75",
+    "unit": "",
+    "qty": 1.0,
+    "price": 1479.15
+   },
+   {
+    "name": "水管三通",
+    "spec": "75×50",
+    "unit": "",
+    "qty": 1.0,
+    "price": 3.36
+   },
+   {
+    "name": "防管",
+    "spec": "75",
+    "unit": "米",
+    "qty": 36.0,
+    "price": 18.0
+   },
+   {
+    "name": "镀锌方管",
+    "spec": "60×20",
+    "unit": "米",
+    "qty": 60.0,
+    "price": 36.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "80",
+    "unit": "米",
+    "qty": 96.0,
+    "price": 61.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "",
+    "unit": "米",
+    "qty": 50.0,
+    "price": 36.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "",
+    "unit": "",
+    "qty": 80.0,
+    "price": 80.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "",
+    "unit": "",
+    "qty": 80.0,
+    "price": 80.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "",
+    "unit": "",
+    "qty": 50.0,
+    "price": 50.0
+   },
+   {
+    "name": "丝纹管",
+    "spec": "114×50",
+    "unit": "",
+    "qty": 50.0,
+    "price": 120.0
+   },
+   {
+    "name": "三通",
+    "spec": "114",
+    "unit": "",
+    "qty": 10.0,
+    "price": 420.0
+   },
+   {
+    "name": "大小头",
+    "spec": "114×50",
+    "unit": "",
+    "qty": 10.0,
+    "price": 400.0
+   },
+   {
+    "name": "弯头",
+    "spec": "65×50",
+    "unit": "个",
+    "qty": 10.0,
+    "price": 18.0
+   },
+   {
+    "name": "活接",
+    "spec": "DN100",
+    "unit": "个",
+    "qty": 20.0,
+    "price": 280.0
+   },
+   {
+    "name": "活接球阀",
+    "spec": "22",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 60.0
+   },
+   {
+    "name": "PPR热熔直接",
+    "spec": "20×100",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 37.5
+   }
+  ],
+  "sec": 8.7
+ },
+ "round2": {
+  "rows": 17,
+  "items": [
+   {
+    "name": "清扣2",
+    "spec": "",
+    "unit": "",
+    "qty": 1.0,
+    "price": 8.03,
+    "issues": [
+     "unit: 缺失单位",
+     "name: 疑似名称规格混写，请人工确认"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "镀锌管",
+    "spec": "110×75",
+    "unit": "",
+    "qty": 1.0,
+    "price": 1479.15,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "三通",
+    "spec": "75×50",
+    "unit": "",
+    "qty": 1.0,
+    "price": 3.36,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [
+     "name: 水管三通→三通"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "防管",
+    "spec": "75",
+    "unit": "米",
+    "qty": 36.0,
+    "price": 18.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "镀锌方管",
+    "spec": "60×20",
+    "unit": "米",
+    "qty": 60.0,
+    "price": 36.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "80",
+    "unit": "米",
+    "qty": 96.0,
+    "price": 61.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "",
+    "unit": "米",
+    "qty": 50.0,
+    "price": 36.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "",
+    "unit": "",
+    "qty": 80.0,
+    "price": 80.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "",
+    "unit": "",
+    "qty": 80.0,
+    "price": 80.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "",
+    "unit": "",
+    "qty": 50.0,
+    "price": 50.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "丝纹管",
+    "spec": "114×50",
+    "unit": "",
+    "qty": 50.0,
+    "price": 120.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "三通",
+    "spec": "114",
+    "unit": "",
+    "qty": 10.0,
+    "price": 420.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "大小头",
+    "spec": "114×50",
+    "unit": "",
+    "qty": 10.0,
+    "price": 400.0,
+    "issues": [
+     "unit: 缺失单位"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "弯头",
+    "spec": "65×50",
+    "unit": "个",
+    "qty": 10.0,
+    "price": 18.0,
+    "issues": [
+     "unit: 单位不在常见单位集合"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "活接",
+    "spec": "DN100",
+    "unit": "个",
+    "qty": 20.0,
+    "price": 280.0,
+    "issues": [
+     "unit: 单位不在常见单位集合"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "活接球阀",
+    "spec": "22",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 60.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "PPR热熔直接",
+    "spec": "20×100",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 37.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": true
+   }
+  ],
+  "sec": 7.0
+ },
+ "truncated": false
+}

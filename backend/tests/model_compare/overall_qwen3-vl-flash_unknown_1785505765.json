@@ -1,0 +1,334 @@
+{
+ "model": "qwen3-vl-flash",
+ "img": "unknown_1785505765.jpg",
+ "round1": {
+  "rows": 17,
+  "items": [
+   {
+    "name": "防通风草管",
+    "spec": "66×4×50",
+    "unit": "只",
+    "qty": 15.0,
+    "price": 414.0
+   },
+   {
+    "name": "防通风草管",
+    "spec": "150×130",
+    "unit": "只",
+    "qty": 76.0,
+    "price": 198.0
+   },
+   {
+    "name": "防锈套管",
+    "spec": "2×150+6×100+6×50",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 708.0
+   },
+   {
+    "name": "防锈套管",
+    "spec": "2×100+8×50",
+    "unit": "只",
+    "qty": 11.0,
+    "price": 366.0
+   },
+   {
+    "name": "防锈套管",
+    "spec": "8×50",
+    "unit": "只",
+    "qty": 5.0,
+    "price": 240.0
+   },
+   {
+    "name": "防锈套管",
+    "spec": "2×150+8×65",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 394.0
+   },
+   {
+    "name": "防锈套管",
+    "spec": "12×50",
+    "unit": "只",
+    "qty": 3.0,
+    "price": 355.0
+   },
+   {
+    "name": "防锈套管",
+    "spec": "8×150+2×50+6×50",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 948.0
+   },
+   {
+    "name": "防锈套管",
+    "spec": "6×150+6×50",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 528.0
+   },
+   {
+    "name": "防锈套管",
+    "spec": "4×50",
+    "unit": "只",
+    "qty": 31.0,
+    "price": 120.0
+   },
+   {
+    "name": "防锈套管",
+    "spec": "2×50",
+    "unit": "只",
+    "qty": 4.0,
+    "price": 67.0
+   },
+   {
+    "name": "防锈套管",
+    "spec": "方钢片",
+    "unit": "片",
+    "qty": 40.0,
+    "price": 11.0
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "双通",
+    "unit": "只",
+    "qty": 40.0,
+    "price": 80.0
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "一通",
+    "unit": "只",
+    "qty": 80.0,
+    "price": 40.0
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "对通",
+    "unit": "只",
+    "qty": 60.0,
+    "price": 15.0
+   },
+   {
+    "name": "八角形水盒",
+    "spec": "对通",
+    "unit": "只",
+    "qty": 60.0,
+    "price": 15.0
+   },
+   {
+    "name": "预埋盒",
+    "spec": "200×100",
+    "unit": "只",
+    "qty": 270.0,
+    "price": 5.0
+   }
+  ],
+  "sec": 10.4
+ },
+ "round2": {
+  "rows": 17,
+  "items": [
+   {
+    "name": "人防通风套管",
+    "spec": "66×4×50",
+    "unit": "只",
+    "qty": 15.0,
+    "price": 414.0,
+    "issues": [],
+    "corrections": [
+     "name: 防通风草管→人防通风套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "人防通风套管",
+    "spec": "150×130",
+    "unit": "只",
+    "qty": 76.0,
+    "price": 198.0,
+    "issues": [],
+    "corrections": [
+     "name: 防通风草管→人防通风套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "防水套管",
+    "spec": "2×150+6×100+6×50",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 708.0,
+    "issues": [],
+    "corrections": [
+     "name: 防锈套管→防水套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "防水套管",
+    "spec": "2×100+8×50",
+    "unit": "只",
+    "qty": 11.0,
+    "price": 366.0,
+    "issues": [],
+    "corrections": [
+     "name: 防锈套管→防水套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "防水套管",
+    "spec": "8×50",
+    "unit": "只",
+    "qty": 5.0,
+    "price": 240.0,
+    "issues": [],
+    "corrections": [
+     "name: 防锈套管→防水套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "防水套管",
+    "spec": "2×150+8×65",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 394.0,
+    "issues": [],
+    "corrections": [
+     "name: 防锈套管→防水套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "防水套管",
+    "spec": "12×50",
+    "unit": "只",
+    "qty": 3.0,
+    "price": 355.0,
+    "issues": [],
+    "corrections": [
+     "name: 防锈套管→防水套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "防水套管",
+    "spec": "8×150+2×50+6×50",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 948.0,
+    "issues": [],
+    "corrections": [
+     "name: 防锈套管→防水套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "防水套管",
+    "spec": "6×150+6×50",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 528.0,
+    "issues": [],
+    "corrections": [
+     "name: 防锈套管→防水套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "防水套管",
+    "spec": "4×50",
+    "unit": "只",
+    "qty": 31.0,
+    "price": 120.0,
+    "issues": [],
+    "corrections": [
+     "name: 防锈套管→防水套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "防水套管",
+    "spec": "2×50",
+    "unit": "只",
+    "qty": 4.0,
+    "price": 67.0,
+    "issues": [],
+    "corrections": [
+     "name: 防锈套管→防水套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "防水套管",
+    "spec": "方钢片",
+    "unit": "片",
+    "qty": 40.0,
+    "price": 11.0,
+    "issues": [
+     "疑似名称规格混写"
+    ],
+    "corrections": [
+     "name: 防锈套管→防水套管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "双通",
+    "unit": "只",
+    "qty": 40.0,
+    "price": 80.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "一通",
+    "unit": "只",
+    "qty": 80.0,
+    "price": 40.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "穿筋盒",
+    "spec": "对通",
+    "unit": "只",
+    "qty": 60.0,
+    "price": 15.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "八角灯头盒",
+    "spec": "对通",
+    "unit": "只",
+    "qty": 60.0,
+    "price": 15.0,
+    "issues": [],
+    "corrections": [
+     "name: 八角形水盒→八角灯头盒"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "预埋盒",
+    "spec": "200×100",
+    "unit": "只",
+    "qty": 270.0,
+    "price": 5.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   }
+  ],
+  "sec": 6.5
+ },
+ "truncated": false
+}

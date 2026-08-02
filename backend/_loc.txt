@@ -1,0 +1,4 @@
+26: SPEC_MARK = re.compile(r'[0-9×xX*#]|DN\d')
+107: def structural_decompose(items: list) -> list:
+124:         if is_ghost_row(item):
+207:         if name and not spec and SPEC_MARK.search(name):

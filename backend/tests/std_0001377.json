@@ -1,0 +1,128 @@
+[
+ {
+  "name": "法兰螺丝",
+  "spec": "16*60",
+  "unit": "套",
+  "qty": 160,
+  "price": 2
+ },
+ {
+  "name": " v型卡",
+  "spec": "65",
+  "unit": "只",
+  "qty": 50,
+  "price": 1.5
+ },
+ {
+  "name": "膨胀螺丝",
+  "spec": "8*80",
+  "unit": "只",
+  "qty": 640,
+  "price": 0.8
+ },
+ {
+  "name": "槽钢",
+  "spec": "8#",
+  "unit": "米",
+  "qty": 12,
+  "price": 55
+ },
+ {
+  "name": "PE给水管",
+  "spec": "50",
+  "unit": "米",
+  "qty": 60,
+  "price": 16
+ },
+ {
+  "name": "直接",
+  "spec": "50",
+  "unit": "只",
+  "qty": 10,
+  "price": 3.5
+ },
+ {
+  "name": "三通",
+  "spec": "50*32",
+  "unit": "只",
+  "qty": 1,
+  "price": 6.5
+ },
+ {
+  "name": "内丝弯头",
+  "spec": "32",
+  "unit": "只",
+  "qty": 1,
+  "price": 23
+ },
+ {
+  "name": "弯头",
+  "spec": "32",
+  "unit": "只",
+  "qty": 2,
+  "price": 2
+ },
+ {
+  "name": "直接",
+  "spec": "32",
+  "unit": "只",
+  "qty": 2,
+  "price": 1.5
+ },
+ {
+  "name": "给水管",
+  "spec": "32",
+  "unit": "米",
+  "qty": 12,
+  "price": 7
+ },
+ {
+  "name": "HDPE雨水管",
+  "spec": "110",
+  "unit": "米",
+  "qty": 60,
+  "price": 25.76
+ },
+ {
+  "name": "大弯弯头",
+  "spec": "110",
+  "unit": "只",
+  "qty": 20,
+  "price": 51.6
+ },
+ {
+  "name": "伸缩节",
+  "spec": "110",
+  "unit": "只",
+  "qty": 6,
+  "price": 55.35
+ },
+ {
+  "name": "检查口",
+  "spec": "110",
+  "unit": "只",
+  "qty": 6,
+  "price": 75.33
+ },
+ {
+  "name": "45度弯头",
+  "spec": "110",
+  "unit": "只",
+  "qty": 14,
+  "price": 43
+ },
+ {
+  "name": "墙卡",
+  "spec": "110",
+  "unit": "只",
+  "qty": 30,
+  "price": 9
+ },
+ {
+  "name": "V型卡",
+  "spec": "100",
+  "unit": "只",
+  "qty": 50,
+  "price": 2.5
+ }
+]

@@ -1,0 +1,345 @@
+{
+ "model": "qwen3-vl-flash",
+ "img": "unknown_1785402093.jpg",
+ "round1": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "清扫口",
+    "spec": "110",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 8.03
+   },
+   {
+    "name": "争中王通",
+    "spec": "110×75",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 14.79
+   },
+   {
+    "name": "顺水三通",
+    "spec": "75×50",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 3.36
+   },
+   {
+    "name": "防管",
+    "spec": "75",
+    "unit": "米",
+    "qty": 36.0,
+    "price": 18.0
+   },
+   {
+    "name": "轻合金方管",
+    "spec": "60×20",
+    "unit": "米",
+    "qty": 60.0,
+    "price": 36.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "80",
+    "unit": "米",
+    "qty": 96.0,
+    "price": 61.0
+   },
+   {
+    "name": "管",
+    "spec": "50",
+    "unit": "米",
+    "qty": 36.0,
+    "price": 38.5
+   },
+   {
+    "name": "王通",
+    "spec": "80",
+    "unit": "只",
+    "qty": 31.0,
+    "price": 37.0
+   },
+   {
+    "name": "弯头",
+    "spec": "80",
+    "unit": "只",
+    "qty": 34.0,
+    "price": 24.0
+   },
+   {
+    "name": "三通",
+    "spec": "50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 16.2
+   },
+   {
+    "name": "管头",
+    "spec": "50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 12.0
+   },
+   {
+    "name": "丝口三通",
+    "spec": "114×50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 42.0
+   },
+   {
+    "name": "三通",
+    "spec": "114",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 40.0
+   },
+   {
+    "name": "大叶头",
+    "spec": "114×50",
+    "unit": "只",
+    "qty": 5.0,
+    "price": 18.0
+   },
+   {
+    "name": "弯头",
+    "spec": "65×50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 18.0
+   },
+   {
+    "name": "镀锌铁件带",
+    "spec": "",
+    "unit": "瓶",
+    "qty": 20.0,
+    "price": 14.0
+   },
+   {
+    "name": "铜球阀",
+    "spec": "22",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 60.0
+   },
+   {
+    "name": "PPR外丝直接",
+    "spec": "20×20",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 37.5
+   }
+  ],
+  "sec": 10.4
+ },
+ "round2": {
+  "rows": 18,
+  "items": [
+   {
+    "name": "清扫口",
+    "spec": "110",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 8.03,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "三通",
+    "spec": "110×75",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 14.79,
+    "issues": [
+     "疑似名称规格混写"
+    ],
+    "corrections": [
+     "name: 争中王通→三通"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "顺水三通",
+    "spec": "75×50",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 3.36,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "防管",
+    "spec": "75",
+    "unit": "米",
+    "qty": 36.0,
+    "price": 18.0,
+    "issues": [
+     "未入库"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "铝合金方管",
+    "spec": "60×20",
+    "unit": "米",
+    "qty": 60.0,
+    "price": 36.0,
+    "issues": [],
+    "corrections": [
+     "name: 轻合金方管→铝合金方管"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "80",
+    "unit": "米",
+    "qty": 96.0,
+    "price": 61.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "管",
+    "spec": "50",
+    "unit": "米",
+    "qty": 36.0,
+    "price": 38.5,
+    "issues": [
+     "未入库"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "三通",
+    "spec": "80",
+    "unit": "只",
+    "qty": 31.0,
+    "price": 37.0,
+    "issues": [
+     "疑似名称规格混写"
+    ],
+    "corrections": [
+     "name: 王通→三通"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "弯头",
+    "spec": "80",
+    "unit": "只",
+    "qty": 34.0,
+    "price": 24.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "三通",
+    "spec": "50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 16.2,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "管头",
+    "spec": "50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 12.0,
+    "issues": [
+     "未入库"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "丝口三通",
+    "spec": "114×50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 42.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "三通",
+    "spec": "114",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 40.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "大叶头",
+    "spec": "114×50",
+    "unit": "只",
+    "qty": 5.0,
+    "price": 18.0,
+    "issues": [
+     "未入库"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "弯头",
+    "spec": "65×50",
+    "unit": "只",
+    "qty": 10.0,
+    "price": 18.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌铁件带",
+    "spec": "",
+    "unit": "瓶",
+    "qty": 20.0,
+    "price": 14.0,
+    "issues": [
+     "未入库"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "铜球阀",
+    "spec": "22",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 60.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "PPR外丝直接",
+    "spec": "20×20",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 37.5,
+    "issues": [
+     "未入库"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   }
+  ],
+  "sec": 6.2
+ },
+ "truncated": false
+}

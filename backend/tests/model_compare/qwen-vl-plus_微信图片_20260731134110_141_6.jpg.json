@@ -1,0 +1,426 @@
+{
+ "model": "qwen-vl-plus",
+ "img": "微信图片_20260731134110_141_6.jpg",
+ "round1": {
+  "rows": 23,
+  "items": [
+   {
+    "name": "密闭套管",
+    "spec": "一通",
+    "unit": "套",
+    "qty": 3.0,
+    "price": 900.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "二通",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 900.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "三通",
+    "unit": "套",
+    "qty": 8.0,
+    "price": 115.0
+   },
+   {
+    "name": "密闭套管",
+    "spec": "四通",
+    "unit": "套",
+    "qty": 3.0,
+    "price": 400.0
+   },
+   {
+    "name": "预埋套管",
+    "spec": "75",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 280.0
+   },
+   {
+    "name": "预埋套管",
+    "spec": "100",
+    "unit": "套",
+    "qty": 20.0,
+    "price": 3.5
+   },
+   {
+    "name": "镀锌管",
+    "spec": "22",
+    "unit": "米",
+    "qty": 20.0,
+    "price": 4.4
+   },
+   {
+    "name": "镀锌管",
+    "spec": "20",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 2000.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 22.0,
+    "price": 0.45
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 20.0,
+    "price": 0.35
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 1000.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 20.0,
+    "price": 0.45
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 1000.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 0.35
+   },
+   {
+    "name": "热镀锌扁钢",
+    "spec": "150×80×12",
+    "unit": "支",
+    "qty": 2.0,
+    "price": 35.0
+   },
+   {
+    "name": "热镀锌扁钢",
+    "spec": "60",
+    "unit": "支",
+    "qty": 60.0,
+    "price": 2100.0
+   },
+   {
+    "name": "热镀锌扁钢",
+    "spec": "25",
+    "unit": "卷",
+    "qty": 20.0,
+    "price": 1200.0
+   },
+   {
+    "name": "PVC直接",
+    "spec": "20",
+    "unit": "支",
+    "qty": 8000.0,
+    "price": 0.16
+   },
+   {
+    "name": "PVC直接",
+    "spec": "20",
+    "unit": "支",
+    "qty": 2.0,
+    "price": 1280.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "15",
+    "unit": "米",
+    "qty": 1014.0,
+    "price": 6.5
+   },
+   {
+    "name": "镀锌管",
+    "spec": "15",
+    "unit": "米",
+    "qty": 20.0,
+    "price": 6591.0
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 420.0,
+    "price": 11.5
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 4830.0
+   }
+  ],
+  "sec": 40.6
+ },
+ "round2": {
+  "rows": 23,
+  "items": [
+   {
+    "name": "密闭套管",
+    "spec": "一通",
+    "unit": "套",
+    "qty": 3.0,
+    "price": 900.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "二通",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 900.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "三通",
+    "unit": "套",
+    "qty": 8.0,
+    "price": 115.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "密闭套管",
+    "spec": "四通",
+    "unit": "套",
+    "qty": 3.0,
+    "price": 400.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "预埋套管",
+    "spec": "75",
+    "unit": "套",
+    "qty": 2.0,
+    "price": 280.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "预埋套管",
+    "spec": "100",
+    "unit": "套",
+    "qty": 20.0,
+    "price": 3.5,
+    "issues": [
+     "price: 单价异常"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "22",
+    "unit": "米",
+    "qty": 20.0,
+    "price": 4.4,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "20",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 2000.0,
+    "issues": [
+     "price: 单价异常"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 22.0,
+    "price": 0.45,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 20.0,
+    "price": 0.35,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 1000.0,
+    "issues": [
+     "price: 单价异常"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 20.0,
+    "price": 0.45,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 1000.0,
+    "issues": [
+     "price: 单价异常"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 0.35,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "热镀锌扁钢",
+    "spec": "150×80×12",
+    "unit": "支",
+    "qty": 2.0,
+    "price": 35.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "热镀锌扁钢",
+    "spec": "60",
+    "unit": "支",
+    "qty": 60.0,
+    "price": 2100.0,
+    "issues": [
+     "price: 单价异常"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "热镀锌扁钢",
+    "spec": "25",
+    "unit": "卷",
+    "qty": 20.0,
+    "price": 1200.0,
+    "issues": [
+     "price: 单价异常"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "PVC直接",
+    "spec": "20",
+    "unit": "支",
+    "qty": 8000.0,
+    "price": 0.16,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "PVC直接",
+    "spec": "20",
+    "unit": "支",
+    "qty": 2.0,
+    "price": 1280.0,
+    "issues": [
+     "price: 单价异常"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "15",
+    "unit": "米",
+    "qty": 1014.0,
+    "price": 6.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "15",
+    "unit": "米",
+    "qty": 20.0,
+    "price": 6591.0,
+    "issues": [
+     "price: 单价异常"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 420.0,
+    "price": 11.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "镀锌管",
+    "spec": "10",
+    "unit": "米",
+    "qty": 2.0,
+    "price": 4830.0,
+    "issues": [
+     "price: 单价异常"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   }
+  ],
+  "sec": 27.0,
+  "completion_tokens": 1672
+ }
+}

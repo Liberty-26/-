@@ -1,0 +1,275 @@
+{
+ "model": "qwen-vl-max",
+ "img": "微信图片_20260731134125_146_6.jpg",
+ "receipt_no": "0001393",
+ "round1": {
+  "rows": 15,
+  "items": [
+   {
+    "name": "拉杆",
+    "spec": "6.2米×17支",
+    "unit": "米",
+    "qty": 105.4,
+    "price": 20.0
+   },
+   {
+    "name": "拉杆",
+    "spec": "6.5米×12支",
+    "unit": "米",
+    "qty": 78.0,
+    "price": 20.0
+   },
+   {
+    "name": "拉杆",
+    "spec": "6.4米×39支",
+    "unit": "米",
+    "qty": 249.6,
+    "price": 20.0
+   },
+   {
+    "name": "拉杆",
+    "spec": "6.2米×51支",
+    "unit": "米",
+    "qty": 316.2,
+    "price": 20.0
+   },
+   {
+    "name": "拉杆",
+    "spec": "3.7米×57支",
+    "unit": "米",
+    "qty": 210.9,
+    "price": 20.0
+   },
+   {
+    "name": "拉杆",
+    "spec": "3.5米×54支",
+    "unit": "米",
+    "qty": 189.0,
+    "price": 20.0
+   },
+   {
+    "name": "拉杆",
+    "spec": "3.4米×30支",
+    "unit": "米",
+    "qty": 102.0,
+    "price": 20.0
+   },
+   {
+    "name": "拉杆",
+    "spec": "3.2米×105支",
+    "unit": "米",
+    "qty": 336.0,
+    "price": 20.0
+   },
+   {
+    "name": "法兰",
+    "spec": "100",
+    "unit": "只",
+    "qty": 20.0,
+    "price": 21.0
+   },
+   {
+    "name": "预埋件",
+    "spec": "12×200×300",
+    "unit": "只",
+    "qty": 740.0,
+    "price": 51.5
+   },
+   {
+    "name": "预埋件",
+    "spec": "4×400×400",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 35.0
+   },
+   {
+    "name": "预埋件",
+    "spec": "24×420×470",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 40.0
+   },
+   {
+    "name": "预埋件",
+    "spec": "24×420×450",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 45.0
+   },
+   {
+    "name": "地脚螺栓",
+    "spec": "M30",
+    "unit": "套",
+    "qty": 208.0,
+    "price": 30.0
+   },
+   {
+    "name": "预埋套",
+    "spec": "",
+    "unit": "只",
+    "qty": 3000.0,
+    "price": 1.0
+   }
+  ],
+  "sec": 19.1
+ },
+ "round2": {
+  "rows": 15,
+  "items": [
+   {
+    "name": "拉杆",
+    "spec": "6.2米×17支",
+    "unit": "米",
+    "qty": 105.4,
+    "price": 20.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "拉杆",
+    "spec": "6.5米×12支",
+    "unit": "米",
+    "qty": 78.0,
+    "price": 20.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "拉杆",
+    "spec": "6.4米×39支",
+    "unit": "米",
+    "qty": 249.6,
+    "price": 20.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "拉杆",
+    "spec": "6.2米×51支",
+    "unit": "米",
+    "qty": 316.2,
+    "price": 20.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "拉杆",
+    "spec": "3.7米×57支",
+    "unit": "米",
+    "qty": 210.9,
+    "price": 20.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "拉杆",
+    "spec": "3.5米×54支",
+    "unit": "米",
+    "qty": 189.0,
+    "price": 20.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "拉杆",
+    "spec": "3.4米×30支",
+    "unit": "米",
+    "qty": 102.0,
+    "price": 20.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "拉杆",
+    "spec": "3.2米×105支",
+    "unit": "米",
+    "qty": 336.0,
+    "price": 20.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "法兰",
+    "spec": "100",
+    "unit": "只",
+    "qty": 20.0,
+    "price": 21.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "预埋件",
+    "spec": "12×200×300",
+    "unit": "只",
+    "qty": 740.0,
+    "price": 51.5,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "预埋件",
+    "spec": "4×400×400",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 35.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "预埋件",
+    "spec": "24×420×470",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 40.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "预埋件",
+    "spec": "24×420×450",
+    "unit": "只",
+    "qty": 1.0,
+    "price": 45.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "地脚螺栓",
+    "spec": "M30",
+    "unit": "套",
+    "qty": 208.0,
+    "price": 30.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "预埋套",
+    "spec": "",
+    "unit": "只",
+    "qty": 3000.0,
+    "price": 1.0,
+    "issues": [
+     "name: 未入库"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   }
+  ],
+  "sec": 5.5
+ },
+ "truncated": false
+}

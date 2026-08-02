@@ -1,0 +1,152 @@
+{
+ "img": "微信图片_20260731134129_148_6.jpg",
+ "model_rec": "qwen-vl-max",
+ "model_cal": "deepseek-v4-flash",
+ "round1": {
+  "rows": 7,
+  "items": [
+   {
+    "name": "镀锌钢丝网",
+    "spec": "",
+    "unit": "卷",
+    "qty": 15.0,
+    "price": 80.0
+   },
+   {
+    "name": "PVC线盒",
+    "spec": "",
+    "unit": "个",
+    "qty": 200.0,
+    "price": 0.8
+   },
+   {
+    "name": "滴水线条",
+    "spec": "",
+    "unit": "米",
+    "qty": 1000.0,
+    "price": 0.6
+   },
+   {
+    "name": "拉杆 25#",
+    "spec": "",
+    "unit": "套",
+    "qty": 48.0,
+    "price": 22.0
+   },
+   {
+    "name": "阻燃防火了",
+    "spec": "",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 260.0
+   },
+   {
+    "name": "V型卡 530",
+    "spec": "",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 16.0
+   },
+   {
+    "name": "扎带",
+    "spec": "",
+    "unit": "只",
+    "qty": 50000.0,
+    "price": 0.11
+   }
+  ],
+  "sec": 9.4
+ },
+ "round2": {
+  "rows": 7,
+  "items": [
+   {
+    "name": "镀锌钢丝网",
+    "spec": "",
+    "unit": "卷",
+    "qty": 15.0,
+    "price": 80.0,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "PVC穿筋盒",
+    "spec": "",
+    "unit": "个",
+    "qty": 200.0,
+    "price": 0.8,
+    "issues": [
+     "unit: 单位不在常见单位集合"
+    ],
+    "corrections": [
+     "name: PVC线盒→PVC穿筋盒"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "滴水线条",
+    "spec": "",
+    "unit": "米",
+    "qty": 1000.0,
+    "price": 0.6,
+    "issues": [],
+    "corrections": [],
+    "not_in_library": false
+   },
+   {
+    "name": "拉杆",
+    "spec": "25#",
+    "unit": "套",
+    "qty": 48.0,
+    "price": 22.0,
+    "issues": [],
+    "corrections": [
+     "name: 拉杆25#→拉杆",
+     "spec: 空→25#"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "阻燃防火了",
+    "spec": "",
+    "unit": "只",
+    "qty": 2.0,
+    "price": 260.0,
+    "issues": [
+     "name: 疑似名称规格混写"
+    ],
+    "corrections": [],
+    "not_in_library": true
+   },
+   {
+    "name": "V型卡530",
+    "spec": "530",
+    "unit": "只",
+    "qty": 600.0,
+    "price": 16.0,
+    "issues": [
+     "name: 校准修正未命中品名库，已保留原名"
+    ],
+    "corrections": [
+     "spec: 空→530"
+    ],
+    "not_in_library": false
+   },
+   {
+    "name": "扎带",
+    "spec": "",
+    "unit": "只",
+    "qty": 50000.0,
+    "price": 0.11,
+    "issues": [
+     "qty: 数量超出范围"
+    ],
+    "corrections": [],
+    "not_in_library": false
+   }
+  ],
+  "sec": 3.7
+ },
+ "truncated": false
+}
