@@ -5,6 +5,7 @@ GET/POST/PUT/DELETE /api/history
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 from database import get_conn
+from database import mark_verified
 from models import SaveReceiptRequest, UpdateReceiptRequest
 
 router = APIRouter(prefix="/api", tags=["history"])
@@ -304,3 +305,21 @@ async def delete_history(receipt_id: int):
         raise HTTPException(status_code=500, detail=f"删除失败: {str(e)}")
     finally:
         conn.close()
+
+
+# ---- 确认入库 ----
+
+@router.post("/history/{receipt_id}/verify")
+async def verify_history(receipt_id: int):
+    """确认入库：核对完成后标记单据为 verified（审核区「确认入库」）"""
+    conn = get_conn()
+    try:
+        existing = conn.execute(
+            "SELECT id FROM receipts WHERE id = ?", [receipt_id]
+        ).fetchone()
+        if not existing:
+            raise HTTPException(status_code=404, detail="单据不存在")
+    finally:
+        conn.close()
+    mark_verified(receipt_id)
+    return {"success": True}

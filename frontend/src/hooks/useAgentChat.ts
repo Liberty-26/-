@@ -28,8 +28,8 @@ export function useAgentChat() {
     saveMessage(role, content).catch(() => {}); // fire-and-forget
   }, []);
 
-  const sendMessage = useCallback(async (text: string, selectedIds: number[], uploadedFile?: string) => {
-    if (!text.trim() || isLoading) return;
+  const sendMessage = useCallback(async (text: string, selectedIds: number[], uploadedFile?: string): Promise<string | null> => {
+    if (!text.trim() || isLoading) return null;
 
     const userMsg: AgentMessage = { role: 'user', content: text };
     setMessages((prev) => [...prev, userMsg]);
@@ -43,13 +43,16 @@ export function useAgentChat() {
       setMessages((prev) => [...prev, agentMsg]);
       setHistory(res.data.history || []);
       persistMsg('assistant', res.data.reply);
+      setIsLoading(false);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      return res.data.reply;
     } else {
       const errMsg: AgentMessage = { role: 'assistant', content: `处理失败：${res.error || '未知错误'}` };
       setMessages((prev) => [...prev, errMsg]);
+      setIsLoading(false);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      return null;
     }
-
-    setIsLoading(false);
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   }, [history, isLoading, persistMsg]);
 
   return { messages, isLoading, sendMessage, messagesEndRef, loadedFromDb };

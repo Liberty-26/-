@@ -5,7 +5,7 @@ GET/POST /api/materials，PUT/DELETE /api/materials/{id}
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from database import list_materials, create_material, update_material, delete_material
+from database import get_conn, list_materials, create_material, update_material, delete_material
 
 router = APIRouter(prefix="/api/materials", tags=["materials"])
 
@@ -36,6 +36,44 @@ async def add_material(req: MaterialIn):
     if mid is None:
         raise HTTPException(status_code=409, detail="品名已存在")
     return {"success": True, "data": {"id": mid}}
+
+
+@router.get("/candidates")
+async def material_candidates(limit: int = Query(10, ge=1, le=50)):
+    """收录收件箱：识别明细中出现的、品名库未收录的名称（按出现次数排序）。
+    判断规则：items.name 与品名库 name/aliases 均不精确匹配即视为未收录。"""
+    conn = get_conn()
+    try:
+        rows = conn.execute(
+            """SELECT i.name AS name,
+                       COUNT(*) AS count,
+                       MAX(r.date) AS latest_date
+                FROM receipt_items i
+                JOIN receipts r ON r.id = i.receipt_id
+                WHERE TRIM(i.name) != ''
+                GROUP BY i.name
+                ORDER BY count DESC, latest_date DESC
+                LIMIT ?""",
+            [limit],
+        ).fetchall()
+        mats = conn.execute("SELECT name, aliases FROM materials").fetchall()
+        known = set()
+        for m in mats:
+            known.add(m["name"].strip())
+            for a in (m["aliases"] or "").replace("，", ",").replace("/", ",").split(","):
+                a = a.strip()
+                if a:
+                    known.add(a)
+        items = [
+            {"name": r["name"].strip(), "count": r["count"], "latest_date": r["latest_date"] or ""}
+            for r in rows
+            if r["name"].strip() not in known
+        ]
+        return {"success": True, "data": {"items": items}}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+    finally:
+        conn.close()
 
 
 @router.put("/{material_id}")

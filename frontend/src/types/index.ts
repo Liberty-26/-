@@ -82,3 +82,32 @@ export interface AgentMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
+
+// ---- 新工作台类型 ----
+
+/** 品名库收录候选：识别中出现的未收录品名 */
+export interface MaterialCandidate {
+  name: string;
+  count: number;
+  latest_date: string;
+}
+
+/** 校正记录（记忆·校正层） */
+export interface CorrectionRecord {
+  id: number;
+  receipt_no: string;
+  field: string;
+  before_val: string;
+  after_val: string;
+  created_at: string;
+}
+
+/** 助手事实（记忆·事实层） */
+export interface AssistantFact {
+  id: number;
+  fact_key: string;
+  fact_value: string;
+  created_at?: string;
+}
+
+export type PageId = 'workbench' | 'review' | 'library' | 'materials' | 'settings';

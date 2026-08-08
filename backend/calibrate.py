@@ -7,7 +7,6 @@ SteelDigitize Pro — AI 校准模块 v2（结构化解构 + 语义校准双层�
 from __future__ import annotations
 import json
 import re
-from openai import OpenAI
 import config
 from database import get_materials_for_prompt, get_material_unit
 
@@ -28,9 +27,30 @@ SPEC_MARK = re.compile(r'[0-9×xX*#]|DN\d')
 # 纯规格特征：去掉所有数字/乘号/#/DN/Φ/单位符号后什么都不剩
 PURE_SPEC_RE = re.compile(r'[0-9×xX*#DNdnΦφ.+\-/\s()（）]')
 
+# 规格行可带的量词/单位字（"6,5米×12支"→去掉数字符号后剩"米支"也算规格行）
+# 注意避开品名词：如"86拉伸盒"的"盒"虽在列表，但整体仍剩"拉伸"等字，不会被误判
+SPEC_LIKE_UNIT_CHARS = "米支根捆卷盒组套只个片桶包瓶袋块条张对双平方寸角孔号口"
+SPEC_LIKE_STRIP_RE = re.compile(
+    r'[0-9×xX*#DNdnΦφ.+\-/\s()（）,，、]|[' + SPEC_LIKE_UNIT_CHARS + r']'
+)
+
+
 def is_pure_spec(name: str) -> bool:
     """name 全由数字和规格符号组成，不可能是品名"""
     return bool(name) and PURE_SPEC_RE.sub('', name).strip() == ''
+
+
+def is_spec_like(name: str) -> bool:
+    """规格行检测：name 基本由数字/规格符号 + 少量单位字组成（如 "6,5米×12支"、"3.2米"）。
+    这是原版设计"纯规格错位"规则的纯代码实现：此类行视为规格而不是品名，
+    移到规格列后由结构化解构继承上方最近品名。
+    约束：必须含数字或乘号，避免误判纯汉字行。
+    """
+    if not name:
+        return False
+    if not re.search(r'[0-9×]', name):
+        return False
+    return SPEC_LIKE_STRIP_RE.sub('', name).strip() == ''
 
 # 合计/表尾防护词
 HEADER_LIKE = ("合计", "小计", "大写", "收货", "经办", "备注", "金额")
@@ -138,9 +158,10 @@ def structural_decompose(items: list) -> list:
         qty = _to_float(item.get("qty", 0))
         price = _to_float(item.get("price", 0))
 
-        # 纯规格检测：name 全是数字/符号 → 移到 spec，name 清空，下方 fill-down 自动继承品名
-        if is_pure_spec(name) and not spec:
-            item["spec"] = name
+        # 纯规格检测（原版"纯规格错位"规则）：name 是纯数字规格，或数字+单位字规格
+        # （如 "6,5米×12支"、"3.2米"）→ 并入 spec，name 清空，由下方继承品名
+        if is_pure_spec(name) or is_spec_like(name):
+            item["spec"] = (name + spec) if spec else name
             item["name"] = ""
             name = ""
 
@@ -376,13 +397,132 @@ def _code_fallback(item: dict, materials: list = None) -> dict:
     return item
 
 
+# ---- 纯代码品名库对齐（替代原 DeepSeek 语义校准） ----
+
+# 规格段字符（数字/乘号/#/DN/Φ/符号/空格/括号）
+_SPEC_CHARS = set("0123456789×xX*#ΦφDNdn.+-()（）/ ")
+# 规格尾缀可带的量词类汉字（仅当前面紧邻数字/规格符号时允许，如 "20角"、"32号"）
+_SPEC_UNIT_CHARS = set("角孔号口寸")
+# 手写字母形近数字：I/l→1，O/o→0（如 "IIO" → "110"、"IOO" → "100"）
+_LOOKALIKE = {"I": "1", "i": "1", "l": "1", "O": "0", "o": "0"}
+
+
+def _match_material_loose(text: str, materials: list, max_d: int = 2) -> str | None:
+    """宽松品名匹配：精确/别名/前缀失败后，按编辑距离分级收敛。
+    1) 大小写不敏感精确匹配（V型卡 → v型卡）
+    2) 距离 1 唯一候选（亭头 → 弯头）
+    3) 距离 2 唯一候选（小云水三通 → 顺水三通）
+    """
+    hit = _match_material(text, materials)
+    if hit:
+        return hit
+    low = text.lower()
+    ci = [m["name"] for m in materials if m["name"].lower() == low]
+    if len(ci) == 1:
+        return ci[0]
+    if len(text) < 2:
+        return None
+    cands = []
+    for m in materials:
+        if len(m["name"]) < 2:
+            continue
+        if abs(len(text) - len(m["name"])) > max_d:
+            continue
+        d = _edit_distance(text, m["name"], max_d)
+        if d <= max_d:
+            cands.append((d, m["name"]))
+    d1 = sorted({n for d, n in cands if d == 1})
+    if len(d1) == 1:
+        return d1[0]
+    if d1:
+        return None  # 距离 1 有多个候选，不猜测
+    d2 = sorted({n for d, n in cands if d == 2})
+    return d2[0] if len(d2) == 1 else None
+
+
+def _generic_split(items: list) -> list:
+    """
+    通用名称/规格拆分：把"名称 + 尾部规格"拆开（品名库前缀匹配失败时的兜底）。
+    例：斜三通110×75 → 斜三通 + 110×75；PVC排水管 IIO → PVC排水管 + 110。
+    约束：前缀非空且以中文/字母结尾，避免拆坏 "86拉伸盒" 这类数字开头品名。
+    """
+    for it in items:
+        name = str(it.get("name", "")).strip()
+        spec = str(it.get("spec", "")).strip()
+        if not name or spec:
+            continue
+        i = len(name)
+        tail = ""
+        has_digit_or_mark = False
+        letter_look = 0
+        while i > 0:
+            ch = name[i - 1]
+            if ch in _SPEC_CHARS:
+                has_digit_or_mark = has_digit_or_mark or ch.isdigit() or ch in "×xX*#Φφ"
+                tail = ch + tail
+                i -= 1
+            elif ch in _LOOKALIKE:
+                letter_look += 1
+                tail = ch + tail
+                i -= 1
+            elif ch in _SPEC_UNIT_CHARS and i >= 2 and name[i - 2] in _SPEC_CHARS:
+                # "20角"/"32号" 的量词尾缀：仅当前一个字符是数字/规格符号时并入规格
+                tail = ch + tail
+                i -= 1
+            else:
+                break
+        if not tail or i == 0:
+            continue
+        if not has_digit_or_mark and letter_look < 2:
+            continue
+        prefix = name[:i]
+        if not prefix or not (prefix[-1].isalpha() or "\u4e00" <= prefix[-1] <= "\u9fff"):
+            continue
+        norm_tail = "".join(_LOOKALIKE.get(c, c) for c in tail)
+        it["name"] = prefix
+        it["spec"] = norm_tail
+        it.setdefault("corrections", []).append(f"name: 拆分→{prefix} / spec: {norm_tail}")
+    return items
+
+
+def _align_names(items: list, materials: list) -> list:
+    """形近字/别名归一：库外品名 → 编辑距离 ≤2 唯一候选 → 标准名"""
+    for it in items:
+        name = str(it.get("name", "")).strip()
+        if not name:
+            continue
+        std = _match_material_loose(name, materials)
+        if std and std != name:
+            it["name"] = std
+            it.setdefault("corrections", []).append(f"name: {name}→{std}（形近字修正）")
+    return items
+
+
+def _align_units(items: list, materials: list) -> list:
+    """单位对齐：识别单位异常/非白名单且品名库有默认单位时，对齐为库内单位"""
+    for it in items:
+        name = str(it.get("name", "")).strip()
+        unit = str(it.get("unit", "")).strip()
+        if not name or not unit or unit in UNIT_WHITELIST:
+            continue
+        std_unit = get_material_unit(name)
+        if not std_unit:
+            std_name = _match_material(name, materials)
+            if std_name:
+                std_unit = get_material_unit(std_name)
+        if std_unit:
+            it["unit"] = std_unit
+            it.setdefault("corrections", []).append(f"unit: {unit}→{std_unit}（对齐品名库）")
+    return items
+
+
 def calibrate_items(items: list, receipt_no: str = "", date: str = "") -> dict:
     """
-    校准主流程 v2：
+    校准主流程 v3（纯代码，无模型调用）：
     1. 文本归一化
     2. 结构化解构（品名行归属，纯代码）
-    3. DeepSeek 语义校准（品名库 + 拆分）
-    4. 代码兜底（数值规则 + 模糊匹配拆分 + 继承补刀）
+    3. 品名库对齐（通用规格拆分 → 形近字/别名归一 → 单位对齐）
+    4. 名称规格拆分（品名库前缀）+ 继承补刀 + 代码兜底
     """
     # 1. 归一化
     normalized = []
@@ -401,99 +541,29 @@ def calibrate_items(items: list, receipt_no: str = "", date: str = "") -> dict:
     # 单位"略写"继承（模型前：输入中不含略写记号，杜绝模型臆测）
     normalized = inherit_abbrev_units(normalized)
 
-    # 2. DeepSeek 语义校准（prompt v2，不含继承规则）
-    api_key = config.AGENT_API_KEY
-    if not api_key:
-        return {"success": False, "error": "Agent API Key 未配置，无法校准"}
-
-    materials_block = _build_materials_block()
-    prompt = CALIBRATE_PROMPT_TEMPLATE.format(
-        materials=materials_block,
-        items_json=json.dumps(normalized, ensure_ascii=False),
-    )
-
-    model_items = None
-    model_header_rows = []
-    truncated = False
-    try:
-        client = OpenAI(api_key=api_key, base_url=config.AGENT_API_BASE, timeout=60.0)
-        # 动态输出上限：按行数计算，小单收紧防话痨，大单放宽不截断
-        max_tokens = min(8000, len(normalized) * 250 + 600)
-        resp = client.chat.completions.create(
-            model=config.AGENT_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,        # 降随机，治话痨
-            max_tokens=max_tokens,
-            response_format={"type": "json_object"},   # 内容硬限制：强制输出合法 JSON 对象
-            extra_body={"thinking": {"type": "disabled"}},   # 关闭思考链（校准是机械转换，不需要推理）
-        )
-        content = resp.choices[0].message.content or ""
-        # 记录 token
-        try:
-            from database import record_token_usage
-            usage = resp.usage
-            if usage:
-                record_token_usage("calibrate", config.AGENT_MODEL,
-                                   usage.prompt_tokens or 0, usage.completion_tokens or 0,
-                                   usage.total_tokens or 0)
-                # 截断检测：输出 token 达到上限 → 模型输出大概率残缺
-                truncated = usage.completion_tokens >= max_tokens
-        except Exception:
-            pass
-        parsed = _parse_model_output(content)
-        if parsed and isinstance(parsed.get("items"), list):
-            model_items = parsed["items"]
-            model_header_rows = parsed.get("header_rows") or []
-    except Exception as e:
-        return {"success": False, "error": f"校准调用失败: {str(e)}"}
-
-    # 4. 组装结果（模型结果优先，缺失时用结构化数据）
-    #    截断时模型输出大概率残缺 → 降级为归一化 + 代码兜底结果
+    # 3. 品名库对齐（纯代码，替代 DeepSeek）
     materials = get_materials_for_prompt()
-    result_items = []
-    if model_items and not truncated:
-        for i, mit in enumerate(model_items):
-            if not isinstance(mit, dict):
-                continue
-            item = _normalize_item(mit)
-            item["issues"] = list(mit.get("issues") or [])
-            item["corrections"] = list(mit.get("corrections") or [])
-            item["not_in_library"] = bool(mit.get("not_in_library", False))
-            # Bug1 修复：模型改品名前必须命中品名库（V型卡→v型卡 是无意义纠正）
-            new_name = item.get("name", "").strip()
-            old_name = (normalized[i].get("name", "") if i < len(normalized) else "").strip()
-            if new_name and old_name and new_name != old_name:
-                # 仅当新 name 在品名库（或别名匹配）时接受修正
-                hit = _match_material(new_name, materials)
-                if not hit:
-                    # 未命中品名库 → 回退到旧 name，删除对应 corrections
-                    item["name"] = old_name
-                    item["corrections"] = [c for c in item.get("corrections", []) if not c.startswith("name:")]
-                    item.setdefault("issues", []).append("name: 校准修正未命中品名库，已保留原名")
-            result_items.append(item)
-    else:
-        for nit in normalized:
-            item = dict(nit)
-            item["issues"] = []
-            item["corrections"] = []
-            item["not_in_library"] = False
-            result_items.append(item)
+    normalized = _generic_split(normalized)
+    normalized = _align_names(normalized, materials)
+    normalized = _align_units(normalized, materials)
 
-    # 5. 代码兜底：名称规格拆分 + 继承补刀 + 略写兜底 + 规则校验
-    result_items = _split_name_spec(result_items, materials)
+    # 4. 代码兜底：名称规格拆分 + 继承补刀 + 略写兜底 + 规则校验
+    result_items = _split_name_spec(normalized, materials)
     result_items = _fill_down_names(result_items)
     # 单位"略写"兜底（模型输出残留的略写记号，静默继承，"略写"绝不泄漏）
     result_items = inherit_abbrev_units(result_items)
     result_items = [_code_fallback(it, materials) for it in result_items]
 
-    # 表头行（0-based，过滤越界）
-    header_rows = [r for r in model_header_rows if isinstance(r, int) and 0 <= r < len(result_items)]
+    # 未入库标记（品名不在库中 → 前端橙色徽标；空品名行不标记）
+    for it in result_items:
+        name = str(it.get("name", "")).strip()
+        it["not_in_library"] = bool(name) and _match_material(name, materials) is None
 
     return {
         "success": True,
         "items": result_items,
-        "header_rows": header_rows,
-        "truncated": truncated,
+        "header_rows": [],
+        "truncated": False,
     }
 
 
@@ -520,89 +590,26 @@ def calibrate_items_progress(items: list, receipt_no: str = "", date: str = ""):
     normalized = inherit_abbrev_units(normalized)
     yield {"step": 1, "label": "文本归一化", "done": True}
 
-    # 2. DeepSeek 语义校准
-    yield {"step": 2, "label": "AI语义校准", "done": False, "model": config.AGENT_MODEL}
-    api_key = config.AGENT_API_KEY
-    if not api_key:
-        yield {"step": 0, "done": False, "error": "Agent API Key 未配置，无法校准"}
-        return
-    materials_block = _build_materials_block()
-    prompt = CALIBRATE_PROMPT_TEMPLATE.format(
-        materials=materials_block,
-        items_json=json.dumps(normalized, ensure_ascii=False),
-    )
-
-    model_items = None
-    model_header_rows = []
-    truncated = False
-    try:
-        client = OpenAI(api_key=api_key, base_url=config.AGENT_API_BASE, timeout=60.0)
-        # 动态输出上限：按行数计算，小单收紧防话痨，大单放宽不截断
-        max_tokens = min(8000, len(normalized) * 250 + 600)
-        resp = client.chat.completions.create(
-            model=config.AGENT_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,        # 降随机，治话痨
-            max_tokens=max_tokens,
-            response_format={"type": "json_object"},   # 内容硬限制：强制输出合法 JSON 对象
-            extra_body={"thinking": {"type": "disabled"}},   # 关闭思考链（校准是机械转换，不需要推理）
-        )
-        content = resp.choices[0].message.content or ""
-        try:
-            from database import record_token_usage
-            usage = resp.usage
-            if usage:
-                record_token_usage("calibrate", config.AGENT_MODEL,
-                                   usage.prompt_tokens or 0, usage.completion_tokens or 0,
-                                   usage.total_tokens or 0)
-                # 截断检测：输出 token 达到上限 → 模型输出大概率残缺
-                truncated = usage.completion_tokens >= max_tokens
-        except Exception:
-            pass
-        parsed = _parse_model_output(content)
-        if parsed and isinstance(parsed.get("items"), list):
-            model_items = parsed["items"]
-            model_header_rows = parsed.get("header_rows") or []
-    except Exception as e:
-        yield {"step": 0, "done": False, "error": f"校准调用失败: {str(e)}"}
-        return
-    yield {"step": 2, "label": "AI语义校准", "done": True, "model": config.AGENT_MODEL}
-
-    # 3. 组装 + 代码兜底
-    yield {"step": 3, "label": "代码规则兜底", "done": False}
+    # 2. 品名库对齐（纯代码，替代 DeepSeek）
+    yield {"step": 2, "label": "品名库对齐", "done": False}
+    normalized = structural_decompose(normalized)
     materials = get_materials_for_prompt()
-    result_items = []
-    if model_items and not truncated:
-        for i, mit in enumerate(model_items):
-            if not isinstance(mit, dict):
-                continue
-            item = _normalize_item(mit)
-            item["issues"] = list(mit.get("issues") or [])
-            item["corrections"] = list(mit.get("corrections") or [])
-            item["not_in_library"] = bool(mit.get("not_in_library", False))
-            new_name = item.get("name", "").strip()
-            old_name = (normalized[i].get("name", "") if i < len(normalized) else "").strip()
-            if new_name and old_name and new_name != old_name:
-                hit = _match_material(new_name, materials)
-                if not hit:
-                    item["name"] = old_name
-                    item["corrections"] = [c for c in item.get("corrections", []) if not c.startswith("name:")]
-                    item.setdefault("issues", []).append("name: 校准修正未命中品名库，已保留原名")
-            result_items.append(item)
-    else:
-        for nit in normalized:
-            item = dict(nit)
-            item["issues"] = []
-            item["corrections"] = []
-            item["not_in_library"] = False
-            result_items.append(item)
+    normalized = _generic_split(normalized)
+    normalized = _align_names(normalized, materials)
+    normalized = _align_units(normalized, materials)
+    yield {"step": 2, "label": "品名库对齐", "done": True}
 
-    result_items = _split_name_spec(result_items, materials)
+    # 3. 代码兜底
+    yield {"step": 3, "label": "代码规则兜底", "done": False}
+    result_items = _split_name_spec(normalized, materials)
     result_items = _fill_down_names(result_items)
     # 单位"略写"兜底（模型输出残留的略写记号，静默继承，"略写"绝不泄漏）
     result_items = inherit_abbrev_units(result_items)
     result_items = [_code_fallback(it, materials) for it in result_items]
-    header_rows = [r for r in model_header_rows if isinstance(r, int) and 0 <= r < len(result_items)]
+    for it in result_items:
+        name = str(it.get("name", "")).strip()
+        it["not_in_library"] = bool(name) and _match_material(name, materials) is None
+    header_rows = []
     yield {"step": 3, "label": "代码规则兜底", "done": True}
 
     # 完成
@@ -612,6 +619,6 @@ def calibrate_items_progress(items: list, receipt_no: str = "", date: str = ""):
         "result": {
             "items": result_items,
             "header_rows": header_rows,
-            "truncated": truncated,
+            "truncated": False,
         }
     }

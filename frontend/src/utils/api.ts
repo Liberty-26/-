@@ -1,5 +1,8 @@
 // SteelDigitize Pro — API 调用封装
-import type { ApiResponse, Receipt, PaginatedData, HistoryQuery, MonthStat } from '../types';
+import type {
+  ApiResponse, Receipt, PaginatedData, HistoryQuery, MonthStat,
+  MaterialCandidate, CorrectionRecord, AssistantFact,
+} from '../types';
 
 const BASE = '/api';
 const TIMEOUT_MS = 300000;
@@ -22,7 +25,14 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     const json = await resp.json();
 
     if (!resp.ok) {
-      return { success: false, error: json.detail || `HTTP ${resp.status}` };
+      // FastAPI 422 校验错误 detail 可能是对象/数组（如 [{type,loc,msg,input,ctx}]），归一为可读字符串
+      const detail = json.detail;
+      let errMsg: string;
+      if (typeof detail === 'string') errMsg = detail;
+      else if (Array.isArray(detail)) errMsg = detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join('；');
+      else if (detail && typeof detail === 'object') errMsg = JSON.stringify(detail);
+      else errMsg = `HTTP ${resp.status}`;
+      return { success: false, error: errMsg };
     }
     return json as ApiResponse<T>;
   } catch (err: unknown) {
@@ -71,6 +81,11 @@ export async function deleteMaterial(id: number) {
   return request<void>('DELETE', `/materials/${id}`);
 }
 
+/** 品名收录候选：识别中出现的未收录品名 */
+export async function getMaterialCandidates() {
+  return request<{ items: MaterialCandidate[] }>('GET', '/materials/candidates');
+}
+
 // ---- 历史 CRUD ----
 
 export async function saveReceipt(receipt: Receipt) {
@@ -111,6 +126,11 @@ export async function updateReceipt(id: number, receipt: Receipt) {
   });
 }
 
+/** 确认入库：标记单据为已核对 */
+export async function verifyReceipt(id: number) {
+  return request<void>('POST', `/history/${id}/verify`);
+}
+
 export async function deleteReceipt(id: number) {
   return request<void>('DELETE', `/history/${id}`);
 }
@@ -121,14 +141,31 @@ export async function getSettings() {
   return request<{
     qwen_api_key: string; qwen_model: string;
     deepseek_api_key: string; available_models?: { id: string; label: string }[];
+    agent_api_key: string; agent_api_base: string; agent_model: string;
+    scan_api_key: string; scan_api_base: string; scan_scene: string;
+    work_dir: string;
   }>('GET', '/settings');
 }
 
 export async function saveSettings(settings: {
   qwen_api_key?: string; qwen_model?: string;
   deepseek_api_key?: string; work_dir?: string;
+  agent_key?: string; agent_base?: string; agent_model?: string;
+  scan_key?: string; scan_base?: string; scan_scene?: string;
 }) {
   return request<void>('POST', '/settings', settings);
+}
+
+/** 扫描王官方场景列表 */
+export async function getScanScenes() {
+  return request<{ scenes: { scene: string; label: string; type: string }[]; current: string }>('GET', '/settings/scan-scenes');
+}
+
+/** 测试扫描王连接并测速（真实调用一次，消耗额度） */
+export async function testScanConnection(apiKey: string, apiBase: string, scene: string) {
+  return request<{ latency_ms: number; status: string; message: string }>('POST', '/settings/test-scan', {
+    api_key: apiKey, api_base: apiBase, scene,
+  });
 }
 
 export async function testQwenConnection(apiKey: string, model: string) {
@@ -203,4 +240,70 @@ export async function deleteSkillApi(id: number) {
 
 export async function getMonitor() {
   return request<{ total_receipts: number; today_count: number; exported: number; pending: number; verified: number; total_tokens: number; today_tokens: number; uptime_seconds: number }>('GET', '/agent/monitor');
+}
+
+// ---- 记忆（事实层 + 校正层） ----
+
+export async function getFacts() {
+  return request<{ facts: AssistantFact[] }>('GET', '/memory/facts');
+}
+
+export async function addFact(fact_key: string, fact_value: string) {
+  return request<{ id: number }>('POST', '/memory/facts', { fact_key, fact_value });
+}
+
+export async function deleteFact(id: number) {
+  return request<void>('DELETE', `/memory/facts/${id}`);
+}
+
+export async function getCorrections() {
+  return request<{ corrections: CorrectionRecord[] }>('GET', '/memory/corrections');
+}
+
+export async function addCorrections(changes: { receipt_no: string; field: string; before_val: string; after_val: string }[]) {
+  return request<void>('POST', '/memory/corrections', { changes });
+}
+
+export async function deleteCorrection(id: number) {
+  return request<void>('DELETE', `/memory/corrections/${id}`);
+}
+
+export async function clearCorrections() {
+  return request<void>('DELETE', '/memory/corrections');
+}
+
+// ---- 校准（纯代码，SSE 流式） ----
+
+export async function calibrateItemsSSE(items: { name: string; spec: string; unit: string; qty: number; price: number }[], receiptNo?: string, date?: string) {
+  try {
+    const resp = await fetch('/api/recognize/calibrate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, receipt_no: receiptNo, date }),
+    });
+    if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    let last: { done: boolean; result?: { items: unknown; header_rows: number[] }; error?: string } | null = null;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const events = buf.split('\n\n');
+      buf = events.pop() || '';
+      for (const evt of events) {
+        const line = evt.trim();
+        if (!line.startsWith('data: ')) continue;
+        const data = JSON.parse(line.slice(6));
+        if (data.step === 0) last = data;
+      }
+    }
+    if (last?.done && last.result) {
+      return { success: true, data: { items: last.result.items as import('../types').ReceiptItem[], header_rows: last.result.header_rows || [] } };
+    }
+    return { success: false, error: last?.error || '校准失败' };
+  } catch (e) {
+    return { success: false, error: (e as Error).message || '校准请求失败' };
+  }
 }

@@ -15,6 +15,18 @@ class RecognizeRequest(BaseModel):
     model: Optional[str] = Field(None, description="识图模型名，前端可选传入；不传则用后端默认")
 
 
+class RecognizeBatchRequest(BaseModel):
+    """批量识别：一次提交多张图，后端并发池处理，统一返回"""
+    images: List[RecognizeRequest] = Field(..., description="多张图片识别请求")
+
+
+class RetryRequest(BaseModel):
+    """重试识别：用已保存的原图重新识别"""
+    image_path: str = Field(..., description="已保存的原图文件名（uploads 目录下）")
+    receipt_no: Optional[str] = None
+    date: Optional[str] = None
+
+
 class CalibrateItem(BaseModel):
     """待校准的识别条目"""
     name: str = ""

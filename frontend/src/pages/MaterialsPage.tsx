@@ -1,38 +1,44 @@
-// SteelDigitize Pro — 品名库管理页
+// SteelDigitize Pro — 品名库（分类目录 + 收录收件箱 + 增删改查）
 import { useState, useEffect, useCallback } from 'react';
-import { getMaterials, createMaterial, updateMaterial, deleteMaterial } from '../utils/api';
+import {
+  getMaterials, createMaterial, updateMaterial, deleteMaterial, getMaterialCandidates,
+} from '../utils/api';
 import { useToast } from '../hooks/useToast';
 import ConfirmDialog from '../components/ConfirmDialog';
-import type { Material } from '../types';
+import type { Material, MaterialCandidate } from '../types';
+
+const CATS = ['全部', '管材', '管件', '线盒', '网类', '其他'];
 
 export default function MaterialsPage() {
   const { showToast } = useToast();
   const [items, setItems] = useState<Material[]>([]);
-  const [total, setTotal] = useState(0);
+  const [cands, setCands] = useState<MaterialCandidate[]>([]);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  // 新增/编辑弹窗
+  const [curCat, setCurCat] = useState('全部');
   const [editing, setEditing] = useState<Material | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formName, setFormName] = useState('');
   const [formAliases, setFormAliases] = useState('');
   const [formUnit, setFormUnit] = useState('');
-
-  // 删除确认
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
   const fetchList = useCallback(async (kw: string) => {
-    setLoading(true);
     const res = await getMaterials(kw || undefined);
-    if (res.success && res.data) { setItems(res.data.items); setTotal(res.data.total); }
+    if (res.success && res.data) setItems(res.data.items);
     else showToast(res.error || '查询失败', 'error');
-    setLoading(false);
   }, [showToast]);
 
-  useEffect(() => { fetchList(''); }, [fetchList]);
+  const fetchCands = useCallback(async () => {
+    const res = await getMaterialCandidates();
+    if (res.success && res.data) setCands(res.data.items);
+  }, []);
 
-  const handleSearch = () => fetchList(search.trim());
+  useEffect(() => { fetchList(''); fetchCands(); }, [fetchList, fetchCands]);
+
+  useEffect(() => {
+    const badge = document.getElementById('navBadgeCand');
+    if (badge) badge.textContent = String(cands.length);
+  }, [cands.length]);
 
   const openAdd = () => {
     setEditing(null); setFormName(''); setFormAliases(''); setFormUnit('');
@@ -47,9 +53,7 @@ export default function MaterialsPage() {
   const handleSave = async () => {
     if (!formName.trim()) { showToast('品名不能为空', 'error'); return; }
     const data = { name: formName.trim(), aliases: formAliases.trim(), unit: formUnit.trim() };
-    const res = editing
-      ? await updateMaterial(editing.id, data)
-      : await createMaterial(data);
+    const res = editing ? await updateMaterial(editing.id, data) : await createMaterial(data);
     if (res.success) {
       showToast(editing ? '已更新' : '已新增', 'success');
       setDialogOpen(false);
@@ -66,95 +70,123 @@ export default function MaterialsPage() {
     else showToast(res.error || '删除失败', 'error');
   };
 
+  const adopt = async (c: MaterialCandidate) => {
+    const res = await createMaterial({ name: c.name, aliases: '', unit: '' });
+    if (res.success) {
+      showToast('已收录：' + c.name, 'success');
+      setCands((prev) => prev.filter((x) => x.name !== c.name));
+      fetchList(search.trim());
+    } else {
+      showToast(res.error || '收录失败', 'error');
+      setCands((prev) => prev.filter((x) => x.name !== c.name));
+    }
+  };
+
+  const ignore = (name: string) => {
+    setCands((prev) => prev.filter((x) => x.name !== name));
+    showToast('已忽略该候选', 'info');
+  };
+
+  const filtered = items.filter((m) => {
+    if (curCat !== '全部' && !m.name.includes(curCat) && !(m.aliases || '').includes(curCat)) return false;
+    return true;
+  });
+
   return (
-    <div className="flex-1 p-margin-page overflow-auto h-full flex flex-col">
-      <div className="flex items-center justify-between mb-stack-md shrink-0">
-        <h2 className="font-headline-md text-headline-md text-on-surface">品名库</h2>
-        <button onClick={openAdd} className="bg-primary text-white px-4 py-2 rounded-lg font-semibold text-label-sm hover:bg-primary-container flex items-center gap-1">
-          <span className="material-symbols-outlined text-sm">add</span> 新增品名
-        </button>
+    <div className="plain">
+      <div className="page-head">
+        <div>
+          <div className="page-title">品名库</div>
+          <div className="page-sub">识别对齐的标准目录 · {items.length} 条 · 从识别中持续收录</div>
+        </div>
+        <button className="btn" style={{ marginLeft: 'auto' }} onClick={openAdd}>＋ 新增品名</button>
       </div>
 
-      {/* 搜索栏 */}
-      <div className="flex flex-wrap gap-3 items-end mb-stack-md shrink-0">
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] uppercase text-on-surface-variant font-medium">搜索</label>
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            placeholder="品名 / 别名"
-            className="bg-white border border-outline-variant rounded px-3 py-1.5 text-label-sm focus:border-primary w-44" />
+      <div className="mat-layout">
+        <div className="mat-side">
+          <div className="cat-list">
+            {CATS.map((c) => (
+              <button key={c} className={`cat-item ${curCat === c ? 'active' : ''}`} onClick={() => setCurCat(c)}>
+                <span>{c}</span>
+                <span className="cnt">{c === '全部' ? items.length : filtered.length}</span>
+              </button>
+            ))}
+          </div>
+          <div className="inbox">
+            <h4>收录收件箱 <span className="badge">{cands.length}</span></h4>
+            <div className="hint">识别中出现的未收录品名，确认后进入品名库</div>
+            {cands.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>收件箱已清空</div>}
+            {cands.map((c) => (
+              <div key={c.name} className="cand">
+                <div><span className="to">{c.name}</span></div>
+                <div className="reason">出现 {c.count} 次 · 最近 {c.latest_date || '—'}</div>
+                <div className="acts">
+                  <button className="mini" onClick={() => adopt(c)}>收录</button>
+                  <button className="mini ghost" onClick={() => ignore(c.name)}>忽略</button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <button onClick={handleSearch} disabled={loading}
-          className="bg-primary text-white px-6 py-1.5 rounded-lg font-medium text-label-sm hover:bg-primary-container disabled:opacity-50">
-          {loading ? '搜索中...' : '搜索'}
-        </button>
+
+        <div className="mat-main">
+          <div className="mat-toolbar">
+            <input
+              className="search"
+              placeholder="搜索品名 / 别名…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') fetchList(search.trim()); }}
+            />
+            <button className="btn sm ghost" onClick={() => fetchList(search.trim())}>搜索</button>
+            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-3)' }}>{filtered.length} 条</span>
+          </div>
+          <div className="mat-table-wrap">
+            <table className="mat-table">
+              <thead><tr><th>品名</th><th>别名</th><th>默认单位</th><th style={{ width: 110, textAlign: 'center' }}>操作</th></tr></thead>
+              <tbody>
+                {filtered.length === 0 && <tr><td colSpan={4} style={{ padding: 28, textAlign: 'center', color: 'var(--text-3)' }}>没有匹配的品名</td></tr>}
+                {filtered.map((m) => (
+                  <tr key={m.id}>
+                    <td style={{ fontWeight: 600 }}>{m.name}</td>
+                    <td>
+                      {(m.aliases || '').split(/[,，\/]/).filter(Boolean).map((a) => (
+                        <span key={a} className="alias-tag">{a}</span>
+                      ))}
+                      {!m.aliases && <span className="src-tag">—</span>}
+                    </td>
+                    <td>{m.unit || '—'}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button className="link" onClick={() => openEdit(m)}>编辑</button>
+                      <button className="link danger" style={{ marginLeft: 10 }} onClick={() => setDeleteTarget(m.id)}>删除</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
-      {/* 表格 */}
-      <div className="border border-outline-variant rounded overflow-hidden bg-white flex-1 flex flex-col">
-        <div className="overflow-y-auto flex-1">
-          <table className="w-full border-collapse zebra-table">
-            <thead className="sticky top-0 bg-surface-container-high border-b border-outline-variant z-10">
-              <tr>
-                <th className="p-2 text-left text-label-sm text-outline-variant font-medium w-12">序号</th>
-                <th className="p-2 text-left text-label-sm text-outline-variant font-medium">品名</th>
-                <th className="p-2 text-left text-label-sm text-outline-variant font-medium">别名</th>
-                <th className="p-2 text-left text-label-sm text-outline-variant font-medium w-24">默认单位</th>
-                <th className="p-2 text-center text-label-sm text-outline-variant font-medium w-28">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.length === 0 && !loading ? (
-                <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant text-label-sm">暂无品名</td></tr>
-              ) : items.map((m, idx) => (
-                <tr key={m.id} className="border-b border-outline-variant/30">
-                  <td className="p-2 text-table-cell font-mono">{idx + 1}</td>
-                  <td className="p-2 text-table-cell font-medium">{m.name}</td>
-                  <td className="p-2 text-table-cell text-on-surface-variant">{m.aliases || '-'}</td>
-                  <td className="p-2 text-table-cell">{m.unit || '-'}</td>
-                  <td className="p-2 text-center">
-                    <div className="flex gap-1 justify-center">
-                      <button onClick={() => openEdit(m)} className="text-primary text-label-sm hover:underline">编辑</button>
-                      <button onClick={() => setDeleteTarget(m.id)} className="text-error text-label-sm hover:underline">删除</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-3 py-2 border-t border-outline-variant bg-surface-container-low text-label-sm text-on-surface-variant shrink-0">
-          共 {total} 个品名
-        </div>
-      </div>
-
-      {/* 新增/编辑弹窗 */}
       {dialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setDialogOpen(false)}>
-          <div className="bg-white rounded-xl shadow-lg p-6 w-[440px]" onClick={e => e.stopPropagation()}>
-            <h3 className="font-headline-md text-headline-md text-on-surface mb-4">{editing ? '编辑品名' : '新增品名'}</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-label-sm text-on-surface-variant mb-1">品名 *</label>
-                <input type="text" value={formName} onChange={e => setFormName(e.target.value)}
-                  className="w-full bg-white border border-outline-variant rounded-lg px-3 py-2 text-body-md focus:border-primary" />
-              </div>
-              <div>
-                <label className="block text-label-sm text-on-surface-variant mb-1">别名（逗号分隔）</label>
-                <input type="text" value={formAliases} onChange={e => setFormAliases(e.target.value)}
-                  placeholder="例如：镀锌钢管,镀锌管件"
-                  className="w-full bg-white border border-outline-variant rounded-lg px-3 py-2 text-body-md focus:border-primary" />
-              </div>
-              <div>
-                <label className="block text-label-sm text-on-surface-variant mb-1">默认单位</label>
-                <input type="text" value={formUnit} onChange={e => setFormUnit(e.target.value)}
-                  placeholder="例如：米、只、套"
-                  className="w-full bg-white border border-outline-variant rounded-lg px-3 py-2 text-body-md focus:border-primary" />
-              </div>
+        <div className="dlg-mask" onClick={() => setDialogOpen(false)}>
+          <div className="dlg" onClick={(e) => e.stopPropagation()}>
+            <h3>{editing ? '编辑品名' : '新增品名'}</h3>
+            <div className="form-field">
+              <label>品名 *</label>
+              <input value={formName} onChange={(e) => setFormName(e.target.value)} />
             </div>
-            <div className="flex gap-2 mt-5 justify-end">
-              <button onClick={() => setDialogOpen(false)} className="px-4 py-2 text-label-sm border border-outline-variant rounded-lg hover:bg-surface-container-low">取消</button>
-              <button onClick={handleSave} className="px-4 py-2 text-label-sm bg-primary text-white rounded-lg hover:bg-primary-container">保存</button>
+            <div className="form-field">
+              <label>别名（逗号或斜杠分隔）</label>
+              <input value={formAliases} onChange={(e) => setFormAliases(e.target.value)} placeholder="例如：王通,亭头" />
+            </div>
+            <div className="form-field">
+              <label>默认单位</label>
+              <input value={formUnit} onChange={(e) => setFormUnit(e.target.value)} placeholder="例如：米、只、套" />
+            </div>
+            <div className="dlg-acts">
+              <button className="btn ghost" onClick={() => setDialogOpen(false)}>取消</button>
+              <button className="btn" onClick={handleSave}>保存</button>
             </div>
           </div>
         </div>
@@ -163,7 +195,7 @@ export default function MaterialsPage() {
       <ConfirmDialog
         open={deleteTarget !== null}
         title="删除确认"
-        message="确定删除此品名？删除后校准不再匹配该品名。"
+        message="确定删除此品名？删除后识别对齐不再匹配该品名。"
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
       />
