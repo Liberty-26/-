@@ -39,6 +39,53 @@ export default function SettingsPage() {
   const [factVal, setFactVal] = useState('');
   const [clearOpen, setClearOpen] = useState(false);
 
+  // 桌面端自动更新状态
+  const [upd, setUpd] = useState<{
+    state: 'idle' | 'checking' | 'available' | 'uptodate' | 'downloading' | 'downloaded' | 'error';
+    version: string;
+    percent: number;
+    message: string;
+  }>({ state: 'idle', version: '', percent: 0, message: '' });
+
+  // 监听主进程推送的更新事件（桌面版）
+  useEffect(() => {
+    const steel = (window as any).steel;
+    if (!steel || !steel.onUpdateEvent) return;
+    const off = steel.onUpdateEvent((ev: any) => {
+      if (ev.type === 'available') setUpd({ state: 'available', version: ev.version || '', percent: 0, message: '' });
+      else if (ev.type === 'uptodate') { setUpd({ state: 'uptodate', version: '', percent: 0, message: '' }); setTimeout(() => setUpd((s) => ({ ...s, state: 'idle' })), 4000); }
+      else if (ev.type === 'progress') setUpd((s) => ({ ...s, state: 'downloading', percent: ev.percent || 0 }));
+      else if (ev.type === 'downloaded') setUpd((s) => ({ ...s, state: 'downloaded' }));
+      else if (ev.type === 'error') setUpd({ state: 'error', version: '', percent: 0, message: ev.message || '更新失败' });
+    });
+    return off;
+  }, []);
+
+  const handleCheckUpdate = async () => {
+    const steel = (window as any).steel;
+    if (!steel || !steel.checkForUpdates) { showToast('自动更新仅桌面版可用（网页版请手动下载安装包）', 'warning'); return; }
+    setUpd({ state: 'checking', version: '', percent: 0, message: '' });
+    const res = await steel.checkForUpdates();
+    if (!res.ok) {
+      setUpd({ state: 'error', version: '', percent: 0, message: res.message || '检查更新失败' });
+      return;
+    }
+    if (res.status === 'available') setUpd({ state: 'available', version: res.version || '', percent: 0, message: '' });
+    else { setUpd({ state: 'uptodate', version: '', percent: 0, message: '' }); setTimeout(() => setUpd((s) => ({ ...s, state: 'idle' })), 4000); }
+  };
+
+  const handleDownloadUpdate = async () => {
+    const steel = (window as any).steel;
+    if (!steel || !steel.downloadUpdate) return;
+    setUpd((s) => ({ ...s, state: 'downloading', percent: 0 }));
+    await steel.downloadUpdate();
+  };
+
+  const handleInstallUpdate = async () => {
+    const steel = (window as any).steel;
+    if (steel && steel.installUpdate) await steel.installUpdate();
+  };
+
   useEffect(() => {
     const saved = (k: string) => localStorage.getItem(k) || '';
     setAKey(saved(S.aKey));
@@ -307,6 +354,44 @@ export default function SettingsPage() {
           <div className="set-row"><span className="k">数据</span><span className="v">全部在本机 SQLite，不上传云端</span></div>
           <div className="set-row"><span className="k">识别</span><span className="v">夸克扫描王 image-to-excel</span></div>
           <div className="set-row"><span className="k">助手</span><span className="v">自研 harness · 技能文件化 · 三层记忆</span></div>
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 10 }}>软件更新</div>
+            {upd.state === 'idle' && (
+              <button className="btn" onClick={handleCheckUpdate}>检查更新</button>
+            )}
+            {upd.state === 'checking' && (
+              <button className="btn" disabled>检查中…</button>
+            )}
+            {upd.state === 'uptodate' && (
+              <span style={{ fontSize: 13, color: 'var(--green, #34c77b)' }}>✓ 已是最新版本</span>
+            )}
+            {upd.state === 'available' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, color: 'var(--primary)' }}>发现新版本 v{upd.version}</span>
+                <button className="btn sm" onClick={handleDownloadUpdate}>立即下载</button>
+              </div>
+            )}
+            {upd.state === 'downloading' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ flex: 1, height: 6, background: 'var(--border)', borderRadius: 999, overflow: 'hidden', maxWidth: 220 }}>
+                  <i style={{ display: 'block', height: '100%', width: `${upd.percent}%`, background: 'var(--primary)', transition: 'width .3s' }} />
+                </div>
+                <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{upd.percent}%</span>
+              </div>
+            )}
+            {upd.state === 'downloaded' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, color: 'var(--green, #34c77b)' }}>更新已下载完成</span>
+                <button className="btn sm" onClick={handleInstallUpdate}>立即重启安装</button>
+              </div>
+            )}
+            {upd.state === 'error' && (
+              <div style={{ fontSize: 12, color: 'var(--err)' }}>
+                {upd.message}
+                <button className="link" style={{ marginLeft: 8 }} onClick={handleCheckUpdate}>重试</button>
+              </div>
+            )}
+          </div>
         </div>
       ),
     },

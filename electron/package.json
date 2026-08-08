@@ -1,6 +1,6 @@
 {
   "name": "steeldigitize-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "SteelDigitize Pro 桌面端",
   "main": "main.js",
   "private": true,
