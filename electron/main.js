@@ -1,7 +1,8 @@
 // SteelDigitize Pro — Electron 主进程
 // 生产模式：拉起内置后端（resources/backend）→ 打开 http://127.0.0.1:8000
 // 开发模式：直接加载 vite dev server（外部启动 uvicorn + vite）
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -11,6 +12,48 @@ const DEV_URL = process.env.STEEL_DEV_URL || 'http://localhost:5174';
 const PROD_URL = 'http://127.0.0.1:8000';
 let backendProc = null;
 let mainWindow = null;
+
+// 自动更新：打包版启动后检查 GitHub Releases，有新版本提示下载安装
+function setupAutoUpdater() {
+  if (!app.isPackaged) return;
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('update-available', (info) => {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: '发现新版本',
+      message: `发现新版本 ${info.version}，是否立即更新？`,
+      detail: '更新完成后应用会自动重启。',
+      buttons: ['立即更新', '稍后再说'],
+      defaultId: 0,
+      cancelId: 1,
+    }).then(({ response }) => {
+      if (response === 0) autoUpdater.downloadUpdate();
+    });
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: '更新已就绪',
+      message: '新版本已下载完成，重启后生效。',
+      buttons: ['立即重启', '稍后再说'],
+      defaultId: 0,
+      cancelId: 1,
+    }).then(({ response }) => {
+      if (response === 0) autoUpdater.quitAndInstall();
+    });
+  });
+
+  autoUpdater.on('error', (e) => console.error('[updater]', e && e.message));
+  autoUpdater.on('update-not-available', () => console.log('[updater] 已是最新版本'));
+
+  // 启动 6 秒后再检查，避免影响首屏加载
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch((e) => console.error('[updater] 检查失败', e && e.message));
+  }, 6000);
+}
 
 function backendExePath() {
   const name = process.platform === 'win32' ? 'SteelDigitizeBackend.exe' : 'SteelDigitizeBackend';
@@ -94,6 +137,7 @@ async function createWindow() {
 app.whenReady().then(() => {
   startBackend();
   createWindow();
+  setupAutoUpdater();
 });
 
 app.on('window-all-closed', () => {

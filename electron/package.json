@@ -9,6 +9,9 @@
     "dist:win": "electron-builder --win nsis",
     "dist:mac": "electron-builder --mac dmg"
   },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
   "build": {
     "appId": "com.steeldigitize.pro",
     "productName": "SteelDigitize Pro",
@@ -30,6 +33,11 @@
     ],
     "directories": {
       "output": "release"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Liberty-26",
+      "repo": "-"
     },
     "win": {
       "target": ["nsis"],
