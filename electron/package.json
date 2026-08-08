@@ -21,6 +21,11 @@
         "from": "backend-dist",
         "to": "backend",
         "filter": ["**/*"]
+      },
+      {
+        "from": "../frontend/dist",
+        "to": "frontend/dist",
+        "filter": ["**/*"]
       }
     ],
     "directories": {

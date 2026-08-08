@@ -34,8 +34,39 @@ _FW = str.maketrans(
 )
 
 
+def _call_yescan_lib(img_bytes: bytes, api_key: str, scene: str) -> dict:
+    """同步调用 yescan SDK（Agent 通道，X-Appbuilder-From=cli），返回 xlsx 字节。
+    放在线程池执行，避免阻塞事件循环。
+    """
+    try:
+        from yescan.ocr_client import QuarkOCRClient
+    except ImportError:
+        return {"success": False, "error": "识别组件缺失，请重新安装 yescan"}
+
+    work_dir = tempfile.mkdtemp(prefix="yescan_work_")
+    img_path = os.path.join(work_dir, "input.jpg")
+    try:
+        with open(img_path, "wb") as f:
+            f.write(img_bytes)
+        with QuarkOCRClient(api_key=api_key, scene=scene, data_type="image") as client:
+            result = client.recognize(image_path=img_path)
+        if result.code != "00000":
+            return {"success": False, "error": f"{result.code} — {result.message or '识别失败'}"}
+        data = result.data or {}
+        try:
+            xlsx_b64 = data["TypesetInfo"][0]["FileBase64"]
+        except (KeyError, IndexError, TypeError):
+            return {"success": False, "error": "识别返回格式异常，未找到表格数据"}
+        try:
+            return {"success": True, "raw": base64.b64decode(xlsx_b64)}
+        except Exception:
+            return {"success": False, "error": "识别结果解码失败"}
+    finally:
+        shutil.rmtree(work_dir, ignore_errors=True)
+
+
 async def call_quark_excel(image_base64: str, api_key: str | None = None) -> dict:
-    """调用 yescan CLI（Agent 通道）执行 image-to-excel，返回 xlsx 字节。
+    """调用夸克 Agent 通道（yescan SDK）执行 image-to-excel，返回 xlsx 字节。
 
     并发触发夸克 QPS 限流（A0300）时自动退避重试（最多 3 次）。
 
@@ -63,7 +94,7 @@ async def call_quark_excel(image_base64: str, api_key: str | None = None) -> dic
 
     last_error = ""
     for attempt in range(3):
-        result = await _call_yescan_once(clean_b64, api_key)
+        result = await asyncio.to_thread(_call_yescan_lib, img_bytes, api_key, config.SCAN_SCENE)
         if result.get("success"):
             return result
         last_error = result.get("error", "")
@@ -72,71 +103,6 @@ async def call_quark_excel(image_base64: str, api_key: str | None = None) -> dic
             continue
         return result
     return {"success": False, "error": last_error}
-
-
-async def _call_yescan_once(clean_b64: str, api_key: str) -> dict:
-    """单次调用 yescan CLI，返回 {"success": True, "raw": bytes} 或错误"""
-    img_bytes = base64.b64decode(clean_b64)
-    # 临时目录：图片输入 + xlsx 输出；HOME 隔离确保只用传入的 key，不被 ~/.yescan/config.json 干扰
-    work_dir = tempfile.mkdtemp(prefix="yescan_work_")
-    fake_home = tempfile.mkdtemp(prefix="yescan_home_")
-    out_dir = os.path.join(work_dir, "out")
-    img_path = os.path.join(work_dir, "input.jpg")
-    try:
-        os.makedirs(out_dir, exist_ok=True)
-        with open(img_path, "wb") as f:
-            f.write(img_bytes)
-
-        env = os.environ.copy()
-        env["SCAN_WEBSERVICE_KEY"] = api_key
-        env["HOME"] = fake_home
-        cmd = [config.YESCAN_BIN, "-s", config.SCAN_SCENE, "-p", img_path, "-o", out_dir]
-
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                env=env,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            try:
-                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
-            except asyncio.TimeoutError:
-                proc.kill()
-                await proc.communicate()
-                return {"success": False, "error": "识别超时，请重试"}
-        except FileNotFoundError:
-            return {"success": False, "error": f"识别工具不存在: {config.YESCAN_BIN}，请重新安装 yescan"}
-        except Exception as e:
-            return {"success": False, "error": f"识别进程启动失败: {str(e)}"}
-
-        if proc.returncode != 0:
-            err_msg = _extract_yescan_error(stdout) or (stderr.decode(errors="ignore")[:300])
-            return {"success": False, "error": f"识别失败: {err_msg}"}
-
-        xlsx_files = [f for f in os.listdir(out_dir) if f.lower().endswith(".xlsx")]
-        if not xlsx_files:
-            return {"success": False, "error": "识别未生成表格文件"}
-        with open(os.path.join(out_dir, xlsx_files[0]), "rb") as f:
-            return {"success": True, "raw": f.read()}
-    finally:
-        shutil.rmtree(work_dir, ignore_errors=True)
-        shutil.rmtree(fake_home, ignore_errors=True)
-
-
-def _extract_yescan_error(stdout: bytes) -> str:
-    """从 yescan 失败输出中提取接口错误信息（输出为 JSON，含 code/message）"""
-    try:
-        text = stdout.decode(errors="ignore").strip()
-        obj = json.loads(text)
-        if isinstance(obj, dict):
-            msg = obj.get("message") or ""
-            code = obj.get("code") or ""
-            if msg:
-                return f"{code} — {msg}" if code else msg
-    except Exception:
-        pass
-    return ""
 
 
 def _strip(s) -> str:

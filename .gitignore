@@ -19,3 +19,9 @@ venv/
 # 系统文件
 Thumbs.db
 .DS_Store
+
+# 桌面打包产物
+backend/build/
+backend/dist/
+electron/backend-dist/
+electron/release/

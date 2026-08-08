@@ -13,10 +13,9 @@ let backendProc = null;
 let mainWindow = null;
 
 function backendExePath() {
-  if (process.platform === 'win32') {
-    return path.join(process.resourcesPath, 'backend', 'SteelDigitizeBackend.exe');
-  }
-  return path.join(process.resourcesPath, 'backend', 'SteelDigitizeBackend');
+  const name = process.platform === 'win32' ? 'SteelDigitizeBackend.exe' : 'SteelDigitizeBackend';
+  // extraResources 把 backend-dist 整体复制到 resources/backend，保留了 SteelDigitizeBackend/ 一层目录
+  return path.join(process.resourcesPath, 'backend', 'SteelDigitizeBackend', name);
 }
 
 function startBackend() {
@@ -33,7 +32,11 @@ function startBackend() {
     cwd: workDir,
     stdio: 'ignore',
     windowsHide: true,
-    env: { ...process.env, WORK_DIR: workDir },
+    env: {
+      ...process.env,
+      WORK_DIR: workDir,
+      FRONTEND_DIR: path.join(process.resourcesPath, 'frontend', 'dist'),
+    },
   });
   backendProc.on('exit', (code) => {
     console.error('[electron] 后端退出 code=', code);

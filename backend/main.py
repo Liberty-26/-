@@ -17,7 +17,9 @@ UPLOAD_DIR = Path(config.UPLOAD_DIR)
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # 前端构建产物（单进程部署：FastAPI serve dist）
-FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+# 桌面版：Electron 通过 FRONTEND_DIR 环境变量传入打包的静态目录
+_frontend_env = os.getenv("FRONTEND_DIR", "").strip()
+FRONTEND_DIST = Path(_frontend_env) if _frontend_env else Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 app = FastAPI(title="SteelDigitize Pro", version="1.0.0")
 
