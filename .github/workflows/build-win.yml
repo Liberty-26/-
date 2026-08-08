@@ -44,8 +44,10 @@ jobs:
           Copy-Item -Recurse -Force backend/dist/SteelDigitizeBackend/* electron/backend-dist/SteelDigitizeBackend/
 
       - name: 打包 Windows 安装包（含桌面快捷方式）
-        run: npm ci && npm run dist:win
+        run: npm ci && npx electron-builder --win nsis --publish always
         working-directory: electron
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 上传安装包
         uses: actions/upload-artifact@v4
@@ -53,13 +55,3 @@ jobs:
           name: SteelDigitize-Pro-Setup
           path: electron/release/*.exe
           if-no-files-found: error
-
-      - name: 发布到 GitHub Releases（自动更新源）
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            electron/release/*.exe
-            electron/release/*.yml
-            electron/release/*.blockmap
-          generate_release_notes: true
