@@ -100,7 +100,7 @@ main{flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;}
 .search:focus{outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.12);}
 
 /* ---------- 工作台 ---------- */
-.wb{display:flex; height:100%; min-height:0;}
+.wb{display:flex; height:100%; width:100%; min-height:0;}
 .wb-center{flex:1; min-width:0; display:flex; flex-direction:column; padding:20px 24px; overflow:hidden;}
 .wb-title{font-size:22px; font-weight:700; letter-spacing:-.01em;}
 .wb-sub{color:var(--text-2); font-size:13px; margin-top:2px;}
@@ -215,7 +215,7 @@ main{flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;}
 .pill.teal{background:var(--teal-soft); color:var(--teal);}
 
 /* ---------- 审核区 ---------- */
-.review{display:flex; height:100%; min-height:0;}
+.review{display:flex; height:100%; width:100%; min-height:0;}
 .queue{width:304px; flex-shrink:0; background:var(--card); border-right:1px solid var(--border); display:flex; flex-direction:column; min-height:0;}
 .queue-head{padding:18px 18px 12px; border-bottom:1px solid var(--border);}
 .queue-title{font-size:17px; font-weight:700; display:flex; align-items:center; gap:8px;}

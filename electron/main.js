@@ -107,14 +107,43 @@ function backendExePath() {
   return path.join(process.resourcesPath, 'backend', 'SteelDigitizeBackend', name);
 }
 
-function backendHealthy(timeoutMs = 1200) {
+function getDistMtime() {
+  try {
+    const p = path.join(process.resourcesPath, 'frontend', 'dist', 'index.html');
+    if (fs.existsSync(p)) return String(Math.round(fs.statSync(p).mtimeMs));
+  } catch (e) { /* ignore */ }
+  return '';
+}
+
+function fetchHealth(timeoutMs = 1200) {
   return new Promise((resolve) => {
     const req = http.get(PROD_URL + '/api/health', { timeout: timeoutMs }, (res) => {
-      res.resume();
-      resolve(res.statusCode === 200);
+      let body = '';
+      res.on('data', (c) => { body += c; });
+      res.on('end', () => {
+        try {
+          const j = JSON.parse(body);
+          resolve(j && j.success && j.data ? j.data : null);
+        } catch (e) { resolve(null); }
+      });
     });
-    req.on('error', () => resolve(false));
-    req.setTimeout(timeoutMs, () => { req.destroy(); resolve(false); });
+    req.on('error', () => resolve(null));
+    req.setTimeout(timeoutMs, () => { req.destroy(); resolve(null); });
+  });
+}
+
+function killProcess(pid) {
+  return new Promise((resolve) => {
+    if (!pid || Number(pid) === process.pid) return resolve();
+    try {
+      if (process.platform === 'win32') {
+        const { execFile } = require('child_process');
+        execFile('taskkill', ['/F', '/PID', String(pid)], () => resolve());
+      } else {
+        process.kill(Number(pid), 'SIGTERM');
+        resolve();
+      }
+    } catch (e) { resolve(); }
   });
 }
 
@@ -125,10 +154,17 @@ async function startBackend() {
     console.error('[electron] 内置后端不存在:', exe);
     return;
   }
-  // 若 8000 已有一个健康的后端（如残留实例），直接复用，避免端口冲突
-  if (await backendHealthy()) {
-    console.log('[electron] 复用已运行的后端服务');
-    return;
+  // 若 8000 已有健康后端：指纹一致（同一安装版本）→ 复用；指纹不一致（升级后残留的旧版后端）→ 杀掉重启
+  const health = await fetchHealth();
+  if (health) {
+    const myDist = getDistMtime();
+    if (health.dist_mtime && myDist && health.dist_mtime === myDist) {
+      console.log('[electron] 复用已运行的后端服务');
+      return;
+    }
+    console.log('[electron] 检测到旧版本残留后端，关闭后启动新版');
+    await killProcess(health.pid);
+    await new Promise((r) => setTimeout(r, 800));
   }
   // 工作目录放在用户数据目录，数据与安装目录分离（Windows 上 Program Files 只读）
   const workDir = path.join(app.getPath('userData'), 'appdata');

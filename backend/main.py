@@ -57,7 +57,15 @@ def startup():
 
 @app.get("/api/health")
 def health():
-    return {"success": True, "data": {"status": "ok"}}
+    # 返回进程 PID 与前端构建指纹：Electron 据此判断 8000 端口上的后端是否与当前安装版本一致
+    dist_mtime = None
+    try:
+        idx = FRONTEND_DIST / "index.html"
+        if idx.exists():
+            dist_mtime = str(int(idx.stat().st_mtime * 1000))
+    except Exception:
+        pass
+    return {"success": True, "data": {"status": "ok", "pid": os.getpid(), "dist_mtime": dist_mtime}}
 
 
 # 路由式 fallback：serve 前端 dist（必须在所有 API 路由之后注册）
