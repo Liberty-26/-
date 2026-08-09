@@ -26,6 +26,20 @@ function sendUpdate(payload) {
   }
 }
 
+// 语义化比较版本号（仅支持 x.y.z）：remote > local 才算有新版本
+function isNewerVersion(remote, local) {
+  if (!remote || !local) return false;
+  const r = String(remote).split('.').map((n) => parseInt(n, 10) || 0);
+  const l = String(local).split('.').map((n) => parseInt(n, 10) || 0);
+  const len = Math.max(r.length, l.length);
+  for (let i = 0; i < len; i++) {
+    const a = r[i] || 0;
+    const b = l[i] || 0;
+    if (a !== b) return a > b;
+  }
+  return false;
+}
+
 // 自动更新：启动后自动检查 GitHub Releases；前端设置页可手动检查/下载/安装
 function setupAutoUpdater() {
   if (!app.isPackaged) return;
@@ -67,7 +81,8 @@ ipcMain.handle('check-updates', async () => {
   try {
     const result = await autoUpdater.checkForUpdates();
     const version = result && result.updateInfo ? result.updateInfo.version : '';
-    return { ok: true, status: result ? 'available' : 'uptodate', version };
+    const hasNew = isNewerVersion(version, app.getVersion());
+    return { ok: true, status: hasNew ? 'available' : 'uptodate', version };
   } catch (e) {
     return { ok: false, message: (e && e.message) || '检查更新失败' };
   }

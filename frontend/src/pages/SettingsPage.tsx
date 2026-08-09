@@ -57,7 +57,7 @@ export default function SettingsPage() {
     if (!steel || !steel.onUpdateEvent) return;
     const off = steel.onUpdateEvent((ev: any) => {
       if (ev.type === 'available') setUpd({ state: 'available', version: ev.version || '', percent: 0, message: '' });
-      else if (ev.type === 'uptodate') { setUpd({ state: 'uptodate', version: '', percent: 0, message: '' }); setTimeout(() => setUpd((s) => ({ ...s, state: 'idle' })), 4000); }
+      else if (ev.type === 'uptodate') { setUpd({ state: 'uptodate', version: '', percent: 0, message: '' }); }
       else if (ev.type === 'progress') setUpd((s) => ({ ...s, state: 'downloading', percent: ev.percent || 0 }));
       else if (ev.type === 'downloaded') setUpd((s) => ({ ...s, state: 'downloaded' }));
       else if (ev.type === 'error') setUpd({ state: 'error', version: '', percent: 0, message: ev.message || '更新失败' });
@@ -75,14 +75,17 @@ export default function SettingsPage() {
       return;
     }
     if (res.status === 'available') setUpd({ state: 'available', version: res.version || '', percent: 0, message: '' });
-    else { setUpd({ state: 'uptodate', version: '', percent: 0, message: '' }); setTimeout(() => setUpd((s) => ({ ...s, state: 'idle' })), 4000); }
+    else { setUpd({ state: 'uptodate', version: '', percent: 0, message: '' }); }
   };
 
   const handleDownloadUpdate = async () => {
     const steel = (window as any).steel;
     if (!steel || !steel.downloadUpdate) return;
     setUpd((s) => ({ ...s, state: 'downloading', percent: 0 }));
-    await steel.downloadUpdate();
+    const res = await steel.downloadUpdate();
+    if (res && !res.ok) {
+      setUpd({ state: 'error', version: '', percent: 0, message: res.message || '下载失败，请重试' });
+    }
   };
 
   const handleInstallUpdate = async () => {
@@ -367,7 +370,10 @@ export default function SettingsPage() {
               <button className="btn" disabled>检查中…</button>
             )}
             {upd.state === 'uptodate' && (
-              <span style={{ fontSize: 13, color: 'var(--green, #34c77b)' }}>✓ 已是最新版本</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, color: 'var(--green, #34c77b)' }}>✓ 已是最新版本</span>
+                <button className="link" onClick={handleCheckUpdate}>重新检查</button>
+              </div>
             )}
             {upd.state === 'available' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
