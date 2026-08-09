@@ -6,6 +6,7 @@ import {
 import { useToast } from '../hooks/useToast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import type { Material, MaterialCandidate } from '../types';
+import { Plus } from 'lucide-react';
 
 const CATS = ['全部', '管材', '管件', '线盒', '网类', '其他'];
 
@@ -99,7 +100,7 @@ export default function MaterialsPage() {
           <div className="page-title">品名库</div>
           <div className="page-sub">识别对齐的标准目录 · {items.length} 条 · 从识别中持续收录</div>
         </div>
-        <button className="btn" style={{ marginLeft: 'auto' }} onClick={openAdd}>＋ 新增品名</button>
+        <button className="btn" style={{ marginLeft: 'auto' }} onClick={openAdd}><Plus size={15} />新增品名</button>
       </div>
 
       <div className="mat-layout">

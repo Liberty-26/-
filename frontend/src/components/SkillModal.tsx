@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { getHistory } from '../utils/api';
 import { useToast } from '../hooks/useToast';
 import type { ReceiptSummary } from '../types';
+import { X } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -65,7 +66,7 @@ export default function SkillModal({ open, onClose, onRun }: Props) {
             表格生成
             <div className="sub">选择单据与目标表格，确认后由工作助手执行</div>
           </div>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose} aria-label="关闭"><X size={16} /></button>
         </div>
         <div className="modal-body">
           <div className="step"><span className="n">1</span>选择单据（从资料库中勾选，无需记单号）</div>

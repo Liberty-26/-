@@ -5,6 +5,7 @@ import { useNav } from '../contexts/NavContext';
 import { useQueue } from '../contexts/QueueContext';
 import { useToast } from '../hooks/useToast';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { Inbox, RotateCcw, Plus, Minus, BookOpen } from 'lucide-react';
 import {
   getReceiptDetail, updateReceipt, verifyReceipt, deleteReceipt,
   calibrateItemsSSE, recognizeImage, addCorrections,
@@ -250,7 +251,7 @@ export default function ReviewPage() {
           </div>
           <div className="queue-sub">识别结果需与原图核对后入库</div>
           <div style={{ marginTop: 10 }}>
-            <button className="link" onClick={() => setPage('materials')}>品名库 ›</button>
+            <button className="link" onClick={() => setPage('materials')}><BookOpen size={13} />品名库</button>
           </div>
         </div>
         <div className="queue-list">
@@ -298,7 +299,7 @@ export default function ReviewPage() {
               <span className="pill blue">识别自动提取</span>
               <div className="spacer" />
               <div className="work-actions">
-                <button className="btn ghost sm" disabled>↻ 重新识别</button>
+                <button className="btn ghost sm" disabled><RotateCcw size={14} />重新识别</button>
                 <button className="btn ghost sm" disabled>保存草稿</button>
                 <button className="btn ok sm" disabled>确认入库</button>
               </div>
@@ -314,7 +315,7 @@ export default function ReviewPage() {
                 <div className="orig-head">上传原图（不裁剪）</div>
                 <div className="orig-img">
                   <div className="empty" style={{ padding: '70px 0' }}>
-                    <div style={{ fontSize: 34, opacity: .35 }}>▤</div>
+                    <div style={{ opacity: .4 }}><Inbox size={40} strokeWidth={1.5} /></div>
                     <div>没有待审核单据</div>
                     <div style={{ fontSize: 12 }}>上传识别后原图会显示在这里</div>
                   </div>
@@ -346,7 +347,7 @@ export default function ReviewPage() {
               <span className="pill blue">识别自动提取</span>
               <div className="spacer" />
               <div className="work-actions">
-                <button className="btn ghost sm" onClick={handleReRecognize} disabled={loading || saving}>↻ 重新识别</button>
+                <button className="btn ghost sm" onClick={handleReRecognize} disabled={loading || saving}><RotateCcw size={14} />重新识别</button>
                 <button className="btn ghost sm" onClick={() => saveCurrent(false)} disabled={loading || saving}>保存草稿</button>
                 <button className="btn ok sm" onClick={handleVerify} disabled={loading || saving}>
                   {saving ? '处理中…' : '确认入库'}
@@ -366,8 +367,8 @@ export default function ReviewPage() {
                 <div className="orig-head">
                   上传原图（不裁剪）
                   <div className="orig-zoom">
-                    <button onClick={() => setZoom((z) => Math.min(2.5, z + 0.25))}>＋</button>
-                    <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))}>－</button>
+                    <button onClick={() => setZoom((z) => Math.min(2.5, z + 0.25))} title="放大"><Plus size={14} /></button>
+                    <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} title="缩小"><Minus size={14} /></button>
                     <button onClick={() => setZoom(1)}>1:1</button>
                   </div>
                 </div>

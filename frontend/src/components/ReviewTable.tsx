@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useEffect, useRef, type KeyboardEvent }
 import type { ReceiptItem } from '../types';
 import { useToast } from '../hooks/useToast';
 import ConfirmDialog from './ConfirmDialog';
+import { Plus, AlertTriangle } from 'lucide-react';
 
 interface Props {
   items: ReceiptItem[];
@@ -371,7 +372,7 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
                     {!header && (() => {
                       const errs = (item.issues || []).length;
                       const news = item.not_in_library ? 1 : 0;
-                      if (errs) return <span className="cell-flag" style={{ color: 'var(--err)' }}>⚠ {errs} 项异常</span>;
+                      if (errs) return <span className="cell-flag" style={{ color: 'var(--err)' }}><AlertTriangle size={12} style={{ verticalAlign: '-1px' }} /> {errs} 项异常</span>;
                       if (news) return <span className="cell-flag" style={{ color: 'var(--warn)' }}>◈ 未入库</span>;
                       return <span className="cell-flag" style={{ color: 'var(--text-3)' }}>—</span>;
                     })()}
@@ -408,7 +409,7 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
       </div>
 
       <div style={{ padding: '10px 14px' }}>
-        <button className="btn sm ghost" onClick={addRow}>＋ 添加行</button>
+        <button className="btn sm ghost" onClick={addRow}><Plus size={14} />添加行</button>
       </div>
 
       <ConfirmDialog

@@ -9,6 +9,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import type { AssistantFact, CorrectionRecord } from '../types';
 
 const S = { aKey: 'steel_agent_key', aBase: 'steel_agent_base', aModel: 'steel_agent_model', sKey: 'steel_scan_key' };
+import { CheckCircle2 } from 'lucide-react';
 
 interface ScanScene { scene: string; label: string; type: string }
 
@@ -377,7 +378,7 @@ export default function SettingsPage() {
             )}
             {upd.state === 'uptodate' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, color: 'var(--green, #34c77b)' }}>✓ 已是最新版本</span>
+                <span style={{ fontSize: 13, color: 'var(--green, #34c77b)' }}><CheckCircle2 size={14} style={{ verticalAlign: '-2px' }} /> 已是最新版本</span>
                 <button className="link" onClick={handleCheckUpdate}>重新检查</button>
               </div>
             )}

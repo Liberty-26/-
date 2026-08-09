@@ -2,14 +2,16 @@
 import { useNav } from '../contexts/NavContext';
 import { useQueue } from '../contexts/QueueContext';
 import type { ReactNode } from 'react';
+import type { ComponentType } from 'react';
+import { LayoutDashboard, ClipboardCheck, Archive, Boxes, Settings } from 'lucide-react';
 import type { PageId } from '../types';
 
-const PAGES: { id: PageId; label: string; icon: string; badge?: () => number | null }[] = [
-  { id: 'workbench', label: '工作台', icon: '▦' },
-  { id: 'review', label: '审核区', icon: '▤' },
-  { id: 'library', label: '资料库', icon: '▥' },
-  { id: 'materials', label: '品名库', icon: '▣' },
-  { id: 'settings', label: '设置', icon: '⚙' },
+const PAGES: { id: PageId; label: string; icon: ComponentType<{ size?: number; strokeWidth?: number }> }[] = [
+  { id: 'workbench', label: '工作台', icon: LayoutDashboard },
+  { id: 'review', label: '审核区', icon: ClipboardCheck },
+  { id: 'library', label: '资料库', icon: Archive },
+  { id: 'materials', label: '品名库', icon: Boxes },
+  { id: 'settings', label: '设置', icon: Settings },
 ];
 
 export default function Layout({ children }: { children: ReactNode[] }) {
@@ -34,7 +36,7 @@ export default function Layout({ children }: { children: ReactNode[] }) {
               className={`nav-item ${page === p.id ? 'active' : ''}`}
               onClick={() => setPage(p.id)}
             >
-              <span className="nav-icon">{p.icon}</span>
+              <span className="nav-icon"><p.icon size={17} strokeWidth={2} /></span>
               {p.label}
               {p.id === 'review' && <span className="badge nav-badge-review" id="navBadgeReview">{queue.length}</span>}
             </button>
@@ -46,7 +48,7 @@ export default function Layout({ children }: { children: ReactNode[] }) {
               className={`nav-item ${page === p.id ? 'active' : ''}`}
               onClick={() => setPage(p.id)}
             >
-              <span className="nav-icon">{p.icon}</span>
+              <span className="nav-icon"><p.icon size={17} strokeWidth={2} /></span>
               {p.label}
               {p.id === 'materials' && <span className="badge" id="navBadgeCand">0</span>}
             </button>

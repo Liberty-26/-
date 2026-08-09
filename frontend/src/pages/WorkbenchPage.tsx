@@ -5,6 +5,7 @@ import { useToast } from '../hooks/useToast';
 import { useNav } from '../contexts/NavContext';
 import { useQueue } from '../contexts/QueueContext';
 import SkillModal from '../components/SkillModal';
+import { Table2, CalendarRange, Boxes, Upload } from 'lucide-react';
 import {
   saveReceipt, loadMessages,
 } from '../utils/api';
@@ -355,14 +356,14 @@ export default function WorkbenchPage() {
 
         <div className="skills">
           <button className="skill-card" onClick={() => setSkillOpen(true)}>
-            <div className="skill-ico">▦</div>
+            <div className="skill-ico"><Table2 size={19} strokeWidth={2} /></div>
             <div>
               <div className="skill-name">表格生成</div>
               <div className="skill-desc">把选中的单据写入对账单 Excel</div>
             </div>
           </button>
           <div className="skill-card disabled">
-            <div className="skill-ico">▥</div>
+            <div className="skill-ico"><CalendarRange size={19} strokeWidth={2} /></div>
             <div>
               <div className="skill-name">月度汇总</div>
               <div className="skill-desc">按月汇总入库单据</div>
@@ -370,7 +371,7 @@ export default function WorkbenchPage() {
             </div>
           </div>
           <div className="skill-card disabled">
-            <div className="skill-ico">▣</div>
+            <div className="skill-ico"><Boxes size={19} strokeWidth={2} /></div>
             <div>
               <div className="skill-name">品名建议</div>
               <div className="skill-desc">新品名收录与别名建议</div>
@@ -449,7 +450,7 @@ export default function WorkbenchPage() {
                 onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
                 onDrop={(e) => { e.preventDefault(); if (!uploading) handleSelectFiles(e.dataTransfer.files); }}
               >
-                <span className="up-ico">＋</span>
+                <span className="up-ico"><Upload size={18} strokeWidth={2} /></span>
                 <span className="up-tip">{uploading ? '识别处理中…' : '上传单据（可多选）'}</span>
                 <div className="up-sub">点击或拖拽上传，识别在后台排队，完成后进审核区</div>
               </button>

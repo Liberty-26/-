@@ -6,6 +6,7 @@ interface Props {
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
 }
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PAGE_SIZES = [10, 20, 50];
 
@@ -39,7 +40,7 @@ export default function Pagination({ page, pageSize, total, onPageChange, onPage
           disabled={page <= 1}
           className="px-2 py-1 rounded hover:bg-surface-container-high disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          ‹
+          <ChevronLeft size={16} />
         </button>
         {start > 1 && (
           <>
@@ -69,7 +70,7 @@ export default function Pagination({ page, pageSize, total, onPageChange, onPage
           disabled={page >= totalPages}
           className="px-2 py-1 rounded hover:bg-surface-container-high disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          ›
+          <ChevronRight size={16} />
         </button>
       </div>
     </div>
