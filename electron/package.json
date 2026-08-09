@@ -35,8 +35,10 @@
       "output": "release"
     },
     "publish": {
-      "provider": "generic",
-      "url": "https://gh-proxy.com/https://github.com/Liberty-26/-/releases/latest/download"
+      "provider": "github",
+      "owner": "Liberty-26",
+      "repo": "-",
+      "releaseType": "release"
     },
     "win": {
       "target": ["nsis"],

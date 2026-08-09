@@ -31,6 +31,11 @@ function setupAutoUpdater() {
   if (!app.isPackaged) return;
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
+  // 国内访问 GitHub 不稳定，更新源走加速镜像；发版仍自动上传 GitHub Releases
+  autoUpdater.setFeedURL({
+    provider: 'generic',
+    url: 'https://gh-proxy.com/https://github.com/Liberty-26/-/releases/latest/download',
+  });
 
   autoUpdater.on('update-available', (info) => {
     updateState.available = true;
