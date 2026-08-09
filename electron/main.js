@@ -141,6 +141,7 @@ async function startBackend() {
       ...process.env,
       WORK_DIR: workDir,
       FRONTEND_DIR: path.join(process.resourcesPath, 'frontend', 'dist'),
+      MATERIALS_SEED_CSV: path.join(process.resourcesPath, '品名种子清单.csv'),
     },
   });
   backendProc.on('exit', (code) => {

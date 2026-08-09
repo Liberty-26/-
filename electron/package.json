@@ -29,6 +29,10 @@
         "from": "../frontend/dist",
         "to": "frontend/dist",
         "filter": ["**/*"]
+      },
+      {
+        "from": "../品名种子清单.csv",
+        "to": "品名种子清单.csv"
       }
     ],
     "directories": {

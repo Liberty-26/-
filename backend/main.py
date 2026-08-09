@@ -48,7 +48,9 @@ app.include_router(memory.router)
 def startup():
     """启动时初始化数据库 + 导入品名种子（幂等）"""
     init_db()
-    added = import_materials_seed()
+    # 桌面版：Electron 传入打包资源里的 CSV；开发模式：默认取项目根目录 CSV
+    seed_csv = os.getenv("MATERIALS_SEED_CSV", "").strip() or None
+    added = import_materials_seed(seed_csv)
     if added:
         print(f"[startup] 品名种子导入完成: 新增 {added} 条")
 
