@@ -4,11 +4,11 @@
 
 /* 全局基础样式 */
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Segoe UI', sans-serif;
   font-size: 14px;
   line-height: 20px;
-  color: #191c1e;
-  background-color: #f8f9fb;
+  color: #0a0a0c;
+  background-color: #f7f8f9;
   margin: 0;
   overflow: hidden;
   height: 100vh;
@@ -19,10 +19,10 @@ body {
   overflow: hidden;
 }
 
-/* 自定义滚动条（对照设计稿） */
+/* 自定义滚动条 */
 .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #434655; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #d3d6da; border-radius: 10px; }
 
 /* 表格斑马纹 */
 .zebra-table tr:nth-child(even) { background-color: #f5f6f8; }
@@ -35,7 +35,7 @@ body {
 }
 
 /* Input placeholder */
-input::placeholder { color: #737686; opacity: 0.6; }
+input::placeholder { color: #9aa1aa; opacity: 1; }
 
 /* Material Symbols 对齐 */
 .material-symbols-outlined {

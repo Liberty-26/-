@@ -32,7 +32,7 @@ const timeNow = () =>
 export default function WorkbenchPage() {
   const { showToast } = useToast();
   const { setPage } = useNav();
-  const { addPending } = useQueue();
+  const { queue, addPending } = useQueue();
   const { messages, isLoading, sendMessage, messagesEndRef } = useAgentChat();
   const [flow, setFlow] = useState<'stream' | 'sessions'>('stream');
   const [flowItems, setFlowItems] = useState<FlowItem[]>([]);
@@ -353,6 +353,12 @@ export default function WorkbenchPage() {
       <div className="wb-center">
         <div className="wb-title">工作台</div>
         <div className="wb-sub">本地工作助手 · 对话、技能与单据流转在同一处</div>
+
+        <div className="ai-strip">
+          <span className="lab">AI 工作台</span>
+          <span>识别完成自动提取单号 / 日期 · 品名对齐 · 金额由代码计算</span>
+          <span className="ac">{queue.length > 0 ? `· ${queue.length} 张待你核对` : '· 当前无待核对单据'}</span>
+        </div>
 
         <div className="skills">
           <button className="skill-card" onClick={() => setSkillOpen(true)}>

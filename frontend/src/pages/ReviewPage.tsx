@@ -285,6 +285,11 @@ export default function ReviewPage() {
       </aside>
 
       <div className="work">
+        <div className="ai-strip" style={{ marginTop: 0, marginBottom: 14 }}>
+          <span className="lab">AI 已完成</span>
+          <span>提取单号 / 日期 · 品名对齐 {summary.corrected} 处 · 金额由代码计算</span>
+          <span className="ac">{currentId != null ? '请你核对数量与单价后确认入库' : '等待识别结果'}</span>
+        </div>
         {currentId == null ? (
           <>
             <div className="work-head">
@@ -294,7 +299,7 @@ export default function ReviewPage() {
               </div>
               <div className="field">
                 <label>日期（已自动提取，可改）</label>
-                <input type="date" disabled />
+                <input type="date" value="" disabled />
               </div>
               <span className="pill blue">识别自动提取</span>
               <div className="spacer" />
