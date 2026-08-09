@@ -14,6 +14,12 @@ let backendProc = null;
 let mainWindow = null;
 let updateState = { available: false, version: '', downloaded: false };
 
+// 单实例锁：防止重复打开导致多个后端抢占 8000 端口
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+}
+
 function sendUpdate(payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('update-event', payload);
@@ -79,11 +85,27 @@ function backendExePath() {
   return path.join(process.resourcesPath, 'backend', 'SteelDigitizeBackend', name);
 }
 
-function startBackend() {
+function backendHealthy(timeoutMs = 1200) {
+  return new Promise((resolve) => {
+    const req = http.get(PROD_URL + '/api/health', { timeout: timeoutMs }, (res) => {
+      res.resume();
+      resolve(res.statusCode === 200);
+    });
+    req.on('error', () => resolve(false));
+    req.setTimeout(timeoutMs, () => { req.destroy(); resolve(false); });
+  });
+}
+
+async function startBackend() {
   if (!app.isPackaged) return; // 开发模式：后端由外部 uvicorn 提供
   const exe = backendExePath();
   if (!fs.existsSync(exe)) {
     console.error('[electron] 内置后端不存在:', exe);
+    return;
+  }
+  // 若 8000 已有一个健康的后端（如残留实例），直接复用，避免端口冲突
+  if (await backendHealthy()) {
+    console.log('[electron] 复用已运行的后端服务');
     return;
   }
   // 工作目录放在用户数据目录，数据与安装目录分离（Windows 上 Program Files 只读）
@@ -153,8 +175,8 @@ async function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
-app.whenReady().then(() => {
-  startBackend();
+app.whenReady().then(async () => {
+  await startBackend();
   createWindow();
   setupAutoUpdater();
 });
@@ -165,6 +187,13 @@ app.on('window-all-closed', () => {
     backendProc = null;
   }
   if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('before-quit', () => {
+  if (backendProc) {
+    try { backendProc.kill(); } catch { /* ignore */ }
+    backendProc = null;
+  }
 });
 
 app.on('activate', () => {
