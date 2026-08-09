@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAgentChat } from '../hooks/useAgentChat';
 import { useToast } from '../hooks/useToast';
 import { useNav } from '../contexts/NavContext';
+import { useQueue } from '../contexts/QueueContext';
 import SkillModal from '../components/SkillModal';
 import {
   getMonitor, saveReceipt, loadMessages,
@@ -30,6 +31,7 @@ const timeNow = () =>
 export default function WorkbenchPage() {
   const { showToast } = useToast();
   const { setPage } = useNav();
+  const { addPending } = useQueue();
   const { messages, isLoading, sendMessage, messagesEndRef } = useAgentChat();
   const [stats, setStats] = useState<{ pending: number; today_count: number; verified: number; exported: number }>({ pending: 0, today_count: 0, verified: 0, exported: 0 });
   const [flow, setFlow] = useState<'stream' | 'sessions'>('stream');
@@ -208,6 +210,19 @@ export default function WorkbenchPage() {
                   labelPatch.receiptId = saved.data?.id;
                   labelPatch.meta = `${r.date || '未填日期'} · ${(r.items || []).length} 行`;
                   labelPatch.label = r.receipt_no || undefined;
+                  // 写入共享待审队列：审核区左侧立即出现，无需刷新
+                  addPending({
+                    id: saved.data?.id ?? 0,
+                    receipt_no: r.receipt_no || '',
+                    date: r.date || '',
+                    total_amount: saved.data?.total_amount ?? 0,
+                    status: 'pending',
+                    operator: saved.data?.operator || '本地用户',
+                    image_path: saved.data?.image_path ?? (r.image_path || ''),
+                    summary: '',
+                    item_count: (r.items || []).length,
+                    created_at: saved.data?.created_at ?? null,
+                  });
                 } else {
                   labelPatch.status = '失败';
                   labelPatch.error = saved.error;
@@ -253,7 +268,7 @@ export default function WorkbenchPage() {
     } finally {
       setUploading(false);
     }
-  }, [flowItems, uploading, showToast, refreshStats, saveReceipt]);
+  }, [flowItems, uploading, showToast, refreshStats, saveReceipt, addPending]);
 
   // 重试：对已保存的原图重新识别（不重新选图）
   const handleRetry = useCallback(async (it: FlowItem) => {
@@ -299,6 +314,20 @@ export default function WorkbenchPage() {
             : x
         )
       );
+      if (saved.success && saved.data?.id) {
+        addPending({
+          id: saved.data.id,
+          receipt_no: r.receipt_no || '',
+          date: r.date || '',
+          total_amount: saved.data.total_amount ?? 0,
+          status: 'pending',
+          operator: saved.data.operator || '本地用户',
+          image_path: saved.data.image_path ?? (r.image_path || ''),
+          summary: '',
+          item_count: (r.items || []).length,
+          created_at: saved.data.created_at ?? null,
+        });
+      }
       refreshStats();
       showToast(saved.success ? `重试成功：${r.receipt_no || r.date || '单据'} 已进审核区` : `重试识别成功但入库失败：${saved.error}`, saved.success ? 'success' : 'warning');
     } catch (e) {
@@ -308,7 +337,7 @@ export default function WorkbenchPage() {
       );
       showToast(msg, 'error');
     }
-  }, [showToast, refreshStats, saveReceipt]);
+  }, [showToast, refreshStats, saveReceipt, addPending]);
 
   const handleRunSkill = useCallback(async (text: string, ids: number[]) => {
     setSkillOpen(false);

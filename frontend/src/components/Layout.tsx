@@ -1,5 +1,6 @@
 // SteelDigitize Pro — 全局布局（工作区 / 管理 分组侧边栏，页面常驻状态保持）
 import { useNav } from '../contexts/NavContext';
+import { useQueue } from '../contexts/QueueContext';
 import type { ReactNode } from 'react';
 import type { PageId } from '../types';
 
@@ -13,6 +14,7 @@ const PAGES: { id: PageId; label: string; icon: string; badge?: () => number | n
 
 export default function Layout({ children }: { children: ReactNode[] }) {
   const { page, setPage } = useNav();
+  const { queue } = useQueue();
 
   return (
     <div className="app">
@@ -34,7 +36,7 @@ export default function Layout({ children }: { children: ReactNode[] }) {
             >
               <span className="nav-icon">{p.icon}</span>
               {p.label}
-              {p.id === 'review' && <span className="badge nav-badge-review" id="navBadgeReview">0</span>}
+              {p.id === 'review' && <span className="badge nav-badge-review" id="navBadgeReview">{queue.length}</span>}
             </button>
           ))}
           <div className="nav-sec">管理</div>

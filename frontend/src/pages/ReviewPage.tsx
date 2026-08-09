@@ -2,9 +2,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ReviewTable from '../components/ReviewTable';
 import { useNav } from '../contexts/NavContext';
+import { useQueue } from '../contexts/QueueContext';
 import { useToast } from '../hooks/useToast';
 import {
-  getHistory, getReceiptDetail, updateReceipt, verifyReceipt,
+  getReceiptDetail, updateReceipt, verifyReceipt,
   calibrateItemsSSE, recognizeImage, addCorrections,
 } from '../utils/api';
 import { fetchUploadAsDataUrl } from '../utils/image';
@@ -13,8 +14,8 @@ import type { ReceiptSummary, ReceiptItem } from '../types';
 export default function ReviewPage() {
   const { showToast } = useToast();
   const { page } = useNav();
+  const { queue, refreshQueue, removePending } = useQueue();
   const active = page === 'review';
-  const [queue, setQueue] = useState<ReceiptSummary[]>([]);
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [no, setNo] = useState('');
   const [date, setDate] = useState('');
@@ -43,32 +44,23 @@ export default function ReviewPage() {
     return () => el.removeEventListener('wheel', handler);
   }, []);
 
-  const loadQueue = useCallback(async () => {
-    const res = await getHistory({ page: 1, page_size: 50, status: 'pending' });
-    if (res.success && res.data) {
-      const items = res.data.items;
-      setQueue(items);
-      const badge = document.getElementById('navBadgeReview');
-      if (badge) badge.textContent = String(res.data.total);
-      // 刷新后恢复到上次正在审核的单据
-      setCurrentId((cur) => {
-        const savedId = Number(sessionStorage.getItem('steel_review_id'));
-        if (savedId && items.some((q) => q.id === savedId)) return savedId;
-        // 当前选中的单据仍在队列中则保留，已出队（入库/删除）则自动选第一项
-        if (cur != null && items.some((q) => q.id === cur)) return cur;
-        return items.length > 0 ? items[0].id : null;
-      });
-      if (items.length === 0) {
-        setItems([]);
-        setImageUrl('');
-      }
-    } else {
-      showToast(res.error || '加载待审队列失败', 'error');
-    }
-  }, [showToast]);
+  // 进入审核区时校准一次（共享队列已实时同步，这里只保证与后端一致）
+  useEffect(() => { if (active) refreshQueue(); }, [active, refreshQueue]);
 
-  // 每次进入审核区都刷新待审队列（页面常驻挂载，首页新识别完成不会自动通知这里）
-  useEffect(() => { if (active) loadQueue(); }, [active, loadQueue]);
+  // 共享队列变化时（首页识别完成/入库移除）自动同步当前选中单据：
+  // 优先恢复上次在审单据，其次保留当前选中，否则选队列第一项（最新单据）
+  useEffect(() => {
+    setCurrentId((cur) => {
+      const savedId = Number(sessionStorage.getItem('steel_review_id'));
+      if (savedId && queue.some((q) => q.id === savedId)) return savedId;
+      if (cur != null && queue.some((q) => q.id === cur)) return cur;
+      return queue.length > 0 ? queue[0].id : null;
+    });
+    if (queue.length === 0) {
+      setItems([]);
+      setImageUrl('');
+    }
+  }, [queue]);
 
   const loadDetail = useCallback(async (id: number) => {
     setLoading(true);
@@ -151,15 +143,12 @@ export default function ReviewPage() {
     if (!currentId) return;
     const ok = await saveCurrent(true);
     if (ok) {
-      const rest = queue.filter((q) => q.id !== currentId);
-      setQueue(rest);
-      const badge = document.getElementById('navBadgeReview');
-      if (badge) badge.textContent = String(rest.length);
-      const next = rest[0]?.id ?? null;
+      removePending(currentId);
+      const next = queue.filter((q) => q.id !== currentId)[0]?.id ?? null;
       if (next) setCurrentId(next);
       else { setCurrentId(null); setItems([]); setImageUrl(''); }
     }
-  }, [currentId, queue, saveCurrent]);
+  }, [currentId, queue, saveCurrent, removePending]);
 
   const handleReRecognize = useCallback(async () => {
     if (!imageUrl) return;
