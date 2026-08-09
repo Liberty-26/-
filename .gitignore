@@ -25,3 +25,6 @@ backend/build/
 backend/dist/
 electron/backend-dist/
 electron/release/
+
+# PyInstaller 生成的构建配置
+backend/*.spec
