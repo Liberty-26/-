@@ -1,6 +1,6 @@
 {
   "name": "steeldigitize-desktop",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "SteelDigitize Pro 桌面端",
   "main": "main.js",
   "private": true,
@@ -35,10 +35,8 @@
       "output": "release"
     },
     "publish": {
-      "provider": "github",
-      "owner": "Liberty-26",
-      "repo": "-",
-      "releaseType": "release"
+      "provider": "generic",
+      "url": "https://gh-proxy.com/https://github.com/Liberty-26/-/releases/latest/download"
     },
     "win": {
       "target": ["nsis"],

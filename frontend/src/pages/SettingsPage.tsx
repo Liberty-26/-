@@ -387,8 +387,11 @@ export default function SettingsPage() {
             )}
             {upd.state === 'error' && (
               <div style={{ fontSize: 12, color: 'var(--err)' }}>
-                {upd.message}
-                <button className="link" style={{ marginLeft: 8 }} onClick={handleCheckUpdate}>重试</button>
+                <div>{upd.message}</div>
+                <div style={{ marginTop: 6, color: 'var(--text-2)' }}>
+                  若提示网络连接失败，可到 <a href="https://github.com/Liberty-26/-/releases/latest" target="_blank" rel="noreferrer" style={{ color: 'var(--primary)' }}>下载页</a> 手动获取最新安装包
+                </div>
+                <button className="link" style={{ marginTop: 4 }} onClick={handleCheckUpdate}>重试</button>
               </div>
             )}
           </div>
