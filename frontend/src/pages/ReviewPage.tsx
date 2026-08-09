@@ -1,6 +1,7 @@
 // SteelDigitize Pro — 审核区：待审队列 + 原图对照 + 可编辑结果 + 确认入库（保留单号/日期自动提取）
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ReviewTable from '../components/ReviewTable';
+import { useNav } from '../contexts/NavContext';
 import { useToast } from '../hooks/useToast';
 import {
   getHistory, getReceiptDetail, updateReceipt, verifyReceipt,
@@ -11,6 +12,8 @@ import type { ReceiptSummary, ReceiptItem } from '../types';
 
 export default function ReviewPage() {
   const { showToast } = useToast();
+  const { page } = useNav();
+  const active = page === 'review';
   const [queue, setQueue] = useState<ReceiptSummary[]>([]);
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [no, setNo] = useState('');
@@ -43,26 +46,29 @@ export default function ReviewPage() {
   const loadQueue = useCallback(async () => {
     const res = await getHistory({ page: 1, page_size: 50, status: 'pending' });
     if (res.success && res.data) {
-      setQueue(res.data.items);
+      const items = res.data.items;
+      setQueue(items);
       const badge = document.getElementById('navBadgeReview');
       if (badge) badge.textContent = String(res.data.total);
-      if (!currentId && res.data.items.length > 0) setCurrentId(res.data.items[0].id);
       // 刷新后恢复到上次正在审核的单据
-      const savedId = Number(sessionStorage.getItem('steel_review_id'));
-      if (savedId && res.data.items.some((q) => q.id === savedId)) {
-        setCurrentId(savedId);
-      }
-      if (res.data.items.length === 0) {
-        setCurrentId(null);
+      setCurrentId((cur) => {
+        const savedId = Number(sessionStorage.getItem('steel_review_id'));
+        if (savedId && items.some((q) => q.id === savedId)) return savedId;
+        // 当前选中的单据仍在队列中则保留，已出队（入库/删除）则自动选第一项
+        if (cur != null && items.some((q) => q.id === cur)) return cur;
+        return items.length > 0 ? items[0].id : null;
+      });
+      if (items.length === 0) {
         setItems([]);
         setImageUrl('');
       }
     } else {
       showToast(res.error || '加载待审队列失败', 'error');
     }
-  }, [currentId, showToast]);
+  }, [showToast]);
 
-  useEffect(() => { loadQueue(); }, [loadQueue]);
+  // 每次进入审核区都刷新待审队列（页面常驻挂载，首页新识别完成不会自动通知这里）
+  useEffect(() => { if (active) loadQueue(); }, [active, loadQueue]);
 
   const loadDetail = useCallback(async (id: number) => {
     setLoading(true);
@@ -232,11 +238,53 @@ export default function ReviewPage() {
 
       <div className="work">
         {currentId == null ? (
-          <div className="empty">
-            <div style={{ fontSize: 34, opacity: .35 }}>▤</div>
-            <div>没有待审核单据</div>
-            <div style={{ fontSize: 12 }}>上传识别后会自动出现在这里</div>
-          </div>
+          <>
+            <div className="work-head">
+              <div className="field">
+                <label>单号（已自动提取，可改）</label>
+                <input className="num" value="" disabled placeholder="—" />
+              </div>
+              <div className="field">
+                <label>日期（已自动提取，可改）</label>
+                <input type="date" disabled />
+              </div>
+              <span className="pill blue">识别自动提取</span>
+              <div className="spacer" />
+              <div className="work-actions">
+                <button className="btn ghost sm" disabled>↻ 重新识别</button>
+                <button className="btn ghost sm" disabled>保存草稿</button>
+                <button className="btn ok sm" disabled>确认入库</button>
+              </div>
+            </div>
+
+            <div className="work-status">
+              <span className="pill gray">暂无待审核单据</span>
+              <span className="pill gray">首页上传识别后会进入待审队列</span>
+            </div>
+
+            <div className="split">
+              <div className="orig">
+                <div className="orig-head">上传原图（不裁剪）</div>
+                <div className="orig-img">
+                  <div className="empty" style={{ padding: '70px 0' }}>
+                    <div style={{ fontSize: 34, opacity: .35 }}>▤</div>
+                    <div>没有待审核单据</div>
+                    <div style={{ fontSize: 12 }}>上传识别后原图会显示在这里</div>
+                  </div>
+                </div>
+              </div>
+              <div className="res">
+                <div className="res-head">识别结果（逐格可改）</div>
+                <div className="res-table-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ color: 'var(--text-3)', fontSize: 13 }}>识别结果将在这里显示</div>
+                </div>
+                <div className="res-foot">
+                  <span>共 0 行</span>
+                  <span className="total">合计 <span className="num">¥0.00</span></span>
+                </div>
+              </div>
+            </div>
+          </>
         ) : (
           <>
             <div className="work-head">
