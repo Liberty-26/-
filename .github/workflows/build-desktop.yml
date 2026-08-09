@@ -7,8 +7,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-win:
-    runs-on: windows-latest
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
     steps:
@@ -24,6 +28,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      - name: 缓存 pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: 缓存 npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package-lock.json', 'electron/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
 
       - name: 安装后端依赖（含打包工具与识别 SDK）
         run: pip install -r requirements.txt pyinstaller yescan
@@ -43,57 +63,15 @@ jobs:
           mkdir -p electron/backend-dist/SteelDigitizeBackend
           cp -R backend/dist/SteelDigitizeBackend/* electron/backend-dist/SteelDigitizeBackend/
 
-      - name: 打包 Windows 安装包并发布
+      - name: 打包并发布（Windows）
+        if: runner.os == 'Windows'
         run: npm ci && npx electron-builder --win nsis --publish always
         working-directory: electron
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 上传安装包（备份）
-        uses: actions/upload-artifact@v4
-        with:
-          name: installer-windows
-          path: electron/release/
-          if-no-files-found: error
-
-  build-mac:
-    needs: build-win
-    runs-on: macos-latest
-    permissions:
-      contents: write
-    steps:
-      - name: 拉取代码
-        uses: actions/checkout@v4
-
-      - name: 安装 Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: 安装 Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: 安装后端依赖（含打包工具与识别 SDK）
-        run: pip install -r requirements.txt pyinstaller yescan
-        working-directory: backend
-
-      - name: 打包内置后端
-        run: pyinstaller --noconfirm --clean --name SteelDigitizeBackend --onedir --noconsole --collect-all uvicorn --collect-all fastapi --collect-all openpyxl --collect-all yescan --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan.on backend_entry.py
-        working-directory: backend
-
-      - name: 构建前端
-        run: npm ci && npm run build
-        working-directory: frontend
-
-      - name: 准备 Electron 内置后端资源
-        shell: bash
-        run: |
-          mkdir -p electron/backend-dist/SteelDigitizeBackend
-          cp -R backend/dist/SteelDigitizeBackend/* electron/backend-dist/SteelDigitizeBackend/
-
-      - name: 打包 macOS 安装包（dmg + zip）并发布
+      - name: 打包并发布（macOS）
+        if: runner.os == 'macOS'
         run: npm ci && npx electron-builder --mac dmg zip --publish always
         working-directory: electron
         env:
@@ -102,6 +80,6 @@ jobs:
       - name: 上传安装包（备份）
         uses: actions/upload-artifact@v4
         with:
-          name: installer-macos
+          name: installer-${{ matrix.os }}
           path: electron/release/
           if-no-files-found: error
