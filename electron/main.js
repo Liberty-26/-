@@ -84,6 +84,8 @@ ipcMain.handle('install-update', async () => {
   return { ok: true };
 });
 
+ipcMain.handle('get-app-version', async () => app.getVersion());
+
 function backendExePath() {
   const name = process.platform === 'win32' ? 'SteelDigitizeBackend.exe' : 'SteelDigitizeBackend';
   // extraResources 把 backend-dist 整体复制到 resources/backend，保留了 SteelDigitizeBackend/ 一层目录

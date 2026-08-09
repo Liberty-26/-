@@ -38,6 +38,7 @@ export default function SettingsPage() {
   const [factKey, setFactKey] = useState('');
   const [factVal, setFactVal] = useState('');
   const [clearOpen, setClearOpen] = useState(false);
+  const [appVersion, setAppVersion] = useState('');
 
   // 桌面端自动更新状态
   const [upd, setUpd] = useState<{
@@ -50,6 +51,9 @@ export default function SettingsPage() {
   // 监听主进程推送的更新事件（桌面版）
   useEffect(() => {
     const steel = (window as any).steel;
+    if (steel && steel.getVersion) {
+      steel.getVersion().then((v: string) => setAppVersion(v || ''));
+    }
     if (!steel || !steel.onUpdateEvent) return;
     const off = steel.onUpdateEvent((ev: any) => {
       if (ev.type === 'available') setUpd({ state: 'available', version: ev.version || '', percent: 0, message: '' });
@@ -350,7 +354,7 @@ export default function SettingsPage() {
       body: (
         <div className="set-card">
           <h3>关于 SteelDigitize Pro</h3>
-          <div className="set-row"><span className="k">版本</span><span className="v">0.9 MVP（工作台重塑版）</span></div>
+          <div className="set-row"><span className="k">版本</span><span className="v">{appVersion ? `v${appVersion}` : '桌面版（网页版无版本号）'}</span></div>
           <div className="set-row"><span className="k">数据</span><span className="v">全部在本机 SQLite，不上传云端</span></div>
           <div className="set-row"><span className="k">识别</span><span className="v">夸克扫描王 image-to-excel</span></div>
           <div className="set-row"><span className="k">助手</span><span className="v">自研 harness · 技能文件化 · 三层记忆</span></div>
