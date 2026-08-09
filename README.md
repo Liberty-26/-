@@ -57,7 +57,7 @@ npm install
 npm start   # 开发模式：自动加载 vite dev server
 ```
 
-生产打包：先 `cd frontend && npm run build`，再 `cd electron && npm run dist:mac`（Mac）或 `npm run dist:win`（Windows）。
+生产打包：云端 GitHub Actions 自动完成（Windows exe + macOS dmg/zip），本地无需打包；如需本地调试可先 `cd frontend && npm run build`，再 `cd electron && npm run dist:mac`（Mac）或 `npm run dist:win`（Windows）。
 
 ## Windows 安装包（两种方式）
 
@@ -71,14 +71,14 @@ npm start   # 开发模式：自动加载 vite dev server
 
 **方式二：GitHub Actions 云端打包（推荐）**
 
-仓库页面 → Actions → Build Windows Installer → Run workflow；或推送 `vX.Y.Z` 标签自动触发并发布到 Releases。
+仓库页面 → Actions → Build Desktop Installers → Run workflow；或推送 `vX.Y.Z` 标签自动触发并发布到 Releases（Windows + macOS 一次构建发布）。
 
 ## 发布新版本（含自动更新）
 
 1. 修改代码，提交推送
 2. 更新 `electron/package.json` 的 `version`（如 `1.0.2`）
 3. `git tag v1.0.2 && git push origin v1.0.2`
-4. 云端自动打包并发布到 GitHub Releases
+4. 云端自动打包 Windows 安装包与 macOS dmg/zip 并发布到 GitHub Releases（约 8 分钟）
 5. 已安装用户的应用启动时自动检查更新（设置页「关于」里也可手动检查）
 
 ## 主要页面
