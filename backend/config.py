@@ -7,7 +7,22 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent
-load_dotenv(BASE_DIR / ".env")
+
+# 配置目录：桌面版由 Electron 传入 CONFIG_DIR（用户数据目录，升级/重装不丢）；
+# 开发模式默认使用源码目录 backend/.env
+CONFIG_DIR = Path(os.getenv("CONFIG_DIR", str(BASE_DIR)))
+ENV_PATH = CONFIG_DIR / ".env"
+
+# 一次性迁移：若配置目录还没有 .env，而源码目录有旧配置（开发模式），复制过去
+if ENV_PATH != BASE_DIR / ".env" and not ENV_PATH.exists() and (BASE_DIR / ".env").exists():
+    try:
+        ENV_PATH.parent.mkdir(parents=True, exist_ok=True)
+        import shutil
+        shutil.copyfile(BASE_DIR / ".env", ENV_PATH)
+    except Exception:
+        pass
+
+load_dotenv(ENV_PATH)
 
 # ---- 识图模型配置 ----
 VISION_API_KEY = os.getenv("VISION_API_KEY", "")
@@ -39,7 +54,7 @@ WORK_DIR = os.getenv("WORK_DIR", "")
 
 def reload_config():
     """重新加载 .env"""
-    load_dotenv(BASE_DIR / ".env", override=True)
+    load_dotenv(ENV_PATH, override=True)
     for k in ("VISION_API_KEY", "VISION_API_BASE", "VISION_MODEL",
               "AGENT_API_KEY", "AGENT_API_BASE", "AGENT_MODEL",
               "SCAN_API_KEY", "SCAN_API_BASE", "SCAN_SCENE",
@@ -52,8 +67,8 @@ def reload_config():
 
 
 def save_config(**kwargs):
-    """保存配置到 .env"""
-    env_path = BASE_DIR / ".env"
+    """保存配置到 .env（桌面版在用户数据目录，升级不丢）"""
+    env_path = ENV_PATH
     existing = {}
     if env_path.exists():
         with open(env_path, "r", encoding="utf-8") as f:

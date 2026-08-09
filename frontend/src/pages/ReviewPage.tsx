@@ -13,7 +13,7 @@ import type { ReceiptSummary, ReceiptItem } from '../types';
 
 export default function ReviewPage() {
   const { showToast } = useToast();
-  const { page } = useNav();
+  const { page, setPage } = useNav();
   const { queue, refreshQueue, removePending } = useQueue();
   const active = page === 'review';
   const [currentId, setCurrentId] = useState<number | null>(null);
@@ -197,6 +197,9 @@ export default function ReviewPage() {
         <div className="queue-head">
           <div className="queue-title">待审核单据 <span className="badge">{queue.length}</span></div>
           <div className="queue-sub">识别结果需与原图核对后入库</div>
+          <div style={{ marginTop: 10 }}>
+            <button className="link" onClick={() => setPage('materials')}>品名库 ›</button>
+          </div>
         </div>
         <div className="queue-list">
           {groups.length === 0 && <div className="empty" style={{ marginTop: 40 }}>队列已清空，今天的单据都核对完了</div>}

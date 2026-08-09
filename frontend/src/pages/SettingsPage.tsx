@@ -30,8 +30,8 @@ export default function SettingsPage() {
   const [sScene, setSScene] = useState('image-to-excel');
   const [scenes, setScenes] = useState<ScanScene[]>([]);
   const [testingScan, setTestingScan] = useState(false);
-
-  const [masked, setMasked] = useState<{ agent_key: string; scan_key: string }>({ agent_key: '', scan_key: '' });
+  const [engineEditing, setEngineEditing] = useState(false);
+  const [agentEditing, setAgentEditing] = useState(false);
   const [workDir, setWorkDir] = useState('');
   const [facts, setFacts] = useState<AssistantFact[]>([]);
   const [corrections, setCorrections] = useState<CorrectionRecord[]>([]);
@@ -95,14 +95,14 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const saved = (k: string) => localStorage.getItem(k) || '';
-    setAKey(saved(S.aKey));
     setABase(saved(S.aBase) || 'https://api.deepseek.com');
     setAModel(saved(S.aModel));
-    setSKey(saved(S.sKey));
     getSettings().then((res) => {
       if (res.success && res.data) {
         const d = res.data;
-        setMasked({ agent_key: d.agent_api_key || '', scan_key: d.scan_api_key || '' });
+        // API Key 以后端实际保存值为准（有就是有，没有就是没有，不回填本地残留）
+        setAKey(d.agent_api_key || '');
+        setSKey(d.scan_api_key || '');
         setWorkDir(d.work_dir || '');
         if (d.agent_api_base) setABase(d.agent_api_base);
         if (d.agent_model) setAModel(d.agent_model);
@@ -128,10 +128,9 @@ export default function SettingsPage() {
   /* ---------- 工作助手 ---------- */
   const handleSaveAgent = async () => {
     const res = await saveSettings({ agent_key: aKey, agent_base: aBase, agent_model: aModel });
-    if (aKey) localStorage.setItem(S.aKey, aKey);
     localStorage.setItem(S.aBase, aBase);
     localStorage.setItem(S.aModel, aModel);
-    if (res.success) showToast('助手配置已保存', 'success');
+    if (res.success) { showToast('助手配置已保存', 'success'); setAgentEditing(false); }
     else showToast(res.error || '保存失败', 'error');
   };
 
@@ -179,8 +178,7 @@ export default function SettingsPage() {
   /* ---------- 识别引擎（扫描王） ---------- */
   const handleSaveScan = async () => {
     const res = await saveSettings({ scan_key: sKey, scan_base: sBase, scan_scene: sScene });
-    if (sKey) localStorage.setItem(S.sKey, sKey);
-    if (res.success) showToast('识别引擎配置已保存', 'success');
+    if (res.success) { showToast('识别引擎配置已保存', 'success'); setEngineEditing(false); }
     else showToast(res.error || '保存失败', 'error');
   };
 
@@ -221,10 +219,10 @@ export default function SettingsPage() {
     } else showToast(res.error || '保存失败', 'error');
   };
 
-  const inputRow = (label: string, value: string, set: (v: string) => void, placeholder = '', type = 'text') => (
+  const inputRow = (label: string, value: string, set: (v: string) => void, placeholder = '', type = 'text', readOnly = false) => (
     <div className="set-row">
       <span className="k">{label}</span>
-      <input type={type} style={{ flex: 1, minWidth: 180 }} placeholder={placeholder} value={value} onChange={(e) => set(e.target.value)} />
+      <input type={type} style={{ flex: 1, minWidth: 180 }} placeholder={placeholder} value={value} readOnly={readOnly} onChange={(e) => set(e.target.value)} />
     </div>
   );
 
@@ -235,13 +233,18 @@ export default function SettingsPage() {
       body: (
         <>
           <div className="set-card">
-            <h3>识别引擎 · 夸克扫描王</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h3 style={{ margin: 0 }}>识别引擎</h3>
+              <span style={{ flex: 1 }} />
+              <button className="btn sm ghost" onClick={() => setEngineEditing(true)} disabled={engineEditing}>编辑</button>
+              <button className="btn sm" onClick={handleSaveScan} disabled={!engineEditing}>保存</button>
+            </div>
             <div className="desc">照片 → 表格提取；按场景计费，测试连接会消耗一次识别额度</div>
-            {inputRow('API Key', sKey, setSKey, masked.scan_key ? `已配置（${masked.scan_key}），留空不修改` : 'aiApiKey', 'password')}
-            {inputRow('API 地址', sBase, setSBase, 'https://scan-business.quark.cn/vision')}
+            {inputRow('API Key', sKey, setSKey, '请输入扫描王 API Key（Agent 接入密钥）', 'text', !engineEditing)}
+            {inputRow('API 地址', sBase, setSBase, 'https://scan-business.quark.cn/vision', 'text', !engineEditing)}
             <div className="set-row">
               <span className="k">场景</span>
-              <input list="scan-scenes" style={{ flex: 1, minWidth: 180 }} value={sScene} onChange={(e) => setSScene(e.target.value)} />
+              <input list="scan-scenes" style={{ flex: 1, minWidth: 180 }} value={sScene} readOnly={!engineEditing} onChange={(e) => setSScene(e.target.value)} />
               <datalist id="scan-scenes">
                 {scenes.map((sc) => <option key={sc.scene} value={sc.scene}>{sc.label}</option>)}
               </datalist>
@@ -249,7 +252,6 @@ export default function SettingsPage() {
             <div className="set-row">
               <span className="k">操作</span>
               <span className="v" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button className="btn sm" onClick={handleSaveScan}>保存配置</button>
                 <button className="btn sm ghost" onClick={handleTestScan} disabled={testingScan}>{testingScan ? '测速中…' : '测试连接并测速'}</button>
                 <button className="btn sm ghost" onClick={handleRefreshScenes}>刷新场景列表</button>
               </span>
@@ -261,24 +263,28 @@ export default function SettingsPage() {
             )}
           </div>
           <div className="set-card">
-            <h3>工作助手 · 大模型</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h3 style={{ margin: 0 }}>工作助手 · 大模型</h3>
+              <span style={{ flex: 1 }} />
+              <button className="btn sm ghost" onClick={() => setAgentEditing(true)} disabled={agentEditing}>编辑</button>
+              <button className="btn sm" onClick={handleSaveAgent} disabled={!agentEditing}>保存</button>
+            </div>
             <div className="desc">本地自研 harness，OpenAI 兼容端点；模型列表来自该端点真实返回</div>
-            {inputRow('API 地址', aBase, setABase, 'https://api.deepseek.com')}
-            {inputRow('API Key', aKey, setAKey, masked.agent_key ? `已配置（${masked.agent_key}），留空不修改` : 'sk-...', 'password')}
+            {inputRow('API 地址', aBase, setABase, 'https://api.deepseek.com', 'text', !agentEditing)}
+            {inputRow('API Key', aKey, setAKey, '请输入助手 API Key', 'text', !agentEditing)}
             <div className="set-row">
               <span className="k">模型</span>
               {aModels.length > 0 ? (
-                <select style={{ flex: 1, minWidth: 180 }} value={aModel} onChange={(e) => setAModel(e.target.value)}>
+                <select style={{ flex: 1, minWidth: 180 }} value={aModel} disabled={!agentEditing} onChange={(e) => setAModel(e.target.value)}>
                   {aModels.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
                 </select>
               ) : (
-                <input style={{ flex: 1, minWidth: 180 }} placeholder={aKey ? '输入模型名，或点「获取模型列表」' : '先填写 API Key'} value={aModel} onChange={(e) => setAModel(e.target.value)} />
+                <input style={{ flex: 1, minWidth: 180 }} placeholder={aKey ? '输入模型名，或点「获取模型列表」' : '先填写 API Key'} value={aModel} readOnly={!agentEditing} onChange={(e) => setAModel(e.target.value)} />
               )}
             </div>
             <div className="set-row">
               <span className="k">操作</span>
               <span className="v" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button className="btn sm" onClick={handleSaveAgent}>保存配置</button>
                 <button className="btn sm ghost" onClick={handleTestAgent} disabled={testingAgent}>{testingAgent ? '测试中…' : '测试连接并测速'}</button>
                 <button className="btn sm ghost" onClick={handleFetchModels} disabled={fetchingModels}>{fetchingModels ? '获取中…' : '获取模型列表'}</button>
               </span>

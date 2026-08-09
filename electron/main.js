@@ -140,6 +140,7 @@ async function startBackend() {
     env: {
       ...process.env,
       WORK_DIR: workDir,
+      CONFIG_DIR: workDir,
       FRONTEND_DIR: path.join(process.resourcesPath, 'frontend', 'dist'),
       MATERIALS_SEED_CSV: path.join(process.resourcesPath, '品名种子清单.csv'),
     },

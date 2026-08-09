@@ -32,19 +32,16 @@ def _make_test_png() -> str:
 
 @router.get("")
 async def get_settings():
-    def mask(key: str) -> str:
-        if not key: return ""
-        return "*" * max(0, len(key) - 4) + key[-4:]
     return {
         "success": True,
         "data": {
-            "vision_api_key": mask(config.VISION_API_KEY),
+            "vision_api_key": config.VISION_API_KEY,
             "vision_api_base": config.VISION_API_BASE,
             "vision_model": config.VISION_MODEL,
-            "agent_api_key": mask(config.AGENT_API_KEY),
+            "agent_api_key": config.AGENT_API_KEY,
             "agent_api_base": config.AGENT_API_BASE,
             "agent_model": config.AGENT_MODEL,
-            "scan_api_key": mask(config.SCAN_API_KEY),
+            "scan_api_key": config.SCAN_API_KEY,
             "scan_api_base": config.SCAN_API_BASE,
             "scan_scene": config.SCAN_SCENE,
             "work_dir": config.WORK_DIR,
