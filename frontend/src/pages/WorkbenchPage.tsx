@@ -6,7 +6,7 @@ import { useNav } from '../contexts/NavContext';
 import { useQueue } from '../contexts/QueueContext';
 import SkillModal from '../components/SkillModal';
 import {
-  getMonitor, saveReceipt, loadMessages,
+  saveReceipt, loadMessages,
 } from '../utils/api';
 import { compressImage } from '../utils/image';
 import type { AgentMessage } from '../types';
@@ -33,7 +33,6 @@ export default function WorkbenchPage() {
   const { setPage } = useNav();
   const { addPending } = useQueue();
   const { messages, isLoading, sendMessage, messagesEndRef } = useAgentChat();
-  const [stats, setStats] = useState<{ pending: number; today_count: number; verified: number; exported: number }>({ pending: 0, today_count: 0, verified: 0, exported: 0 });
   const [flow, setFlow] = useState<'stream' | 'sessions'>('stream');
   const [flowItems, setFlowItems] = useState<FlowItem[]>([]);
   const [sessions, setSessions] = useState<{ day: string; count: number }[]>([]);
@@ -46,19 +45,11 @@ export default function WorkbenchPage() {
   const savedKeys = useRef<Set<number>>(new Set());
   const pollRef = useRef<number | null>(null);
 
-  const refreshStats = useCallback(async () => {
-    const res = await getMonitor();
-    if (res.success && res.data) setStats(res.data);
-  }, []);
-
   useEffect(() => {
-    refreshStats();
-    const t = setInterval(refreshStats, 15000);
     return () => {
-      clearInterval(t);
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     };
-  }, [refreshStats]);
+  }, []);
 
   useEffect(() => {
     loadMessages().then((res) => {
@@ -249,7 +240,6 @@ export default function WorkbenchPage() {
               d.failed > 0 ? `识别完成：${d.ok} 张待审核，${d.failed} 张失败` : `识别完成：${d.ok} 张已进审核区`,
               d.failed > 0 ? 'warning' : 'success'
             );
-            refreshStats();
             return true;
           }
           return false;
@@ -268,7 +258,7 @@ export default function WorkbenchPage() {
     } finally {
       setUploading(false);
     }
-  }, [flowItems, uploading, showToast, refreshStats, saveReceipt, addPending]);
+  }, [flowItems, uploading, showToast, saveReceipt, addPending]);
 
   // 重试：对已保存的原图重新识别（不重新选图）
   const handleRetry = useCallback(async (it: FlowItem) => {
@@ -328,7 +318,6 @@ export default function WorkbenchPage() {
           created_at: saved.data.created_at ?? null,
         });
       }
-      refreshStats();
       showToast(saved.success ? `重试成功：${r.receipt_no || r.date || '单据'} 已进审核区` : `重试识别成功但入库失败：${saved.error}`, saved.success ? 'success' : 'warning');
     } catch (e) {
       const msg = (e as Error).message || '重试失败';
@@ -337,7 +326,7 @@ export default function WorkbenchPage() {
       );
       showToast(msg, 'error');
     }
-  }, [showToast, refreshStats, saveReceipt, addPending]);
+  }, [showToast, saveReceipt, addPending]);
 
   const handleRunSkill = useCallback(async (text: string, ids: number[]) => {
     setSkillOpen(false);
@@ -363,14 +352,6 @@ export default function WorkbenchPage() {
       <div className="wb-center">
         <div className="wb-title">工作台</div>
         <div className="wb-sub">本地工作助手 · 对话、技能与单据流转在同一处</div>
-
-        <div className="today-strip">
-          <div className="today-chip amber"><b>{stats.pending}</b>待审核</div>
-          <div className="today-chip blue"><b>{flowItems.filter((it) => it.status === '排队中' || it.status === '识别中').length}</b>识别中</div>
-          <div className="today-chip"><b>{stats.today_count}</b>今日上传</div>
-          <div className="today-chip green"><b>{stats.verified}</b>已核对</div>
-          <div className="today-chip"><b>{stats.exported}</b>已写入对账单</div>
-        </div>
 
         <div className="skills">
           <button className="skill-card" onClick={() => setSkillOpen(true)}>

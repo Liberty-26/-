@@ -174,7 +174,7 @@ async function createWindow() {
     height: 940,
     minWidth: 1100,
     minHeight: 700,
-    title: 'SteelDigitize Pro',
+    title: '数字化工作台',
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,

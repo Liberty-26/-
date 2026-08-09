@@ -20,10 +20,10 @@ export default function Layout({ children }: { children: ReactNode[] }) {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark">钢</div>
+          <div className="brand-mark">数</div>
           <div>
-            <div className="brand-name">SteelDigitize Pro</div>
-            <div className="brand-sub">本地工作台</div>
+            <div className="brand-name">数字化工作台</div>
+            <div className="brand-sub">单据 · 表格 · 助手</div>
           </div>
         </div>
         <nav className="nav">

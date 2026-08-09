@@ -362,7 +362,7 @@ export default function SettingsPage() {
       desc: '版本与数据',
       body: (
         <div className="set-card">
-          <h3>关于 SteelDigitize Pro</h3>
+          <h3>关于 数字化工作台</h3>
           <div className="set-row"><span className="k">版本</span><span className="v">{appVersion ? `v${appVersion}` : '桌面版（网页版无版本号）'}</span></div>
           <div className="set-row"><span className="k">数据</span><span className="v">全部在本机 SQLite，不上传云端</span></div>
           <div className="set-row"><span className="k">识别</span><span className="v">夸克扫描王 image-to-excel</span></div>

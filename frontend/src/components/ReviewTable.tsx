@@ -377,7 +377,17 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
                     })()}
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <button title="移除行" style={{ color: 'var(--err)', opacity: .65 }} onClick={() => removeRow(i)}>✕</button>
+                    <button
+                      className="row-del"
+                      title="删除此行"
+                      aria-label="删除此行"
+                      onClick={() => removeRow(i)}
+                    >
+                      <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                        <circle cx="8" cy="8" r="6.2" />
+                        <line x1="3.6" y1="8" x2="12.4" y2="8" />
+                      </svg>
+                    </button>
                   </td>
                 </tr>
               );

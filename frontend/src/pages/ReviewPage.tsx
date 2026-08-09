@@ -4,8 +4,9 @@ import ReviewTable from '../components/ReviewTable';
 import { useNav } from '../contexts/NavContext';
 import { useQueue } from '../contexts/QueueContext';
 import { useToast } from '../hooks/useToast';
+import ConfirmDialog from '../components/ConfirmDialog';
 import {
-  getReceiptDetail, updateReceipt, verifyReceipt,
+  getReceiptDetail, updateReceipt, verifyReceipt, deleteReceipt,
   calibrateItemsSSE, recognizeImage, addCorrections,
 } from '../utils/api';
 import { fetchUploadAsDataUrl } from '../utils/image';
@@ -30,9 +31,14 @@ export default function ReviewPage() {
   const [dragStart, setDragStart] = useState<{ x: number; y: number; px: number; py: number } | null>(null);
   const [requireDialog, setRequireDialog] = useState(false);
   const [tableReset, setTableReset] = useState(0);
+  const [queueEditing, setQueueEditing] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const origRef = useRef<HTMLDivElement>(null);
 
-  // 原图滚轮缩放：原生非 passive 监听，阻止页面滚动，只缩原图；步进放缓
+  // 原图滚轮缩放：原生非 passive 监听，阻止页面滚动，只缩原图；
+  // 依赖 currentId/imageUrl：原图容器挂载后重新绑定（此前只在组件挂载时绑定一次，单据加载后失效）
   useEffect(() => {
     const el = origRef.current;
     if (!el) return;
@@ -42,7 +48,7 @@ export default function ReviewPage() {
     };
     el.addEventListener('wheel', handler, { passive: false });
     return () => el.removeEventListener('wheel', handler);
-  }, []);
+  }, [currentId, imageUrl]);
 
   // 进入审核区时校准一次（共享队列已实时同步，这里只保证与后端一致）
   useEffect(() => { if (active) refreshQueue(); }, [active, refreshQueue]);
@@ -150,6 +156,38 @@ export default function ReviewPage() {
     }
   }, [currentId, queue, saveCurrent, removePending]);
 
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => (prev.size === queue.length && queue.length > 0 ? new Set() : new Set(queue.map((q) => q.id))));
+  };
+
+  const exitQueueEdit = () => {
+    setQueueEditing(false);
+    setSelectedIds(new Set());
+  };
+
+  const doDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (deleting) return;
+    setDeleting(true);
+    for (const id of Array.from(selectedIds)) {
+      const res = await deleteReceipt(id);
+      if (res.success) removePending(id);
+      else showToast(res.error || `删除单据 ${id} 失败`, 'error');
+    }
+    setDeleting(false);
+    setDeleteOpen(false);
+    exitQueueEdit();
+    showToast(`已删除 ${selectedIds.size} 张单据`, 'success');
+  };
+
   const handleReRecognize = useCallback(async () => {
     if (!imageUrl) return;
     setLoading(true);
@@ -195,7 +233,21 @@ export default function ReviewPage() {
     <div className="review">
       <aside className="queue">
         <div className="queue-head">
-          <div className="queue-title">待审核单据 <span className="badge">{queue.length}</span></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="queue-title">待审核单据 <span className="badge">{queue.length}</span></div>
+            <span style={{ flex: 1 }} />
+            {!queueEditing ? (
+              <button className="link" onClick={() => setQueueEditing(true)} disabled={queue.length === 0}>编辑</button>
+            ) : (
+              <>
+                <button className="link" onClick={toggleSelectAll}>
+                  {selectedIds.size === queue.length && queue.length > 0 ? '取消全选' : '全选'}
+                </button>
+                <button className="link danger" onClick={() => setDeleteOpen(true)} disabled={selectedIds.size === 0}>删除</button>
+                <button className="link" onClick={exitQueueEdit}>完成</button>
+              </>
+            )}
+          </div>
           <div className="queue-sub">识别结果需与原图核对后入库</div>
           <div style={{ marginTop: 10 }}>
             <button className="link" onClick={() => setPage('materials')}>品名库 ›</button>
@@ -209,10 +261,13 @@ export default function ReviewPage() {
               {g.list.map((r) => (
                 <button
                   key={r.id}
-                  className={`q-item ${currentId === r.id ? 'active' : ''}`}
-                  onClick={() => setCurrentId(r.id)}
+                  className={`q-item ${currentId === r.id && !queueEditing ? 'active' : ''} ${queueEditing && selectedIds.has(r.id) ? 'selected' : ''}`}
+                  onClick={() => (queueEditing ? toggleSelect(r.id) : setCurrentId(r.id))}
                 >
                   <div className="q-top">
+                    {queueEditing && (
+                      <span className={`q-check ${selectedIds.has(r.id) ? 'on' : ''}`}>{selectedIds.has(r.id) ? '✓' : ''}</span>
+                    )}
                     <span className="q-no num">{r.receipt_no || '未填单号'}</span>
                     <span className="pill amber" style={{ marginLeft: 'auto' }}>待审核</span>
                   </div>
@@ -380,6 +435,14 @@ export default function ReviewPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="删除确认"
+        message={`确定删除选中的 ${selectedIds.size} 张待审核单据？删除后不可恢复。`}
+        onConfirm={doDeleteSelected}
+        onCancel={() => setDeleteOpen(false)}
+      />
     </div>
   );
 }
