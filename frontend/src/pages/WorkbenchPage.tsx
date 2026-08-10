@@ -29,6 +29,19 @@ const STAGES = ['正在提取单号和日期', '识别中', '转译', '自审核
 const timeNow = () =>
   new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
+// 处理耗时格式化：秒 → 分秒 → 时分（单位自适应）
+const formatElapsed = (s: number): string => {
+  if (s < 60) return `${s}秒`;
+  if (s < 3600) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return sec > 0 ? `${m}分${sec}秒` : `${m}分`;
+  }
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return m > 0 ? `${h}小时${m}分` : `${h}小时`;
+};
+
 export default function WorkbenchPage() {
   const { showToast } = useToast();
   const { setPage } = useNav();
@@ -44,6 +57,12 @@ export default function WorkbenchPage() {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
+  // 流式回复逐行揭示：模型一次吐一大段时也按段匀速展开（配合自动跟随滚动）
+  const [revealLen, setRevealLen] = useState(0);
+  const liveReplyRef = useRef('');
+  liveReplyRef.current = live?.reply || '';
+  // 处理耗时（秒/分/时）
+  const [elapsed, setElapsed] = useState(0);
   const keySeq = useRef(0);
   const pendingFilesRef = useRef<Map<number, File>>(new Map());
   const savedKeys = useRef<Set<number>>(new Set());
@@ -71,6 +90,34 @@ export default function WorkbenchPage() {
     // 流式阶段：贴近底部时跟随，用户上翻则不打断
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
     if (nearBottom) el.scrollTop = el.scrollHeight;
+  }, [live]);
+
+  useEffect(() => {
+    if (live?.phase !== 'streaming') {
+      setRevealLen(0);
+      return;
+    }
+    setRevealLen(0);
+    // 每 40ms 最多揭示 60 字符（≈1500 字/秒）：模型流得慢就实时显示，
+    // 一次吐一大段也会逐段长出来
+    const timer = window.setInterval(() => {
+      setRevealLen((prev) => {
+        const total = liveReplyRef.current.length;
+        return prev >= total ? total : Math.min(total, prev + 60);
+      });
+    }, 40);
+    return () => window.clearInterval(timer);
+  }, [live?.phase]);
+
+  // 处理计时器：live 出现即从 0 开始每秒 +1，结束归零
+  useEffect(() => {
+    if (!live) {
+      setElapsed(0);
+      return;
+    }
+    setElapsed(0);
+    const timer = window.setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => window.clearInterval(timer);
   }, [live]);
 
   useEffect(() => {
@@ -415,10 +462,15 @@ export default function WorkbenchPage() {
                 <div className="task-head">
                   <span className="task-title">{live.phase === 'streaming' ? '正在回复' : '助手处理中'}</span>
                   <span className={`task-status ${live.phase === 'streaming' ? '' : 'running'}`}>
-                    {live.phase === 'streaming' ? '生成中' : live.stageLabel || '处理中'}
+                    {live.phase === 'thinking' ? '思考中' : live.phase === 'tool' ? '调用工具' : '生成中'}
+                    <span className="think-dots"><i /><i /><i /></span>
                   </span>
+                  <span className="task-elapsed">⏱ {formatElapsed(elapsed)}</span>
                 </div>
                 <div className="task-body">
+                  {live.phase !== 'streaming' && (
+                    <div className="task-stage">{live.stageLabel || '处理中'}</div>
+                  )}
                   {live.toolCalls.map((t, i) => (
                     <div key={i} className="tool-row">
                       <span className={`tool-dot ${t.ok === null ? 'wait' : t.ok ? 'ok' : 'fail'}`}>
@@ -429,7 +481,7 @@ export default function WorkbenchPage() {
                     </div>
                   ))}
                   {live.reply && (
-                    <div className="msg assistant live-msg">{live.reply}<span className="caret" /></div>
+                    <div className="msg assistant live-msg">{live.reply.slice(0, revealLen)}<span className="caret" /></div>
                   )}
                 </div>
                 <div className="task-bar"><i /></div>
