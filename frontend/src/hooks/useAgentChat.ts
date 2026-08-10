@@ -77,22 +77,21 @@ export function useAgentChat() {
     }
   }, []);
 
-  // 启动：恢复上次会话（localStorage），否则用最近活跃的会话，都没有则新建
+  // 启动：恢复上次会话（localStorage），否则用最近活跃的会话；
+  // 一个都没有时不自动新建——首页显示「请新建会话」，首次提问时自动创建
   useEffect(() => {
     (async () => {
       const list = await refreshSessions();
       const saved = localStorage.getItem(SESSION_KEY) || '';
       let sid = saved && list.some((s) => s.id === saved) ? saved : '';
       if (!sid && list.length > 0) sid = list[0].id;
-      if (!sid) {
-        const created = await createSession();
-        if (created.success && created.data) sid = created.data.id;
-      }
       sessionIdRef.current = sid;
       setCurrentSessionId(sid);
       if (sid) {
         try { localStorage.setItem(SESSION_KEY, sid); } catch { /* ignore */ }
         await loadMessagesFor(sid);
+      } else {
+        setMessages([]);
       }
       setLoadedFromDb(true);
     })();
@@ -129,9 +128,8 @@ export function useAgentChat() {
     return sid;
   }, [refreshSessions]);
 
-  // 删除会话（默认会话不可删）；删除当前会话时自动切到最近会话或新建
+  // 删除会话（默认会话同样可删）；删除当前会话时自动切到最近会话或新建
   const deleteSessionById = useCallback(async (sid: string): Promise<boolean> => {
-    if (sid === 'default') return false;
     const res = await deleteSession(sid);
     if (!res.success) return false;
     const list = await refreshSessions();
@@ -139,11 +137,39 @@ export function useAgentChat() {
       if (list.length > 0) {
         await switchSession(list[0].id);
       } else {
-        await newSession();
+        sessionIdRef.current = '';
+        setCurrentSessionId('');
+        setMessages([]);
+        setLive(null);
+        try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
       }
     }
     return true;
-  }, [refreshSessions, switchSession, newSession]);
+  }, [refreshSessions, switchSession]);
+
+  // 批量删除会话；删除后若当前会话被删则自动切换
+  const deleteSessions = useCallback(async (ids: string[]): Promise<boolean> => {
+    if (!ids.length) return false;
+    let ok = true;
+    for (const sid of ids) {
+      const res = await deleteSession(sid);
+      if (!res.success) ok = false;
+    }
+    const list = await refreshSessions();
+    if (ids.includes(sessionIdRef.current)) {
+      if (list.length > 0) {
+        await switchSession(list[0].id);
+      } else {
+        // 全部删完：清空当前会话，首页显示「请新建会话」
+        sessionIdRef.current = '';
+        setCurrentSessionId('');
+        setMessages([]);
+        setLive(null);
+        try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+      }
+    }
+    return ok;
+  }, [refreshSessions, switchSession]);
 
   // 停止生成：中断当前流；已生成的部分由 sendMessage 的 abort 分支保留
   const stopGenerating = useCallback(() => {
@@ -361,7 +387,7 @@ export function useAgentChat() {
 
   return {
     messages, isLoading, live, sendMessage, messagesEndRef, loadedFromDb,
-    sessions, currentSessionId, switchSession, newSession, deleteSessionById, refreshSessions,
+    sessions, currentSessionId, switchSession, newSession, deleteSessionById, deleteSessions, refreshSessions,
     stopGenerating,
   };
 }

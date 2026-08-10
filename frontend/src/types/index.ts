@@ -129,4 +129,11 @@ export interface AssistantFact {
   created_at?: string;
 }
 
+/** 训练数据聚合（数据回流）：字段错误统计 + 错误名→修正结果配对 */
+export interface TrainingAggregate {
+  total: number;
+  fields: { field: string; label: string; count: number; pct: number }[];
+  pairs: { before: string; after: string; count: number; pct: number }[];
+}
+
 export type PageId = 'workbench' | 'review' | 'library' | 'materials' | 'settings';

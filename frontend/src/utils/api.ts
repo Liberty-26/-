@@ -2,6 +2,7 @@
 import type {
   ApiResponse, Receipt, PaginatedData, HistoryQuery, MonthStat,
   MaterialCandidate, CorrectionRecord, AssistantFact, AliasSuggestion,
+  TrainingAggregate,
 } from '../types';
 
 const BASE = '/api';
@@ -154,7 +155,7 @@ export async function getSettings() {
     deepseek_api_key: string; available_models?: { id: string; label: string }[];
     agent_api_key: string; agent_api_base: string; agent_model: string;
     scan_api_key: string; scan_api_base: string; scan_scene: string;
-    work_dir: string;
+    work_dir: string; backup_dir: string;
   }>('GET', '/settings');
 }
 
@@ -163,6 +164,7 @@ export async function saveSettings(settings: {
   deepseek_api_key?: string; work_dir?: string;
   agent_key?: string; agent_base?: string; agent_model?: string;
   scan_key?: string; scan_base?: string; scan_scene?: string;
+  backup_dir?: string;
 }) {
   return request<void>('POST', '/settings', settings);
 }
@@ -179,7 +181,19 @@ export async function exportBackup() {
 
 /** 最近备份列表 */
 export async function getBackups() {
-  return request<{ backups: { name: string; size: number; created_at: string }[] }>('GET', '/settings/backups');
+  return request<{ backups: { name: string; size: number; created_at: string; path?: string }[] }>('GET', '/settings/backups');
+}
+
+/** 打开系统原生目录选择器（工作目录 / 备份目录共用） */
+export async function pickDirectory(): Promise<ApiResponse<{ path: string }>> {
+  try {
+    const resp = await fetch('/api/settings/pick-dir');
+    const json = await resp.json();
+    if (!resp.ok) return { success: false, error: json.detail || `HTTP ${resp.status}` };
+    return json as ApiResponse<{ path: string }>;
+  } catch (err) {
+    return { success: false, error: (err as Error).message || '选择失败' };
+  }
 }
 
 /** 测试扫描王连接并测速（真实调用一次，消耗额度） */
@@ -328,8 +342,18 @@ export async function deleteFact(id: number) {
   return request<void>('DELETE', `/memory/facts/${id}`);
 }
 
+/** 编辑已有事实 */
+export async function updateFact(id: number, fact_key: string, fact_value: string) {
+  return request<void>('PUT', `/memory/facts/${id}`, { fact_key, fact_value });
+}
+
 export async function getCorrections(limit = 200) {
   return request<{ corrections: CorrectionRecord[] }>('GET', `/memory/corrections?limit=${limit}`);
+}
+
+/** 训练数据聚合：字段错误统计 + 错误名→修正结果配对（线宽 = 次数占比） */
+export async function getTrainingAggregate() {
+  return request<TrainingAggregate>('GET', '/memory/corrections/aggregate');
 }
 
 export async function addCorrections(changes: { receipt_no: string; field: string; before_val: string; after_val: string }[]) {

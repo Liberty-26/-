@@ -78,13 +78,16 @@ export default function WorkbenchPage() {
   const { queue, addPending } = useQueue();
   const {
     messages, isLoading, live, sendMessage, messagesEndRef,
-    sessions, currentSessionId, switchSession, newSession, deleteSessionById, stopGenerating,
+    sessions, currentSessionId, switchSession, newSession, deleteSessions, stopGenerating,
   } = useAgentChat();
   const [flow, setFlow] = useState<'stream' | 'sessions'>('stream');
   const [flowItems, setFlowItems] = useState<FlowItem[]>([]);
   const [skillOpen, setSkillOpen] = useState(false);
   const [taskCard, setTaskCard] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  // 会话批量管理：编辑 → 全选 → 删除（不给单个会话单独删除键）
+  const [editSessions, setEditSessions] = useState(false);
+  const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
   // 自动跟随滚动：仅当用户没有任何手动滚动操作时生效；
@@ -448,14 +451,30 @@ export default function WorkbenchPage() {
     setTaskCard(reply ?? null);
   }, [sendMessage]);
 
-  // 删除会话（带确认）
-  const handleDeleteSession = useCallback(async (sid: string, title: string) => {
-    const ok = window.confirm(`删除会话「${title || '新对话'}」？该会话的全部消息将一并删除。`);
+  // 批量删除会话（带确认；默认会话同样可删）
+  const handleDeleteSessions = useCallback(async () => {
+    if (selectedSessions.size === 0) return;
+    const ok = window.confirm(`删除选中的 ${selectedSessions.size} 个会话？这些会话的全部消息将一并删除。`);
     if (!ok) return;
-    const done = await deleteSessionById(sid);
-    if (done) showToast('会话已删除', 'success');
-    else showToast('删除失败，默认会话不可删除', 'error');
-  }, [deleteSessionById, showToast]);
+    const done = await deleteSessions(Array.from(selectedSessions));
+    setSelectedSessions(new Set());
+    setEditSessions(false);
+    showToast(done ? `已删除 ${selectedSessions.size} 个会话` : '部分会话删除失败', done ? 'success' : 'warning');
+  }, [selectedSessions, deleteSessions, showToast]);
+
+  const toggleSelectSession = useCallback((sid: string) => {
+    setSelectedSessions((prev) => {
+      const next = new Set(prev);
+      if (next.has(sid)) next.delete(sid); else next.add(sid);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedSessions((prev) =>
+      prev.size === sessions.length ? new Set() : new Set(sessions.map((s) => s.id))
+    );
+  }, [sessions]);
 
   const renderMsg = (m: AgentMessage, i: number) => (
     <div key={i} className={`msg ${m.role === 'user' ? 'user' : 'assistant'}`}>
@@ -477,7 +496,6 @@ export default function WorkbenchPage() {
     <div className="wb">
       <div className="wb-center">
         <div className="wb-title">工作台</div>
-        <div className="wb-sub">本地工作助手 · 对话、技能与单据流转在同一处</div>
 
         <div className="ai-strip">
           <span className="lab">AI 工作台</span>
@@ -517,7 +535,13 @@ export default function WorkbenchPage() {
             <span className="live"><span className="dot" />助手在线</span>
           </div>
           <div className="chat-body" ref={chatBodyRef} onScroll={handleChatScroll}>
-            {messages.length === 0 && (
+            {messages.length === 0 && sessions.length === 0 && (
+              <div className="chat-empty">
+                <div className="ce-title">请新建会话</div>
+                <div className="ce-sub">说点什么吧——我会自动为你开一个新对话，也可以先点右侧「新对话」。</div>
+              </div>
+            )}
+            {messages.length === 0 && sessions.length > 0 && (
               <div className="msg assistant">你好，我是你的本地工作助手。可以让我把单据写入对账单，也可以点上方「表格生成」技能，选好单据直接执行。</div>
             )}
             {messages.map(renderMsg)}
@@ -655,28 +679,42 @@ export default function WorkbenchPage() {
           ) : (
             <>
               <div className="flow-section">最近会话</div>
-              <button className="start-btn" onClick={() => { newSession(); }}>新对话</button>
-              {sessions.length === 0 && <div style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: 13, padding: '18px 0' }}>还没有对话记录</div>}
+              <div className="session-tools">
+                <button className="start-btn" onClick={() => { newSession(); }}>新对话</button>
+                {editSessions ? (
+                  <>
+                    <button className="tool-btn" onClick={toggleSelectAll}>
+                      {selectedSessions.size === sessions.length && sessions.length > 0 ? '取消全选' : '全选'}
+                    </button>
+                    <button className="tool-btn danger" disabled={selectedSessions.size === 0} onClick={handleDeleteSessions}>
+                      删除{selectedSessions.size > 0 ? `（${selectedSessions.size}）` : ''}
+                    </button>
+                    <button className="tool-btn" onClick={() => { setEditSessions(false); setSelectedSessions(new Set()); }}>完成</button>
+                  </>
+                ) : (
+                  <button className="tool-btn" onClick={() => setEditSessions(true)} disabled={sessions.length === 0}>编辑</button>
+                )}
+              </div>
+              {sessions.length === 0 && (
+                <div className="sessions-empty">
+                  <div>还没有会话</div>
+                  <span>点「新对话」开始，或直接在下方向我提问</span>
+                </div>
+              )}
               {sessions.map((s) => (
                 <div
                   key={s.id}
-                  className="session-item"
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => switchSession(s.id)}
+                  className={`session-item ${editSessions ? 'edit' : ''} ${selectedSessions.has(s.id) ? 'selected' : ''}`}
+                  onClick={() => { if (editSessions) toggleSelectSession(s.id); else switchSession(s.id); }}
                 >
-                  <div className="session-title">{s.title || '新对话'}</div>
-                  <div className="session-meta">{s.message_count} 条消息 · {(s.updated_at || '').slice(0, 16).replace('T', ' ')}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="session-count">{s.id === currentSessionId ? '当前对话' : '点击继续对话'}</span>
-                    {s.id !== 'default' && (
-                      <span
-                        className="session-del"
-                        onClick={(e) => { e.stopPropagation(); handleDeleteSession(s.id, s.title); }}
-                      >
-                        删除
-                      </span>
-                    )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                    {editSessions && <span className={`q-check ${selectedSessions.has(s.id) ? 'on' : ''}`}>✓</span>}
+                    <div style={{ minWidth: 0 }}>
+                      <div className="session-title">{s.title || '新对话'}</div>
+                      <div className="session-meta">{s.message_count} 条消息 · {(s.updated_at || '').slice(0, 16).replace('T', ' ')}</div>
+                    </div>
                   </div>
+                  <span className="session-count">{s.id === currentSessionId ? '当前对话' : '点击继续对话'}</span>
                 </div>
               ))}
             </>

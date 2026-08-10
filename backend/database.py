@@ -936,11 +936,12 @@ def ignore_alias_suggestion(suggestion_id: int) -> bool:
 # ---- 数据备份（P7 可恢复性） ----
 
 def create_backup(backup_dir: str = "") -> str:
-    """一键备份：data.db（含 WAL 数据，sqlite backup API）+ uploads → zip。
+    """一键备份（对齐更新）：data.db（含 WAL 数据，sqlite backup API）+ uploads + .env
+    + 备份说明 → 固定文件「数字化工作台备份.zip」。
+    再次点击 = 把该文件更新到最新数据（不产生一堆历史包）。
     返回备份文件绝对路径。"""
-    import shutil
     import zipfile
-    base = Path(backup_dir) if backup_dir else Path(config.CONFIG_DIR) / "backups"
+    base = Path(backup_dir) if backup_dir else (Path(config.BACKUP_DIR) if config.BACKUP_DIR else Path(config.CONFIG_DIR) / "backups")
     base.mkdir(parents=True, exist_ok=True)
     ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tmp_db = base / f"data-{ts}.db"
@@ -952,7 +953,8 @@ def create_backup(backup_dir: str = "") -> str:
     finally:
         dst.close()
         src.close()
-    zip_path = base / f"backup-{ts}.zip"
+    # 固定文件名：再次备份即覆盖更新（用户语义：数据对齐与更新）
+    zip_path = base / "数字化工作台备份.zip"
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(tmp_db, "data.db")
         uploads = Path(config.UPLOAD_DIR)
@@ -960,16 +962,40 @@ def create_backup(backup_dir: str = "") -> str:
             for f in uploads.iterdir():
                 if f.is_file():
                     z.write(f, f"uploads/{f.name}")
+        env_path = config.ENV_PATH
+        if env_path.exists():
+            z.write(env_path, ".env")
+        n_uploads = len([
+            f for f in (Path(config.UPLOAD_DIR).iterdir() if Path(config.UPLOAD_DIR).exists() else [])
+            if f.is_file()
+        ])
+        manifest = (
+            "数字化工作台 · 数据备份说明\n"
+            "备份时间：%s\n"
+            "备份目录：%s\n"
+            "备份内容：\n"
+            "  1. data.db —— 全部业务数据（单据、审核状态、品名库、错误名映射、"
+            "助手记忆、会话记录、校正日志）\n"
+            "  2. uploads/ —— 全部上传原图（%d 张）\n"
+            "  3. .env —— 软件配置（API 地址、工作目录、备份目录；含密钥，请勿外发）\n"
+            "恢复方式：将本文件解压后覆盖到用户数据目录 appdata/ 即可。\n"
+            "提示：再次点击「立即备份」会把本文件更新到最新数据。\n"
+        ) % (ts, str(base), n_uploads)
+        z.writestr("备份说明.txt", manifest)
     tmp_db.unlink(missing_ok=True)
     return str(zip_path)
 
 
 def list_backups(limit: int = 10) -> list:
     """最近备份列表（新→旧）：名称/大小/时间"""
-    base = Path(config.CONFIG_DIR) / "backups"
+    base = Path(config.BACKUP_DIR) if config.BACKUP_DIR else Path(config.CONFIG_DIR) / "backups"
     if not base.exists():
         return []
-    files = sorted(base.glob("backup-*.zip"), key=lambda p: p.stat().st_mtime, reverse=True)[:limit]
+    files = sorted(
+        list(base.glob("数字化工作台备份.zip")) + list(base.glob("backup-*.zip")),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )[:limit]
     out = []
     for f in files:
         st = f.stat()
@@ -977,5 +1003,6 @@ def list_backups(limit: int = 10) -> list:
             "name": f.name,
             "size": st.st_size,
             "created_at": datetime.datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+            "path": str(f),
         })
     return out

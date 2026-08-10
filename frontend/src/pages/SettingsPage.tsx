@@ -1,122 +1,19 @@
-// SteelDigitize Pro — 设置中心（识别引擎 / 工作助手 / 对账单 / 助手记忆 / 关于）
+// SteelDigitize Pro — 设置中心（识别与模型 / 助手记忆 / 关于）
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useToast } from '../hooks/useToast';
 import {
   getSettings, saveSettings, getScanScenes, testScanConnection,
-  getFacts, addFact, deleteFact, getCorrections, deleteCorrection, clearCorrections,
+  getFacts, addFact, deleteFact, updateFact, pickDirectory,
   exportBackup, getBackups,
 } from '../utils/api';
-import ConfirmDialog from '../components/ConfirmDialog';
-import type { AssistantFact, CorrectionRecord } from '../types';
+import type { AssistantFact } from '../types';
+import {
+  CheckCircle2, FolderOpen, Database, RefreshCw, ChevronDown, Pencil, Trash2,
+} from 'lucide-react';
 
 const S = { aKey: 'steel_agent_key', aBase: 'steel_agent_base', aModel: 'steel_agent_model', sKey: 'steel_scan_key' };
-import { CheckCircle2 } from 'lucide-react';
 
 interface ScanScene { scene: string; label: string; type: string }
-
-// 训练数据图表（lieflat-charts 模板语法：F1 梯档柱 / F2 发丝折线）
-const INK = '#1C1C1A';
-const MUTED = '#8A8983';
-const GRID = '#D8D7D1';
-const FAINT = '#B0AFA9';
-const FIELD_LABEL: Record<string, string> = { name: '品名', spec: '规格', unit: '单位', qty: '数量', price: '单价' };
-
-function TrainingCharts({ corrections }: { corrections: { field: string; before_val: string; after_val: string; created_at?: string }[] }) {
-  // F5 · Tick Rows：字段分布，1 tick = 1 次修正（横排，类目名左对齐）
-  const fields = (['name', 'spec', 'unit', 'qty', 'price'] as const)
-    .map((f) => ({ f, n: corrections.filter((c) => c.field === f).length }))
-    .filter((x) => x.n > 0);
-
-  // F2 · Hairline Line：近 7 天修正趋势
-  const days: { label: string; n: number; key: string }[] = [];
-  const now = new Date();
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    days.push({ label: `${String(d.getMonth() + 1)}-${String(d.getDate()).padStart(2, '0')}`, key, n: 0 });
-  }
-  corrections.forEach((c) => {
-    const k = (c.created_at || '').slice(0, 10);
-    const hit = days.find((x) => x.key === k);
-    if (hit) hit.n += 1;
-  });
-  const maxDay = Math.max(1, ...days.map((x) => x.n));
-
-  const W = 400, H = 150;
-  const rowY = (i: number) => 16 + i * 24;
-  const TICK_X0 = 104, TICK_PX = 6;
-
-  return (
-    <div className="td-charts">
-      <div className="td-chart">
-        <div className="td-chart-title">哪类最容易改错</div>
-        <div className="td-chart-sub">1 tick = 1 次人工修正 · 行尾大数</div>
-        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 150 }}>
-          {fields.map((x, i) => {
-            const y = rowY(i);
-            const ticks = Math.min(x.n, 26);
-            return (
-              <g key={x.f}>
-                <text x={94} y={y + 3} fontSize={9} fontWeight={700} fill="#6A6963" textAnchor="end" letterSpacing="0.04em">
-                  {FIELD_LABEL[x.f] || x.f}
-                </text>
-                <line x1={TICK_X0} y1={y + 10} x2={TICK_X0 + 34 * TICK_PX} y2={y + 10} stroke={GRID} strokeWidth={0.6} />
-                {Array.from({ length: ticks }, (_, k) => (
-                  <line
-                    key={k}
-                    x1={TICK_X0 + k * TICK_PX + TICK_PX / 2}
-                    x2={TICK_X0 + k * TICK_PX + TICK_PX / 2}
-                    y1={y + 10}
-                    y2={y + 1}
-                    stroke={INK}
-                    strokeWidth={0.9}
-                    opacity={0.55 + (k % 3) * 0.15}
-                  />
-                ))}
-                <text x={TICK_X0 + x.n * TICK_PX + 10} y={y + 4} fontSize={11} fontWeight={800} fill={INK}>
-                  {x.n}
-                </text>
-              </g>
-            );
-          })}
-          {fields.length === 0 && (
-            <text x={200} y={70} fontSize={11} fill={FAINT} textAnchor="middle">暂无数据</text>
-          )}
-        </svg>
-        <div className="td-chart-src">ONE TICK = ONE CORRECTION · 累计 {corrections.length} 条修正</div>
-      </div>
-
-      <div className="td-chart">
-        <div className="td-chart-title">近 7 天修正趋势</div>
-        <div className="td-chart-sub">1 点 = 1 天 · 发丝折线 = 修正量变化</div>
-        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 150 }}>
-          {days.map((_, i) => {
-            const x = 26 + i * 58;
-            return <line key={i} x1={x} y1={118} x2={x} y2={111} stroke="#CFCEC7" strokeWidth={0.6} />;
-          })}
-          <line x1={20} y1={118} x2={W - 20} y2={118} stroke={GRID} strokeWidth={0.8} />
-          {(() => {
-            const pts = days.map((d, i) => `${26 + i * 58} ${118 - (d.n / maxDay) * 78}`).join(' L ');
-            return <path d={`M${pts}`} fill="none" stroke={INK} strokeWidth={1} />;
-          })()}
-          {days.map((d, i) => {
-            const x = 26 + i * 58;
-            const y = 118 - (d.n / maxDay) * 78;
-            const peak = d.n > 0 && d.n === maxDay;
-            return (
-              <g key={i}>
-                <circle cx={x} cy={y} r={d.n === 0 ? 1.6 : peak ? 4 : 2.2} fill={d.n === 0 ? '#fff' : INK} stroke={INK} strokeWidth={d.n === 0 ? 1 : 0} />
-                {peak && <text x={x} y={y - 9} fontSize={9} fontWeight={800} fill={INK} textAnchor="middle">{d.n}</text>}
-                <text x={x} y={136} fontSize={7.5} fontWeight={600} fill={MUTED} textAnchor="middle" letterSpacing="0.06em">{d.label}</text>
-              </g>
-            );
-          })}
-        </svg>
-        <div className="td-chart-src">LAST 7 DAYS · 实心 = 有修正 · 空心 = 无</div>
-      </div>
-    </div>
-  );
-}
 
 export default function SettingsPage() {
   const { showToast } = useToast();
@@ -138,17 +35,23 @@ export default function SettingsPage() {
   const [testingScan, setTestingScan] = useState(false);
   const [engineEditing, setEngineEditing] = useState(false);
   const [agentEditing, setAgentEditing] = useState(false);
+
+  // 助手记忆：文件存放位置 + 事实层
   const [workDir, setWorkDir] = useState('');
   const [facts, setFacts] = useState<AssistantFact[]>([]);
-  const [corrections, setCorrections] = useState<CorrectionRecord[]>([]);
   const [factKey, setFactKey] = useState('');
   const [factVal, setFactVal] = useState('');
-  const [clearOpen, setClearOpen] = useState(false);
-  const [appVersion, setAppVersion] = useState('');
-  const [backups, setBackups] = useState<{ name: string; size: number; created_at: string }[]>([]);
-  const [backingUp, setBackingUp] = useState(false);
+  const [editingFactId, setEditingFactId] = useState<number | null>(null);
+  const [editFactKey, setEditFactKey] = useState('');
+  const [editFactVal, setEditFactVal] = useState('');
 
-  // 桌面端自动更新状态
+  // 关于：版本 / 备份 / 更新
+  const [appVersion, setAppVersion] = useState('');
+  const [backupDir, setBackupDir] = useState('');
+  const [backups, setBackups] = useState<{ name: string; size: number; created_at: string; path?: string }[]>([]);
+  const [backingUp, setBackingUp] = useState(false);
+  const [showBackupDetail, setShowBackupDetail] = useState(false);
+
   const [upd, setUpd] = useState<{
     state: 'idle' | 'checking' | 'available' | 'uptodate' | 'downloading' | 'downloaded' | 'error';
     version: string;
@@ -185,10 +88,22 @@ export default function SettingsPage() {
     const res = await exportBackup();
     setBackingUp(false);
     if (res.success && res.data) {
-      showToast('备份完成：' + res.data.path, 'success');
+      showToast('备份已更新到最新数据', 'success');
       refreshBackups();
     } else {
       showToast(res.error || '备份失败', 'error');
+    }
+  };
+
+  const handlePickBackupDir = async () => {
+    const res = await pickDirectory();
+    if (res.success && res.data?.path) {
+      setBackupDir(res.data.path);
+      await saveSettings({ backup_dir: res.data.path });
+      refreshBackups();
+      showToast('备份位置已更新', 'success');
+    } else {
+      showToast(res.error || '选择失败', 'error');
     }
   };
 
@@ -231,6 +146,7 @@ export default function SettingsPage() {
         setAKey(d.agent_api_key || '');
         setSKey(d.scan_api_key || '');
         setWorkDir(d.work_dir || '');
+        setBackupDir(d.backup_dir || '');
         if (d.agent_api_base) setABase(d.agent_api_base);
         if (d.agent_model) setAModel(d.agent_model);
         if (d.scan_api_base) setSBase(d.scan_api_base);
@@ -247,7 +163,6 @@ export default function SettingsPage() {
 
   const loadMemory = useCallback(() => {
     getFacts().then((r) => { if (r.success && r.data) setFacts(r.data.facts); });
-    getCorrections(500).then((r) => { if (r.success && r.data) setCorrections(r.data.corrections); });
   }, []);
 
   useEffect(() => { if (panel === 'memory') loadMemory(); }, [panel, loadMemory]);
@@ -326,24 +241,52 @@ export default function SettingsPage() {
     } else showToast(res.error || '刷新失败', 'error');
   };
 
+  /* ---------- 助手记忆 ---------- */
   const handlePickDir = async () => {
-    const r = await fetch('/api/settings/pick-dir');
-    const j = await r.json();
-    if (j.success && j.data?.path) {
-      setWorkDir(j.data.path);
-      await saveSettings({ work_dir: j.data.path });
-      showToast('工作目录已更新', 'success');
-    } else showToast(j.error || '选择失败', 'error');
+    const res = await pickDirectory();
+    if (res.success && res.data?.path) {
+      setWorkDir(res.data.path);
+      await saveSettings({ work_dir: res.data.path });
+      showToast('文件存放位置已更新', 'success');
+    } else showToast(res.error || '选择失败', 'error');
   };
 
   const handleAddFact = async () => {
-    if (!factKey.trim() || !factVal.trim()) { showToast('请填写事实键与值', 'warning'); return; }
+    if (!factKey.trim() || !factVal.trim()) { showToast('请填写记忆键与记忆值', 'warning'); return; }
     const res = await addFact(factKey.trim(), factVal.trim());
     if (res.success) {
       showToast('已记住', 'success');
       setFactKey(''); setFactVal('');
       loadMemory();
     } else showToast(res.error || '保存失败', 'error');
+  };
+
+  const startFactEdit = (f: AssistantFact) => {
+    setEditingFactId(f.id);
+    setEditFactKey(f.fact_key);
+    setEditFactVal(f.fact_value);
+  };
+
+  const cancelFactEdit = () => {
+    setEditingFactId(null);
+    setEditFactKey(''); setEditFactVal('');
+  };
+
+  const saveFactEdit = async () => {
+    if (editingFactId === null) return;
+    if (!editFactKey.trim()) { showToast('记忆键不能为空', 'warning'); return; }
+    const res = await updateFact(editingFactId, editFactKey.trim(), editFactVal.trim());
+    if (res.success) {
+      showToast('记忆已更新', 'success');
+      cancelFactEdit();
+      loadMemory();
+    } else showToast(res.error || '保存失败', 'error');
+  };
+
+  const removeFact = async (id: number) => {
+    const res = await deleteFact(id);
+    if (res.success) { showToast('已删除', 'success'); loadMemory(); }
+    else showToast(res.error || '删除失败', 'error');
   };
 
   const inputRow = (label: string, value: string, set: (v: string) => void, placeholder = '', type = 'text', readOnly = false) => (
@@ -353,10 +296,29 @@ export default function SettingsPage() {
     </div>
   );
 
-  const panels: Record<string, { title: string; desc: string; body: ReactNode }> = {
+  const backupDetail = (
+    <div className="bk-detail">
+      <div className="bk-desc">备份内容（4 类，全在本机）：</div>
+      <ul className="bk-list">
+        <li><b>data.db</b> —— 全部业务数据：单据、审核状态、品名库、错误名映射、助手记忆、会话记录、校正日志</li>
+        <li><b>uploads/</b> —— 全部上传原图</li>
+        <li><b>.env</b> —— 软件配置（API 地址与密钥，请勿外发）</li>
+        <li><b>备份说明.txt</b> —— 本次备份的说明清单</li>
+      </ul>
+      <pre className="bk-example">{`数字化工作台备份.zip
+├── data.db            # 全部业务数据
+├── uploads/           # 上传原图
+│   ├── IMG_6051.jpg
+│   └── …
+├── .env               # 软件配置（含密钥，勿外发）
+└── 备份说明.txt`}</pre>
+      <div className="bk-note">再次点击「立即备份」，会把该文件更新到最新数据，不会堆积历史备份。</div>
+    </div>
+  );
+
+  const panels: Record<string, { title: string; body: ReactNode }> = {
     engine: {
       title: '识别与模型',
-      desc: '识别引擎（扫描王）与工作助手（大模型）的真实 API 配置',
       body: (
         <>
           <div className="set-card">
@@ -425,149 +387,138 @@ export default function SettingsPage() {
         </>
       ),
     },
-    excel: {
-      title: '对账单',
-      desc: '工作助手写入的 Excel 文件与规则',
-      body: (
-        <div className="set-card">
-          <h3>对账单</h3>
-          <div className="set-row"><span className="k">文件</span><span className="v">{workDir ? workDir + '/对账单.xlsx' : '未设置（新建时选择）'}</span></div>
-          <div className="set-row"><span className="k">默认 sheet</span><span className="v">水电</span></div>
-          <div className="set-row"><span className="k">工作目录</span><span className="v">{workDir || '未设置'}</span><button className="act" onClick={handlePickDir}>选择目录</button></div>
-          <div className="set-row"><span className="k">写入规则</span><span className="v">只追加不覆盖 · 写入后自动验证 · 金额由代码计算</span></div>
-        </div>
-      ),
-    },
     memory: {
       title: '助手记忆',
-      desc: '三层记忆：会话 / 事实 / 校正记录，全部在本机，可查看可删除',
       body: (
         <>
           <div className="set-card">
-            <h3>事实层（助手记住的事）</h3>
-            <div className="desc">跨会话保留的偏好与约定</div>
-            {facts.length === 0 && <div className="hint" style={{ fontSize: 12, color: 'var(--text-3)' }}>还没有记录</div>}
-            {facts.map((f) => (
-              <div key={f.id} className="set-row">
-                <span className="k">{f.fact_key}</span>
-                <span className="v">{f.fact_value}</span>
-                <button className="act" style={{ color: 'var(--err)' }} onClick={async () => { await deleteFact(f.id); loadMemory(); }}>删除</button>
-              </div>
-            ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h3 style={{ margin: 0 }}>文件存放位置</h3>
+              <span style={{ flex: 1 }} />
+              <button className="btn sm ghost" onClick={handlePickDir}><FolderOpen size={14} />选择文件夹…</button>
+            </div>
+            <div className="desc">工作助手写入表格的位置，修改后立即生效</div>
             <div className="set-row">
-              <input placeholder="事实键，如：默认sheet" value={factKey} onChange={(e) => setFactKey(e.target.value)} style={{ flex: 1 }} />
-              <input placeholder="事实值，如：水电" value={factVal} onChange={(e) => setFactVal(e.target.value)} style={{ flex: 1 }} />
-              <button className="btn sm" onClick={handleAddFact}>记住</button>
+              <span className="k">位置</span>
+              <span className="v mono">{workDir || '未设置（首次生成对账单时选择）'}</span>
+            </div>
+            <div className="set-row">
+              <span className="k">写入文件</span>
+              <span className="v">对账单.xlsx · 只追加不覆盖 · 金额由代码计算</span>
             </div>
           </div>
           <div className="set-card">
-            <h3>训练数据（校正记录）</h3>
-            <div className="desc">审核区每次人工修改都会记录「识别结果 → 人工修正」，用于生成错误名规则</div>
-            {corrections.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>暂无训练数据：在审核区修改识别结果后，会自动在这里积累</div>}
-            {corrections.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                <span className="pill gray">共 {corrections.length} 条</span>
-                {(['name', 'spec', 'unit', 'qty', 'price'] as const).map((f) => {
-                  const n = corrections.filter((c) => c.field === f).length;
-                  return n > 0 ? <span key={f} className={`pill ${f === 'name' ? 'amber' : 'blue'}`}>{f} × {n}</span> : null;
-                })}
-              </div>
-            )}
-            <TrainingCharts corrections={corrections} />
-            {corrections.map((c) => (
-              <div key={c.id} className="mem-item">
-                <span className="badge">{c.field}</span>
-                <span className="num" style={{ color: 'var(--text-2)', fontSize: 12 }}>{c.receipt_no || '—'}</span>
-                <span style={{ textDecoration: 'line-through', color: 'var(--text-2)' }}>{c.before_val || '（空）'}</span>
-                <span className="arrow">→</span>
-                <span style={{ color: 'var(--ok)' }}>{c.after_val || '（空）'}</span>
-                <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 'auto' }}>{(c.created_at || '').slice(5, 16)}</span>
-                <button className="act del" onClick={async () => { await deleteCorrection(c.id); loadMemory(); }}>删除</button>
-              </div>
+            <h3>长期记忆（事实层）</h3>
+            <div className="desc">助手跨会话记住的约定与偏好，可添加、编辑、删除</div>
+            {facts.length === 0 && <div className="hint" style={{ fontSize: 12, color: 'var(--text-3)' }}>还没有记忆，写一条试试</div>}
+            {facts.map((f) => (
+              editingFactId === f.id ? (
+                <div key={f.id} className="set-row">
+                  <input value={editFactKey} onChange={(e) => setEditFactKey(e.target.value)} style={{ flex: 1, minWidth: 100 }} placeholder="记忆键" />
+                  <input value={editFactVal} onChange={(e) => setEditFactVal(e.target.value)} style={{ flex: 1, minWidth: 120 }} placeholder="记忆值" />
+                  <button className="btn sm" onClick={saveFactEdit}>保存</button>
+                  <button className="act" onClick={cancelFactEdit}>取消</button>
+                </div>
+              ) : (
+                <div key={f.id} className="set-row">
+                  <span className="k">{f.fact_key}</span>
+                  <span className="v">{f.fact_value}</span>
+                  <button className="act" onClick={() => startFactEdit(f)}><Pencil size={13} style={{ verticalAlign: '-2px' }} />编辑</button>
+                  <button className="act del" onClick={() => removeFact(f.id)}><Trash2 size={13} style={{ verticalAlign: '-2px' }} />删除</button>
+                </div>
+              )
             ))}
-            {corrections.length > 0 && (
-              <div className="danger-zone" style={{ marginTop: 8 }}>
-                <div><div className="d-title">清空训练数据</div><div className="d-sub">删除全部校正记录，业务数据不受影响</div></div>
-                <button className="btn danger sm" style={{ marginLeft: 'auto' }} onClick={() => setClearOpen(true)}>清空</button>
-              </div>
-            )}
+            <div className="set-row" style={{ borderTop: '1px dashed var(--border)', marginTop: 4 }}>
+              <input placeholder="记忆键，如：默认sheet" value={factKey} onChange={(e) => setFactKey(e.target.value)} style={{ flex: 1 }} />
+              <input placeholder="记忆值，如：水电" value={factVal} onChange={(e) => setFactVal(e.target.value)} style={{ flex: 1 }} />
+              <button className="btn sm" onClick={handleAddFact}>记住</button>
+            </div>
           </div>
         </>
       ),
     },
     about: {
       title: '关于',
-      desc: '版本与数据',
       body: (
-        <div className="set-card">
-          <h3>关于 数字化工作台</h3>
-          <div className="set-row"><span className="k">版本</span><span className="v">{appVersion ? `v${appVersion}` : '桌面版（网页版无版本号）'}</span></div>
-          <div className="set-row"><span className="k">数据</span><span className="v">全部在本机 SQLite，不上传云端</span></div>
-          <div className="set-row"><span className="k">识别</span><span className="v">夸克扫描王 image-to-excel</span></div>
-          <div className="set-row"><span className="k">助手</span><span className="v">自研 harness · 技能文件化 · 三层记忆</span></div>
-          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 10 }}>数据备份</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <button className="btn sm" onClick={handleBackup} disabled={backingUp}>
-                {backingUp ? '备份中…' : '立即备份'}
+        <>
+          <div className="set-card">
+            <h3>数字化工作台</h3>
+            <div className="set-row"><span className="k">版本</span><span className="v">{appVersion ? `v${appVersion}` : '桌面版（网页版无版本号）'}</span></div>
+            <div className="set-row"><span className="k">数据</span><span className="v">全部在本机 SQLite，不上传云端</span></div>
+            <div className="set-row"><span className="k">助手</span><span className="v">自研 harness · 技能文件化 · 三层记忆</span></div>
+          </div>
+
+          <div className="set-card">
+            <h3>数据备份</h3>
+            <div className="set-row">
+              <span className="k">存放位置</span>
+              <span className="v mono">{backupDir || '默认：用户数据目录 backups/'}</span>
+              <button className="btn sm ghost" onClick={handlePickBackupDir}><FolderOpen size={14} />选择文件夹…</button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
+              <button className="btn" onClick={handleBackup} disabled={backingUp}>
+                <Database size={15} />{backingUp ? '备份中…' : '立即备份'}
               </button>
               {backups.length > 0 && (
                 <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
-                  最近：{backups[0].name}（{backups[0].created_at}）
+                  最近更新：{backups[0].name} · {(backups[0].size / 1024 / 1024).toFixed(1)} MB · {backups[0].created_at}
                 </span>
               )}
+              <button className="link" style={{ marginLeft: 'auto' }} onClick={() => setShowBackupDetail((v) => !v)}>
+                备份内容<ChevronDown size={13} style={{ verticalAlign: '-2px', transform: showBackupDetail ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+              </button>
             </div>
-            {backups.length > 1 && (
-              <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-3)' }}>
-                共 {backups.length} 份：{backups.slice(1).map((b) => b.name).join('、')}
-              </div>
-            )}
+            {showBackupDetail && backupDetail}
           </div>
-          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 10 }}>软件更新</div>
-            {upd.state === 'idle' && (
-              <button className="btn" onClick={handleCheckUpdate}>检查更新</button>
-            )}
-            {upd.state === 'checking' && (
-              <button className="btn" disabled>检查中…</button>
-            )}
-            {upd.state === 'uptodate' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, color: 'var(--green, #34c77b)' }}><CheckCircle2 size={14} style={{ verticalAlign: '-2px' }} /> 已是最新版本</span>
-                <button className="link" onClick={handleCheckUpdate}>重新检查</button>
-              </div>
-            )}
-            {upd.state === 'available' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, color: 'var(--primary)' }}>发现新版本 v{upd.version}</span>
-                <button className="btn sm" onClick={handleDownloadUpdate}>立即下载</button>
-              </div>
-            )}
-            {upd.state === 'downloading' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ flex: 1, height: 6, background: 'var(--border)', borderRadius: 999, overflow: 'hidden', maxWidth: 220 }}>
-                  <i style={{ display: 'block', height: '100%', width: `${upd.percent}%`, background: 'var(--primary)', transition: 'width .3s' }} />
+
+          <div className="set-card">
+            <h3>软件更新</h3>
+            <div className="upd-body">
+              {upd.state === 'idle' && (
+                <div className="upd-line">
+                  <span className="v" style={{ color: 'var(--text-2)' }}>当前版本 v{appVersion} · 更新源 GitHub Releases</span>
+                  <button className="btn sm" onClick={handleCheckUpdate}>检查更新</button>
                 </div>
-                <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{upd.percent}%</span>
-              </div>
-            )}
-            {upd.state === 'downloaded' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, color: 'var(--green, #34c77b)' }}>更新已下载完成</span>
-                <button className="btn sm" onClick={handleInstallUpdate}>立即重启安装</button>
-              </div>
-            )}
-            {upd.state === 'error' && (
-              <div style={{ fontSize: 12, color: 'var(--err)' }}>
-                <div>{upd.message}</div>
-                <div style={{ marginTop: 6, color: 'var(--text-2)' }}>
-                  若提示网络连接失败，可到 <a href="https://github.com/Liberty-26/-/releases/latest" target="_blank" rel="noreferrer" style={{ color: 'var(--primary)' }}>下载页</a> 手动获取最新安装包
+              )}
+              {upd.state === 'checking' && (
+                <div className="upd-line"><span className="live-spinner" />正在检查最新版本…</div>
+              )}
+              {upd.state === 'uptodate' && (
+                <div className="upd-line">
+                  <span className="upd-ok"><CheckCircle2 size={15} />已是最新版本</span>
+                  <button className="link" onClick={handleCheckUpdate}>重新检查</button>
                 </div>
-                <button className="link" style={{ marginTop: 4 }} onClick={handleCheckUpdate}>重试</button>
-              </div>
-            )}
+              )}
+              {upd.state === 'available' && (
+                <div className="upd-line">
+                  <span className="v" style={{ fontWeight: 600 }}>发现新版本 v{upd.version}</span>
+                  <button className="btn sm" onClick={handleDownloadUpdate}>立即下载</button>
+                </div>
+              )}
+              {upd.state === 'downloading' && (
+                <div className="upd-line">
+                  <div className="upd-progress"><i style={{ width: `${upd.percent}%` }} /></div>
+                  <span className="v" style={{ color: 'var(--text-2)' }}>正在下载 {upd.percent}%</span>
+                </div>
+              )}
+              {upd.state === 'downloaded' && (
+                <div className="upd-line">
+                  <span className="upd-ok"><CheckCircle2 size={15} />更新已下载完成</span>
+                  <button className="btn sm" onClick={handleInstallUpdate}>立即重启安装</button>
+                </div>
+              )}
+              {upd.state === 'error' && (
+                <div className="upd-line" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+                  <span style={{ color: 'var(--err)' }}>{upd.message}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                    若网络失败，可到 <a href="https://github.com/Liberty-26/-/releases/latest" target="_blank" rel="noreferrer" style={{ color: 'var(--primary)' }}>下载页</a> 手动获取安装包；Mac 未签名时也请手动安装 dmg
+                  </span>
+                  <button className="link" onClick={handleCheckUpdate}><RefreshCw size={13} style={{ verticalAlign: '-2px' }} />重试</button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       ),
     },
   };
@@ -579,7 +530,11 @@ export default function SettingsPage() {
       <div className="page-head">
         <div>
           <div className="page-title">设置</div>
-          <div className="page-sub">识别、模型、对账单与助手记忆，全部存在本机</div>
+          <div className="page-sub">
+            {panel === 'engine' && '识别引擎（扫描王）与工作助手（大模型）的真实 API 配置'}
+            {panel === 'memory' && '文件存放位置与助手长期记忆，全部存在本机'}
+            {panel === 'about' && '版本、数据备份与软件更新'}
+          </div>
         </div>
       </div>
       <div className="set-layout">
@@ -589,18 +544,9 @@ export default function SettingsPage() {
           ))}
         </div>
         <div className="set-panel">
-          <div className="page-sub" style={{ fontSize: 13 }}>{cur.desc}</div>
           {cur.body}
         </div>
       </div>
-
-      <ConfirmDialog
-        open={clearOpen}
-        title="清空校正记录"
-        message="确定清空全部纠正记录？"
-        onConfirm={async () => { await clearCorrections(); setClearOpen(false); loadMemory(); showToast('已清空', 'success'); }}
-        onCancel={() => setClearOpen(false)}
-      />
     </div>
   );
 }

@@ -45,6 +45,7 @@ async def get_settings():
             "scan_api_base": config.SCAN_API_BASE,
             "scan_scene": config.SCAN_SCENE,
             "work_dir": config.WORK_DIR,
+            "backup_dir": config.BACKUP_DIR,
         }
     }
 

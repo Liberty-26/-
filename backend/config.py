@@ -50,6 +50,7 @@ SCAN_MAX_CONCURRENCY = int(os.getenv("SCAN_MAX_CONCURRENCY", "2"))
 DATABASE_PATH = os.getenv("DATABASE_PATH", str(BASE_DIR / "data.db"))
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", str(BASE_DIR / "uploads"))
 WORK_DIR = os.getenv("WORK_DIR", "")
+BACKUP_DIR = os.getenv("BACKUP_DIR", "")
 
 
 def reload_config():
@@ -58,7 +59,7 @@ def reload_config():
     for k in ("VISION_API_KEY", "VISION_API_BASE", "VISION_MODEL",
               "AGENT_API_KEY", "AGENT_API_BASE", "AGENT_MODEL",
               "SCAN_API_KEY", "SCAN_API_BASE", "SCAN_SCENE",
-              "WORK_DIR", "YESCAN_BIN"):
+              "WORK_DIR", "BACKUP_DIR", "YESCAN_BIN"):
         globals()[k] = os.getenv(k, globals().get(k, ""))
     try:
         globals()["SCAN_MAX_CONCURRENCY"] = int(os.getenv("SCAN_MAX_CONCURRENCY", "2"))
@@ -83,6 +84,7 @@ def save_config(**kwargs):
         "agent_key": "AGENT_API_KEY", "agent_base": "AGENT_API_BASE", "agent_model": "AGENT_MODEL",
         "scan_key": "SCAN_API_KEY", "scan_base": "SCAN_API_BASE", "scan_scene": "SCAN_SCENE",
         "work_dir": "WORK_DIR",
+        "backup_dir": "BACKUP_DIR",
     }
     for short, full in key_map.items():
         if short in kwargs:

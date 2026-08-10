@@ -34,29 +34,18 @@ def _ensure_tables():
         conn.close()
 
 
-def _seed_default_facts():
-    """首次使用记忆时写入默认事实（幂等）"""
-    conn = get_conn()
-    try:
-        n = conn.execute("SELECT COUNT(*) FROM assistant_facts").fetchone()[0]
-        if n == 0:
-            conn.execute(
-                "INSERT INTO assistant_facts (fact_key, fact_value) VALUES (?, ?)",
-                ("默认写入目标", "对账单.xlsx · 水电 sheet"),
-            )
-            conn.execute(
-                "INSERT INTO assistant_facts (fact_key, fact_value) VALUES (?, ?)",
-                ("写入确认", "false"),
-            )
-            conn.commit()
-    finally:
-        conn.close()
-
-
 @router.get("/facts")
 async def list_facts(scope: str = ""):
     _ensure_tables()
-    _seed_default_facts()
+    # 迁移：删除旧版种子默认事实（用户明确不要保留「默认写入目标/写入确认」）
+    conn = get_conn()
+    try:
+        conn.execute(
+            "DELETE FROM assistant_facts WHERE fact_key IN ('默认写入目标', '写入确认')"
+        )
+        conn.commit()
+    finally:
+        conn.close()
     facts = get_facts(scope.strip())
     usage = {
         "memory": memory_usage("memory"),
@@ -87,6 +76,28 @@ async def remove_fact(fact_id: int):
     try:
         conn.execute("DELETE FROM assistant_facts WHERE id = ?", [fact_id])
         conn.commit()
+        return {"success": True}
+    finally:
+        conn.close()
+
+
+@router.put("/facts/{fact_id}")
+async def update_fact(fact_id: int, req: dict):
+    """编辑已有事实：key / value 均可修改"""
+    _ensure_tables()
+    fact_key = (req.get("fact_key") or "").strip()
+    fact_value = (req.get("fact_value") or "").strip()
+    if not fact_key:
+        raise HTTPException(status_code=400, detail="事实键不能为空")
+    conn = get_conn()
+    try:
+        cur = conn.execute(
+            "UPDATE assistant_facts SET fact_key = ?, fact_value = ? WHERE id = ?",
+            [fact_key, fact_value, fact_id],
+        )
+        conn.commit()
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="记录不存在")
         return {"success": True}
     finally:
         conn.close()
@@ -128,6 +139,41 @@ async def add_corrections(req: dict):
             )
         conn.commit()
         return {"success": True}
+    finally:
+        conn.close()
+
+
+@router.get("/corrections/aggregate")
+async def corrections_aggregate():
+    """训练数据聚合（数据回流）：字段错误统计 + 错误名→修正结果配对。
+    前端据此渲染「哪个表头错得多」的显眼统计与错误名对照图（线宽 = 次数占比）。"""
+    conn = get_conn()
+    try:
+        total = conn.execute(
+            "SELECT COUNT(*) FROM correction_log WHERE TRIM(before_val) != '' OR TRIM(after_val) != ''"
+        ).fetchone()[0]
+        fields = []
+        for f, label in (('name', '品名'), ('spec', '规格'), ('unit', '单位'), ('qty', '数量'), ('price', '单价')):
+            n = conn.execute("SELECT COUNT(*) FROM correction_log WHERE field = ?", (f,)).fetchone()[0]
+            if n > 0:
+                fields.append({"field": f, "label": label, "count": n, "pct": round(n / total * 100, 1) if total else 0})
+        fields.sort(key=lambda x: -x["count"])
+        pairs = conn.execute(
+            """SELECT before_val, after_val, COUNT(*) AS cnt FROM correction_log
+               WHERE field = 'name' AND TRIM(before_val) != '' AND TRIM(after_val) != ''
+                 AND before_val != after_val
+               GROUP BY before_val, after_val ORDER BY cnt DESC"""
+        ).fetchall()
+        pair_list = [
+            {
+                "before": r["before_val"],
+                "after": r["after_val"],
+                "count": r["cnt"],
+                "pct": round(r["cnt"] / total * 100, 1) if total else 0,
+            }
+            for r in pairs
+        ]
+        return {"success": True, "data": {"total": total, "fields": fields, "pairs": pair_list}}
     finally:
         conn.close()
 

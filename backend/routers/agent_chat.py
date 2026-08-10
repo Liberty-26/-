@@ -125,8 +125,6 @@ async def new_session(req: dict):
 
 @router.delete("/sessions/{session_id}")
 async def remove_session(session_id: str):
-    if session_id == "default":
-        raise HTTPException(status_code=400, detail="默认会话不可删除")
     delete_session(session_id)
     return {"success": True}
 
