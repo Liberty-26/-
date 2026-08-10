@@ -170,6 +170,13 @@ export function useAgentChat() {
     };
 
     let finalReply = '';
+    // 一次性守卫：done/error/降级/收尾可能多路径触发，只允许落库一次
+    let finished = false;
+    const finishOnce = async (content: string) => {
+      if (finished) return;
+      finished = true;
+      await finishAssistantMsg(sid, content);
+    };
     try {
       const resp = await agentChatStream(text, history, selectedIds, uploadedFile, sid);
       if (!resp.ok) {
@@ -178,13 +185,13 @@ export function useAgentChat() {
         try {
           const res = await apiAgentChat(text, history, selectedIds, uploadedFile, sid);
           if (res.success && res.data) {
-            await finishAssistantMsg(sid, res.data.reply);
+            await finishOnce(res.data.reply);
             return res.data.reply;
           }
-          await finishAssistantMsg(sid, `处理失败：${res.error || '未知错误'}`);
+          await finishOnce(`处理失败：${res.error || '未知错误'}`);
           return null;
         } catch (e2) {
-          await finishAssistantMsg(sid, `处理失败：${(e2 as Error).message || '网络错误'}`);
+          await finishOnce(`处理失败：${(e2 as Error).message || '网络错误'}`);
           return null;
         }
       }
@@ -220,10 +227,10 @@ export function useAgentChat() {
             setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 30);
             break;
           case 'done':
-            await finishAssistantMsg(sid, evt.reply || finalReply || '处理完成');
+            await finishOnce(evt.reply || finalReply || '处理完成');
             break;
           case 'error':
-            await finishAssistantMsg(sid, `处理失败：${evt.message}`);
+            await finishOnce(`处理失败：${evt.message}`);
             break;
         }
       };
@@ -246,9 +253,7 @@ export function useAgentChat() {
         }
       }
       // 流正常结束但没有 done 事件（异常中断兜底）
-      if (liveRef.current) {
-        await finishAssistantMsg(sid, finalReply || '处理完成');
-      }
+      await finishOnce(finalReply || '处理完成');
     } catch (e) {
       if (abort.signal.aborted) {
         setIsLoading(false);
@@ -260,13 +265,13 @@ export function useAgentChat() {
       try {
         const res = await apiAgentChat(text, history, selectedIds, uploadedFile, sid);
         if (res.success && res.data) {
-          await finishAssistantMsg(sid, res.data.reply);
+          await finishOnce(res.data.reply);
           return res.data.reply;
         }
-        await finishAssistantMsg(sid, `处理失败：${res.error || '未知错误'}`);
+        await finishOnce(`处理失败：${res.error || '未知错误'}`);
         return null;
       } catch (e2) {
-        await finishAssistantMsg(sid, `处理失败：${(e2 as Error).message || '网络错误'}`);
+        await finishOnce(`处理失败：${(e2 as Error).message || '网络错误'}`);
         return null;
       }
     }

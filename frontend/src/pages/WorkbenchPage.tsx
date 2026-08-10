@@ -43,10 +43,35 @@ export default function WorkbenchPage() {
   const [taskCard, setTaskCard] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const chatBodyRef = useRef<HTMLDivElement>(null);
   const keySeq = useRef(0);
   const pendingFilesRef = useRef<Map<number, File>>(new Map());
   const savedKeys = useRef<Set<number>>(new Set());
   const pollRef = useRef<number | null>(null);
+
+  // 聊天区自动跟随滚动（行业标准做法：发送即滚到底，生成过程持续跟随；
+  // 用户主动上翻查看历史时暂停跟随，回到底部附近自动恢复）
+  useEffect(() => {
+    if (messages.length > 0 && live?.phase !== 'streaming') {
+      // 新消息/回复落库：直接滚到底
+      const el = chatBodyRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    }
+  }, [messages.length]);
+
+  useEffect(() => {
+    if (!live) return;
+    const el = chatBodyRef.current;
+    if (!el) return;
+    if (live.phase === 'thinking') {
+      // 发送后立即滚到底，保证流程卡可见
+      el.scrollTop = el.scrollHeight;
+      return;
+    }
+    // 流式阶段：贴近底部时跟随，用户上翻则不打断
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+    if (nearBottom) el.scrollTop = el.scrollHeight;
+  }, [live]);
 
   useEffect(() => {
     return () => {
@@ -380,7 +405,7 @@ export default function WorkbenchPage() {
             与助手对话
             <span className="live"><span className="dot" />助手在线</span>
           </div>
-          <div className="chat-body">
+          <div className="chat-body" ref={chatBodyRef}>
             {messages.length === 0 && (
               <div className="msg assistant">你好，我是你的本地工作助手。可以让我把单据写入对账单，也可以点上方「表格生成」技能，选好单据直接执行。</div>
             )}
