@@ -8,11 +8,8 @@ on:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    # Windows 云端构建（Mac 改为本地脚本 scripts/build-mac.sh，不走 GitHub）
+    runs-on: windows-latest
     permissions:
       contents: write
     steps:
@@ -75,15 +72,7 @@ jobs:
           cp -R backend/dist/SteelDigitizeBackend/* electron/backend-dist/SteelDigitizeBackend/
 
       - name: 打包并发布（Windows）
-        if: runner.os == 'Windows'
         run: npm ci && npx electron-builder --win nsis --publish always
-        working-directory: electron
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 打包并发布（macOS）
-        if: runner.os == 'macOS'
-        run: npm ci && npx electron-builder --mac dmg zip --publish always
         working-directory: electron
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -91,6 +80,6 @@ jobs:
       - name: 上传安装包（备份）
         uses: actions/upload-artifact@v4
         with:
-          name: installer-${{ matrix.os }}
+          name: installer-windows
           path: electron/release/
           if-no-files-found: error
