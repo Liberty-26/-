@@ -10,7 +10,7 @@ import {
   saveReceipt,
 } from '../utils/api';
 import { compressImage } from '../utils/image';
-import type { AgentMessage } from '../types';
+import type { AgentMessage, RunTrace } from '../types';
 
 interface FlowItem {
   key: number;
@@ -42,6 +42,35 @@ const formatElapsed = (s: number): string => {
   return m > 0 ? `${h}小时${m}分` : `${h}小时`;
 };
 
+// 运行痕迹：完成后收起为一行，可展开查看思考/工具过程；与结果之间用细线分隔
+function RunTraceView({ trace }: { trace: RunTrace }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="run-trace">
+      <button className="trace-toggle" onClick={() => setOpen((v) => !v)}>
+        <span className={`trace-chevron ${open ? 'open' : ''}`}>▸</span>
+        <span>运行痕迹</span>
+        <span className="trace-meta">· 用时 {formatElapsed(trace.elapsed)}</span>
+      </button>
+      {open && (
+        <div className="trace-body">
+          {trace.tools.length === 0 && (
+            <div className="trace-empty">思考 → 生成回复 · 无工具调用</div>
+          )}
+          {trace.tools.map((t, i) => (
+            <div key={i} className="trace-tool">
+              <span className={`live-tool-dot ${t.ok ? 'ok' : 'fail'}`}>{t.ok ? '✓' : '✗'}</span>
+              <span className="live-tool-name">{t.name}</span>
+              <span className="live-tool-sum">{t.summary}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="trace-divider" />
+    </div>
+  );
+}
+
 export default function WorkbenchPage() {
   const { showToast } = useToast();
   const { setPage } = useNav();
@@ -57,6 +86,10 @@ export default function WorkbenchPage() {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
+  // 自动跟随滚动：仅当用户没有任何手动滚动操作时生效；
+  // 一旦用户手动滚动（即使之后回到底部），本次生成内都不再跟随
+  const followRef = useRef(true);
+  const lastProgTopRef = useRef(-1);
   // 流式回复逐行揭示：模型一次吐一大段时也按段匀速展开（配合自动跟随滚动）
   const [revealLen, setRevealLen] = useState(0);
   const liveReplyRef = useRef('');
@@ -68,29 +101,45 @@ export default function WorkbenchPage() {
   const savedKeys = useRef<Set<number>>(new Set());
   const pollRef = useRef<number | null>(null);
 
-  // 聊天区自动跟随滚动（行业标准做法：发送即滚到底，生成过程持续跟随；
-  // 用户主动上翻查看历史时暂停跟随，回到底部附近自动恢复）
-  useEffect(() => {
-    if (messages.length > 0 && live?.phase !== 'streaming') {
-      // 新消息/回复落库：直接滚到底
-      const el = chatBodyRef.current;
-      if (el) el.scrollTop = el.scrollHeight;
-    }
-  }, [messages.length]);
-
-  useEffect(() => {
-    if (!live) return;
+  const scrollToBottom = useCallback(() => {
     const el = chatBodyRef.current;
     if (!el) return;
-    if (live.phase === 'thinking') {
-      // 发送后立即滚到底，保证流程卡可见
-      el.scrollTop = el.scrollHeight;
+    el.scrollTop = el.scrollHeight;
+    lastProgTopRef.current = el.scrollTop; // 记录程序化滚动的实际位置，供 onScroll 区分人为滚动
+  }, []);
+
+  const handleChatScroll = useCallback(() => {
+    const el = chatBodyRef.current;
+    if (!el) return;
+    // 与程序化目标不一致 → 用户手动滚动了，本次生成内停止跟随
+    if (Math.abs(el.scrollTop - lastProgTopRef.current) > 2) {
+      followRef.current = false;
+    }
+  }, []);
+
+  // 跟随规则：live 从无到有 = 新一轮发送 → 重置跟随并滚到底；
+  // 生成中仅在无人为滚动时持续跟随；结束收尾一次（同样只在无人为滚动时）
+  const prevLiveRef = useRef(false);
+  useEffect(() => {
+    const started = !prevLiveRef.current && !!live;
+    prevLiveRef.current = !!live;
+    if (!live) {
+      if (followRef.current) scrollToBottom();
       return;
     }
-    // 流式阶段：贴近底部时跟随，用户上翻则不打断
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
-    if (nearBottom) el.scrollTop = el.scrollHeight;
-  }, [live]);
+    if (started) {
+      followRef.current = true;
+      scrollToBottom();
+      return;
+    }
+    if (followRef.current) scrollToBottom();
+  }, [live, scrollToBottom]);
+
+  // 切换会话：回到该会话最新消息
+  useEffect(() => {
+    followRef.current = true;
+    scrollToBottom();
+  }, [currentSessionId, scrollToBottom]);
 
   useEffect(() => {
     if (live?.phase !== 'streaming') {
@@ -399,7 +448,10 @@ export default function WorkbenchPage() {
   }, [sendMessage]);
 
   const renderMsg = (m: AgentMessage, i: number) => (
-    <div key={i} className={`msg ${m.role === 'user' ? 'user' : 'assistant'}`}>{m.content}</div>
+    <div key={i} className={`msg ${m.role === 'user' ? 'user' : 'assistant'}`}>
+      {m.role === 'assistant' && m.trace && <RunTraceView trace={m.trace} />}
+      {m.content}
+    </div>
   );
 
   const statusPill: Record<FlowItem['status'], { cls: string; label: string }> = {
@@ -454,7 +506,7 @@ export default function WorkbenchPage() {
             与助手对话
             <span className="live"><span className="dot" />助手在线</span>
           </div>
-          <div className="chat-body" ref={chatBodyRef}>
+          <div className="chat-body" ref={chatBodyRef} onScroll={handleChatScroll}>
             {messages.length === 0 && (
               <div className="msg assistant">你好，我是你的本地工作助手。可以让我把单据写入对账单，也可以点上方「表格生成」技能，选好单据直接执行。</div>
             )}

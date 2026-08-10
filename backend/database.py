@@ -75,6 +75,7 @@ def init_db():
             role TEXT NOT NULL,
             content TEXT NOT NULL,
             session_id TEXT NOT NULL DEFAULT 'default',
+            trace TEXT NOT NULL DEFAULT '',
             created_at TEXT DEFAULT (datetime('now','localtime'))
         )
     """)
@@ -83,6 +84,8 @@ def init_db():
     cols = [r[1] for r in cursor.execute("PRAGMA table_info(chat_messages)").fetchall()]
     if "session_id" not in cols:
         cursor.execute("ALTER TABLE chat_messages ADD COLUMN session_id TEXT NOT NULL DEFAULT 'default'")
+    if "trace" not in cols:
+        cursor.execute("ALTER TABLE chat_messages ADD COLUMN trace TEXT NOT NULL DEFAULT ''")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_messages_session ON chat_messages(session_id, id)")
     cursor.execute(
         "INSERT OR IGNORE INTO chat_sessions (id, title) VALUES ('default', '默认对话')"
@@ -365,12 +368,12 @@ def _touch_session(conn, session_id: str, title_from: str = ""):
 
 # ---- 对话消息 ----
 
-def save_chat_message(role: str, content: str, session_id: str = "default"):
+def save_chat_message(role: str, content: str, session_id: str = "default", trace: str = ""):
     conn = get_conn()
     _touch_session(conn, session_id, content if role == "user" else "")
     conn.execute(
-        "INSERT INTO chat_messages (role, content, session_id) VALUES (?, ?, ?)",
-        [role, content, session_id]
+        "INSERT INTO chat_messages (role, content, session_id, trace) VALUES (?, ?, ?, ?)",
+        [role, content, session_id, trace or ""]
     )
     conn.commit()
     conn.close()
@@ -381,8 +384,8 @@ def load_chat_messages(session_id: str = "", limit: int = 100):
     where = "WHERE session_id = ?" if session_id else ""
     params = [session_id] if session_id else []
     rows = conn.execute(
-        f"""SELECT id, role, content, session_id, created_at FROM (
-                SELECT id, role, content, session_id, created_at FROM chat_messages
+        f"""SELECT id, role, content, session_id, trace, created_at FROM (
+                SELECT id, role, content, session_id, trace, created_at FROM chat_messages
                 {where}
                 ORDER BY id DESC LIMIT ?
             ) ORDER BY id ASC""",

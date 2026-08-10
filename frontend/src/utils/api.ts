@@ -253,13 +253,13 @@ export async function deleteSession(sessionId: string) {
 
 export async function loadMessages(sessionId?: string) {
   const q = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : '';
-  return request<{ messages: { id: number; role: string; content: string; created_at: string }[] }>(
+  return request<{ messages: { id: number; role: string; content: string; trace?: string; created_at: string }[] }>(
     'GET', `/agent/messages${q}`
   );
 }
 
-export async function saveMessage(role: string, content: string, sessionId?: string) {
-  return request<void>('POST', '/agent/messages', { role, content, session_id: sessionId });
+export async function saveMessage(role: string, content: string, sessionId?: string, trace?: unknown) {
+  return request<void>('POST', '/agent/messages', { role, content, session_id: sessionId, trace });
 }
 
 export async function clearMessages(sessionId?: string) {

@@ -176,6 +176,17 @@ main{flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;}
 .live-tool-sum{font-size:12px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .live-reply{max-width:100%; white-space:pre-wrap; word-break:break-word;}
 @keyframes fadeSlide{from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:none;}}
+/* ---------- 运行痕迹（完成后收起可展开，细线分隔结果） ---------- */
+.run-trace{display:flex; flex-direction:column; gap:6px; margin-bottom:2px;}
+.trace-toggle{display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--text-3); padding:0; text-align:left; transition:color .15s ease-out;}
+.trace-toggle:hover{color:var(--primary);}
+.trace-chevron{display:inline-block; font-size:10px; transition:transform .18s ease-out;}
+.trace-chevron.open{transform:rotate(90deg);}
+.trace-meta{font-variant-numeric:tabular-nums;}
+.trace-body{display:flex; flex-direction:column; gap:6px; padding:2px 0 4px; animation:fadeSlide .2s ease-out;}
+.trace-empty{font-size:12px; color:var(--text-3);}
+.trace-tool{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-2);}
+.trace-divider{height:1px; background:var(--border); margin:4px 0 8px;}
 .caret{display:inline-block; width:2px; height:14px; background:var(--primary); margin-left:2px; vertical-align:-2px; animation:caret-blink .9s steps(1) infinite;}
 @keyframes caret-blink{50%{opacity:0;}}
 .chat-input{display:flex; gap:10px; padding:12px 14px; border-top:1px solid var(--border);}

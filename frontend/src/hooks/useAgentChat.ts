@@ -4,7 +4,7 @@ import {
   agentChat as apiAgentChat, agentChatStream, loadMessages, saveMessage,
   getSessions, createSession,
 } from '../utils/api';
-import type { AgentMessage } from '../types';
+import type { AgentMessage, RunTrace } from '../types';
 
 const SESSION_KEY = 'steel_session_id';
 
@@ -65,9 +65,13 @@ export function useAgentChat() {
   const loadMessagesFor = useCallback(async (sid: string) => {
     const res = await loadMessages(sid);
     if (res.success && res.data?.messages) {
-      setMessages(res.data.messages.map(
-        (m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content })
-      ));
+      setMessages(res.data.messages.map((m) => {
+        const msg: AgentMessage = { role: m.role as 'user' | 'assistant', content: m.content };
+        if (m.trace) {
+          try { msg.trace = JSON.parse(m.trace as string); } catch { /* 旧消息无痕迹 */ }
+        }
+        return msg;
+      }));
     } else {
       setMessages([]);
     }
@@ -125,17 +129,16 @@ export function useAgentChat() {
     return sid;
   }, [refreshSessions]);
 
-  const persistMsg = useCallback(async (role: string, content: string, sid: string) => {
-    try { await saveMessage(role, content, sid); } catch { /* ignore */ }
+  const persistMsg = useCallback(async (role: string, content: string, sid: string, trace?: RunTrace) => {
+    try { await saveMessage(role, content, sid, trace); } catch { /* ignore */ }
   }, []);
 
-  const finishAssistantMsg = useCallback(async (sid: string, content: string) => {
-    setMessages((prev) => [...prev, { role: 'assistant', content }]);
-    await persistMsg('assistant', content, sid);
+  const finishAssistantMsg = useCallback(async (sid: string, content: string, trace?: RunTrace) => {
+    setMessages((prev) => [...prev, { role: 'assistant', content, ...(trace ? { trace } : {}) }]);
+    await persistMsg('assistant', content, sid, trace);
     await refreshSessions();
     setIsLoading(false);
     setLive(null);
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
   }, [persistMsg, refreshSessions]);
 
   const sendMessage = useCallback(async (text: string, selectedIds: number[], uploadedFile?: string): Promise<string | null> => {
@@ -170,14 +173,21 @@ export function useAgentChat() {
     };
 
     let finalReply = '';
+    // 运行痕迹收集：状态序列 + 工具调用 + 总耗时（完成后随消息落库，可收起展开）
+    const startTs = Date.now();
+    const traceSteps: string[] = [];
+    const traceTools: { name: string; ok: boolean; summary: string }[] = [];
+    const pushStep = (label: string) => {
+      if (traceSteps[traceSteps.length - 1] !== label) traceSteps.push(label);
+    };
     // 一次性守卫：done/error/降级/收尾可能多路径触发，只允许落库一次
     let finished = false;
-    const finishOnce = async (content: string) => {
+    const finishOnce = async (content: string, trace?: RunTrace) => {
       if (finished) return;
       finished = true;
       // 用户已切走会话则丢弃本次落库（避免回复写到别的会话）
       if (sessionIdRef.current !== sid) return;
-      await finishAssistantMsg(sid, content);
+      await finishAssistantMsg(sid, content, trace);
     };
     try {
       const resp = await agentChatStream(text, history, selectedIds, uploadedFile, sid);
@@ -206,15 +216,25 @@ export function useAgentChat() {
       const handleEvent = async (evt: StreamEvent) => {
         switch (evt.type) {
           case 'stage':
+            pushStep('思考中');
             applyLive({ phase: 'thinking', stageLabel: evt.label });
             break;
           case 'tool_call':
+            pushStep('执行中');
+            traceTools.push({ name: evt.name, ok: false, summary: '执行中…' });
             applyLive({
               phase: 'tool',
               toolCalls: [...(liveRef.current?.toolCalls || []), { name: evt.name, ok: null, summary: null }],
             });
             break;
           case 'tool_result':
+            {
+              const last = traceTools[traceTools.length - 1];
+              if (last && last.name === evt.name) {
+                last.ok = evt.ok;
+                last.summary = evt.summary;
+              }
+            }
             applyLive({
               toolCalls: (liveRef.current?.toolCalls || []).map((t, i) =>
                 i === (liveRef.current?.toolCalls.length || 0) - 1 && t.name === evt.name
@@ -225,13 +245,18 @@ export function useAgentChat() {
             break;
           case 'delta':
             finalReply += evt.content;
+            pushStep('生成中');
             applyLive({ phase: 'streaming', reply: finalReply });
-            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 30);
             break;
           case 'done':
             // 最少让流程卡展示 ~0.9s：短消息秒回时也不会一闪而过
             await new Promise((r) => setTimeout(r, 900));
-            await finishOnce(evt.reply || finalReply || '处理完成');
+            const trace: RunTrace = {
+              steps: traceSteps,
+              tools: traceTools,
+              elapsed: Math.max(1, Math.round((Date.now() - startTs) / 1000)),
+            };
+            await finishOnce(evt.reply || finalReply || '处理完成', trace);
             break;
           case 'error':
             await finishOnce(`处理失败：${evt.message}`);
@@ -257,7 +282,11 @@ export function useAgentChat() {
         }
       }
       // 流正常结束但没有 done 事件（异常中断兜底）
-      await finishOnce(finalReply || '处理完成');
+      await finishOnce(finalReply || '处理完成', {
+        steps: traceSteps,
+        tools: traceTools,
+        elapsed: Math.max(1, Math.round((Date.now() - startTs) / 1000)),
+      });
     } catch (e) {
       if (abort.signal.aborted) {
         setIsLoading(false);

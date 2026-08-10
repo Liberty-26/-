@@ -142,9 +142,13 @@ async def save_message(req: dict):
     role = req.get("role", "")
     content = req.get("content", "")
     session_id = (req.get("session_id") or "").strip() or "default"
+    trace = req.get("trace") or ""
     if role not in ("user", "assistant"):
         raise HTTPException(status_code=400, detail="role 必须是 user 或 assistant")
-    save_chat_message(role, content, session_id)
+    # trace 可为 dict/字符串，统一存 JSON 字符串
+    if isinstance(trace, (dict, list)):
+        trace = json.dumps(trace, ensure_ascii=False)
+    save_chat_message(role, content, session_id, str(trace))
     return {"success": True}
 
 
