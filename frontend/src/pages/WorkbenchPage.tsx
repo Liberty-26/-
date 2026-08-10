@@ -42,21 +42,22 @@ const formatElapsed = (s: number): string => {
   return m > 0 ? `${h}小时${m}分` : `${h}小时`;
 };
 
-// 运行痕迹：完成后收起为一行，可展开查看思考/工具过程；与结果之间用细线分隔
+// 助手执行过程：完成后收起为一行摘要，可展开查看工具明细；与结果之间用细线分隔
 function RunTraceView({ trace }: { trace: RunTrace }) {
   const [open, setOpen] = useState(false);
+  const summary = trace.tools.length > 0
+    ? trace.tools.map((t) => `${t.ok ? '✓' : '✗'} ${t.name} · ${t.summary}`).join('　')
+    : '思考 → 回复';
   return (
     <div className="run-trace">
       <button className="trace-toggle" onClick={() => setOpen((v) => !v)}>
         <span className={`trace-chevron ${open ? 'open' : ''}`}>▸</span>
-        <span>运行痕迹</span>
-        <span className="trace-meta">· 用时 {formatElapsed(trace.elapsed)}</span>
+        <span className="trace-summary">{summary}</span>
+        <span className="trace-meta">· {formatElapsed(trace.elapsed)}</span>
       </button>
       {open && (
         <div className="trace-body">
-          {trace.tools.length === 0 && (
-            <div className="trace-empty">思考 → 生成回复 · 无工具调用</div>
-          )}
+          {trace.tools.length === 0 && <div className="trace-empty">思考 → 生成回复</div>}
           {trace.tools.map((t, i) => (
             <div key={i} className="trace-tool">
               <span className={`live-tool-dot ${t.ok ? 'ok' : 'fail'}`}>{t.ok ? '✓' : '✗'}</span>
@@ -77,7 +78,7 @@ export default function WorkbenchPage() {
   const { queue, addPending } = useQueue();
   const {
     messages, isLoading, live, sendMessage, messagesEndRef,
-    sessions, currentSessionId, switchSession, newSession,
+    sessions, currentSessionId, switchSession, newSession, deleteSessionById,
   } = useAgentChat();
   const [flow, setFlow] = useState<'stream' | 'sessions'>('stream');
   const [flowItems, setFlowItems] = useState<FlowItem[]>([]);
@@ -447,6 +448,15 @@ export default function WorkbenchPage() {
     setTaskCard(reply ?? null);
   }, [sendMessage]);
 
+  // 删除会话（带确认）
+  const handleDeleteSession = useCallback(async (sid: string, title: string) => {
+    const ok = window.confirm(`删除会话「${title || '新对话'}」？该会话的全部消息将一并删除。`);
+    if (!ok) return;
+    const done = await deleteSessionById(sid);
+    if (done) showToast('会话已删除', 'success');
+    else showToast('删除失败，默认会话不可删除', 'error');
+  }, [deleteSessionById, showToast]);
+
   const renderMsg = (m: AgentMessage, i: number) => (
     <div key={i} className={`msg ${m.role === 'user' ? 'user' : 'assistant'}`}>
       {m.role === 'assistant' && m.trace && <RunTraceView trace={m.trace} />}
@@ -655,7 +665,17 @@ export default function WorkbenchPage() {
                 >
                   <div className="session-title">{s.title || '新对话'}</div>
                   <div className="session-meta">{s.message_count} 条消息 · {(s.updated_at || '').slice(0, 16).replace('T', ' ')}</div>
-                  <div className="session-count">{s.id === currentSessionId ? '当前对话' : '点击继续对话'}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="session-count">{s.id === currentSessionId ? '当前对话' : '点击继续对话'}</span>
+                    {s.id !== 'default' && (
+                      <span
+                        className="session-del"
+                        onClick={(e) => { e.stopPropagation(); handleDeleteSession(s.id, s.title); }}
+                      >
+                        删除
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </>

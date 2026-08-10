@@ -193,23 +193,22 @@ def _init_messages_fts(cursor):
                INSERT INTO messages_fts(rowid, content, session_id) VALUES (new.id, new.content, new.session_id);
                END"""
         )
-        cursor.execute(
-            """CREATE TRIGGER IF NOT EXISTS trg_msgs_ad AFTER DELETE ON chat_messages BEGIN
-               INSERT INTO messages_fts(messages_fts, rowid, content, session_id)
-               VALUES ('delete', old.id, old.content, old.session_id);
-               END"""
-        )
-        cursor.execute(
-            """CREATE TRIGGER IF NOT EXISTS trg_msgs_au AFTER UPDATE OF content ON chat_messages BEGIN
-               INSERT INTO messages_fts(messages_fts, rowid, content, session_id)
-               VALUES ('delete', old.id, old.content, old.session_id);
-               INSERT INTO messages_fts(rowid, content, session_id)
-               VALUES (new.id, new.content, new.session_id);
-               END"""
-        )
+        # 注意：FTS5 的 delete 特殊命令在本项目 SQLite 构建上会报 SQL logic error，
+        # 因此删除/清空消息后统一重建索引，而不是用 AFTER DELETE 触发器。
         # 重建索引（兼容升级前的存量消息）
         cursor.execute("DELETE FROM messages_fts")
         cursor.execute(
+            "INSERT INTO messages_fts(rowid, content, session_id) SELECT id, content, session_id FROM chat_messages"
+        )
+    except sqlite3.OperationalError:
+        pass
+
+
+def _rebuild_messages_fts(conn):
+    """删除/清空消息后重建全文索引（FTS5 删除命令不可用时的安全方案）"""
+    try:
+        conn.execute("DELETE FROM messages_fts")
+        conn.execute(
             "INSERT INTO messages_fts(rowid, content, session_id) SELECT id, content, session_id FROM chat_messages"
         )
     except sqlite3.OperationalError:
@@ -322,10 +321,13 @@ def create_session(title: str = "新对话") -> str:
 def delete_session(session_id: str):
     """删除会话及其全部消息"""
     conn = get_conn()
-    conn.execute("DELETE FROM chat_messages WHERE session_id = ?", [session_id])
-    conn.execute("DELETE FROM chat_sessions WHERE id = ?", [session_id])
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute("DELETE FROM chat_messages WHERE session_id = ?", [session_id])
+        _rebuild_messages_fts(conn)
+        conn.execute("DELETE FROM chat_sessions WHERE id = ?", [session_id])
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def get_session(session_id: str):
@@ -397,12 +399,15 @@ def load_chat_messages(session_id: str = "", limit: int = 100):
 def clear_chat_messages(session_id: str = ""):
     """清空会话消息；session_id 为空时清空全部"""
     conn = get_conn()
-    if session_id:
-        conn.execute("DELETE FROM chat_messages WHERE session_id = ?", [session_id])
-    else:
-        conn.execute("DELETE FROM chat_messages")
-    conn.commit()
-    conn.close()
+    try:
+        if session_id:
+            conn.execute("DELETE FROM chat_messages WHERE session_id = ?", [session_id])
+        else:
+            conn.execute("DELETE FROM chat_messages")
+        _rebuild_messages_fts(conn)
+        conn.commit()
+    finally:
+        conn.close()
 
 
 # ---- 会话全文检索（Hermes 式 session search） ----

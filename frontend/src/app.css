@@ -182,6 +182,7 @@ main{flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;}
 .trace-toggle:hover{color:var(--primary);}
 .trace-chevron{display:inline-block; font-size:10px; transition:transform .18s ease-out;}
 .trace-chevron.open{transform:rotate(90deg);}
+.trace-summary{color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .trace-meta{font-variant-numeric:tabular-nums;}
 .trace-body{display:flex; flex-direction:column; gap:6px; padding:2px 0 4px; animation:fadeSlide .2s ease-out;}
 .trace-empty{font-size:12px; color:var(--text-3);}
@@ -236,6 +237,8 @@ main{flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;}
 .session-title{font-size:13px; font-weight:600;}
 .session-meta{font-size:12px; color:var(--text-3);}
 .session-count{font-size:12px; color:var(--primary); font-weight:600;}
+.session-del{font-size:12px; color:var(--text-3); margin-left:auto; transition:color .15s ease-out;}
+.session-del:hover{color:var(--err);}
 /* ---------- 状态标记 ---------- */
 .pill{font-size:12px; padding:2px 10px; border-radius:999px; font-weight:600; white-space:nowrap; line-height:1.4; display:inline-flex; align-items:center; gap:4px;}
 .pill.blue{background:var(--primary-soft); color:var(--primary);}

@@ -2,7 +2,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   agentChat as apiAgentChat, agentChatStream, loadMessages, saveMessage,
-  getSessions, createSession,
+  getSessions, createSession, deleteSession,
 } from '../utils/api';
 import type { AgentMessage, RunTrace } from '../types';
 
@@ -128,6 +128,22 @@ export function useAgentChat() {
     await refreshSessions();
     return sid;
   }, [refreshSessions]);
+
+  // 删除会话（默认会话不可删）；删除当前会话时自动切到最近会话或新建
+  const deleteSessionById = useCallback(async (sid: string): Promise<boolean> => {
+    if (sid === 'default') return false;
+    const res = await deleteSession(sid);
+    if (!res.success) return false;
+    const list = await refreshSessions();
+    if (sessionIdRef.current === sid) {
+      if (list.length > 0) {
+        await switchSession(list[0].id);
+      } else {
+        await newSession();
+      }
+    }
+    return true;
+  }, [refreshSessions, switchSession, newSession]);
 
   const persistMsg = useCallback(async (role: string, content: string, sid: string, trace?: RunTrace) => {
     try { await saveMessage(role, content, sid, trace); } catch { /* ignore */ }
@@ -313,6 +329,6 @@ export function useAgentChat() {
 
   return {
     messages, isLoading, live, sendMessage, messagesEndRef, loadedFromDb,
-    sessions, currentSessionId, switchSession, newSession, refreshSessions,
+    sessions, currentSessionId, switchSession, newSession, deleteSessionById, refreshSessions,
   };
 }
