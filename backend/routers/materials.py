@@ -40,8 +40,9 @@ async def add_material(req: MaterialIn):
 
 @router.get("/candidates")
 async def material_candidates(limit: int = Query(10, ge=1, le=50)):
-    """收录收件箱：识别明细中出现的、品名库未收录的名称（按出现次数排序）。
-    判断规则：items.name 与品名库 name/aliases 均不精确匹配即视为未收录。"""
+    """收录收件箱：识别明细中出现的、以及人工修正产生的新品名（品名库未收录）。
+    数据回流：人工修正（correction_log field=name）的修正后品名优先进入待收录，
+    不自动更新品名库（是否收录由用户决定）。"""
     conn = get_conn()
     try:
         rows = conn.execute(
@@ -56,6 +57,17 @@ async def material_candidates(limit: int = Query(10, ge=1, le=50)):
                 LIMIT ?""",
             [limit],
         ).fetchall()
+        corr_rows = conn.execute(
+            """SELECT after_val AS name,
+                       COUNT(*) AS count,
+                       MAX(created_at) AS latest_date
+                FROM correction_log
+                WHERE field = 'name' AND TRIM(after_val) != ''
+                GROUP BY after_val
+                ORDER BY count DESC, latest_date DESC
+                LIMIT ?""",
+            [limit],
+        ).fetchall()
         mats = conn.execute("SELECT name, aliases FROM materials").fetchall()
         known = set()
         for m in mats:
@@ -64,16 +76,67 @@ async def material_candidates(limit: int = Query(10, ge=1, le=50)):
                 a = a.strip()
                 if a:
                     known.add(a)
-        items = [
-            {"name": r["name"].strip(), "count": r["count"], "latest_date": r["latest_date"] or ""}
-            for r in rows
-            if r["name"].strip() not in known
-        ]
+        items = []
+        seen = set()
+        # 人工修正产生的新品名（数据回流，优先展示）
+        for r in corr_rows:
+            name = r["name"].strip()
+            if not name or name in known or name in seen:
+                continue
+            seen.add(name)
+            items.append({
+                "name": name,
+                "count": r["count"],
+                "latest_date": r["latest_date"] or "",
+                "source": "correction",
+            })
+        # 识别明细中出现的新品名
+        for r in rows:
+            name = r["name"].strip()
+            if not name or name in known or name in seen:
+                continue
+            seen.add(name)
+            items.append({
+                "name": name,
+                "count": r["count"],
+                "latest_date": r["latest_date"] or "",
+                "source": "recognition",
+            })
         return {"success": True, "data": {"items": items}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
     finally:
         conn.close()
+
+
+@router.get("/alias-suggestions")
+async def alias_suggestions(min_count: int = Query(2, ge=1, le=50)):
+    """别名建议（数据回流 v1）：聚合人工修正对 → 待确认别名。
+    采纳后才写入品名库，校准层别名前缀匹配自动生效。"""
+    from database import aggregate_alias_suggestions
+    try:
+        items = aggregate_alias_suggestions(min_count)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"聚合失败: {str(e)}")
+    return {"success": True, "data": {"items": items}}
+
+
+@router.post("/alias-suggestions/{suggestion_id}/accept")
+async def accept_alias_suggestion(suggestion_id: int):
+    from database import accept_alias_suggestion
+    res = accept_alias_suggestion(suggestion_id)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "采纳失败"))
+    return {"success": True, "data": res}
+
+
+@router.post("/alias-suggestions/{suggestion_id}/ignore")
+async def ignore_alias_suggestion(suggestion_id: int):
+    from database import ignore_alias_suggestion
+    ok = ignore_alias_suggestion(suggestion_id)
+    if not ok:
+        raise HTTPException(status_code=400, detail="建议不存在或已处理")
+    return {"success": True}
 
 
 @router.put("/{material_id}")

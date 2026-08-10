@@ -2,10 +2,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   getMaterials, createMaterial, updateMaterial, deleteMaterial, getMaterialCandidates,
+  getAliasSuggestions, acceptAliasSuggestion, ignoreAliasSuggestion,
 } from '../utils/api';
 import { useToast } from '../hooks/useToast';
 import ConfirmDialog from '../components/ConfirmDialog';
-import type { Material, MaterialCandidate } from '../types';
+import type { Material, MaterialCandidate, AliasSuggestion } from '../types';
 import { Plus } from 'lucide-react';
 
 const CATS = ['全部', '管材', '管件', '线盒', '网类', '其他'];
@@ -14,12 +15,12 @@ export default function MaterialsPage() {
   const { showToast } = useToast();
   const [items, setItems] = useState<Material[]>([]);
   const [cands, setCands] = useState<MaterialCandidate[]>([]);
+  const [aliasSugg, setAliasSugg] = useState<AliasSuggestion[]>([]);
   const [search, setSearch] = useState('');
   const [curCat, setCurCat] = useState('全部');
   const [editing, setEditing] = useState<Material | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formName, setFormName] = useState('');
-  const [formAliases, setFormAliases] = useState('');
   const [formUnit, setFormUnit] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
@@ -34,7 +35,12 @@ export default function MaterialsPage() {
     if (res.success && res.data) setCands(res.data.items);
   }, []);
 
-  useEffect(() => { fetchList(''); fetchCands(); }, [fetchList, fetchCands]);
+  const fetchAliasSugg = useCallback(async () => {
+    const res = await getAliasSuggestions();
+    if (res.success && res.data) setAliasSugg(res.data.items);
+  }, []);
+
+  useEffect(() => { fetchList(''); fetchCands(); fetchAliasSugg(); }, [fetchList, fetchCands, fetchAliasSugg]);
 
   useEffect(() => {
     const badge = document.getElementById('navBadgeCand');
@@ -42,18 +48,19 @@ export default function MaterialsPage() {
   }, [cands.length]);
 
   const openAdd = () => {
-    setEditing(null); setFormName(''); setFormAliases(''); setFormUnit('');
+    setEditing(null); setFormName(''); setFormUnit('');
     setDialogOpen(true);
   };
 
   const openEdit = (m: Material) => {
-    setEditing(m); setFormName(m.name); setFormAliases(m.aliases || ''); setFormUnit(m.unit || '');
+    setEditing(m); setFormName(m.name); setFormUnit(m.unit || '');
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!formName.trim()) { showToast('品名不能为空', 'error'); return; }
-    const data = { name: formName.trim(), aliases: formAliases.trim(), unit: formUnit.trim() };
+    // 错误名（原别名）内置维护，不开放手编
+    const data = { name: formName.trim(), aliases: '', unit: formUnit.trim() };
     const res = editing ? await updateMaterial(editing.id, data) : await createMaterial(data);
     if (res.success) {
       showToast(editing ? '已更新' : '已新增', 'success');
@@ -86,6 +93,27 @@ export default function MaterialsPage() {
   const ignore = (name: string) => {
     setCands((prev) => prev.filter((x) => x.name !== name));
     showToast('已忽略该候选', 'info');
+  };
+
+  const adoptAlias = async (s: AliasSuggestion) => {
+    const res = await acceptAliasSuggestion(s.id);
+    if (res.success) {
+      showToast(`已采纳：${s.before_val} → ${s.after_val}`, 'success');
+      setAliasSugg((prev) => prev.filter((x) => x.id !== s.id));
+      fetchList(search.trim());
+    } else {
+      showToast(res.error || '采纳失败', 'error');
+    }
+  };
+
+  const ignoreAlias = async (s: AliasSuggestion) => {
+    const res = await ignoreAliasSuggestion(s.id);
+    if (res.success) {
+      showToast('已忽略该建议', 'info');
+      setAliasSugg((prev) => prev.filter((x) => x.id !== s.id));
+    } else {
+      showToast(res.error || '操作失败', 'error');
+    }
   };
 
   const filtered = items.filter((m) => {
@@ -128,6 +156,21 @@ export default function MaterialsPage() {
               </div>
             ))}
           </div>
+          <div className="inbox">
+            <h4>错误名建议 <span className="badge">{aliasSugg.length}</span></h4>
+            <div className="hint">来自人工修正的数据回流，采纳后识别自动纠错</div>
+            {aliasSugg.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>暂无待确认的错误名建议</div>}
+            {aliasSugg.map((s) => (
+              <div key={s.id} className="cand">
+                <div><span className="from">{s.before_val}</span> → <span className="to">{s.after_val}</span></div>
+                <div className="reason">来自 {s.count} 次人工修正</div>
+                <div className="acts">
+                  <button className="mini" onClick={() => adoptAlias(s)}>采纳</button>
+                  <button className="mini ghost" onClick={() => ignoreAlias(s)}>忽略</button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="mat-main">
@@ -144,18 +187,12 @@ export default function MaterialsPage() {
           </div>
           <div className="mat-table-wrap">
             <table className="mat-table">
-              <thead><tr><th>品名</th><th>别名</th><th>默认单位</th><th style={{ width: 110, textAlign: 'center' }}>操作</th></tr></thead>
+              <thead><tr><th>品名</th><th>默认单位</th><th style={{ width: 110, textAlign: 'center' }}>操作</th></tr></thead>
               <tbody>
-                {filtered.length === 0 && <tr><td colSpan={4} style={{ padding: 28, textAlign: 'center', color: 'var(--text-3)' }}>没有匹配的品名</td></tr>}
+                {filtered.length === 0 && <tr><td colSpan={3} style={{ padding: 28, textAlign: 'center', color: 'var(--text-3)' }}>没有匹配的品名</td></tr>}
                 {filtered.map((m) => (
                   <tr key={m.id}>
                     <td style={{ fontWeight: 600 }}>{m.name}</td>
-                    <td>
-                      {(m.aliases || '').split(/[,，\/]/).filter(Boolean).map((a) => (
-                        <span key={a} className="alias-tag">{a}</span>
-                      ))}
-                      {!m.aliases && <span className="src-tag">—</span>}
-                    </td>
                     <td>{m.unit || '—'}</td>
                     <td style={{ textAlign: 'center' }}>
                       <button className="link" onClick={() => openEdit(m)}>编辑</button>
@@ -176,10 +213,6 @@ export default function MaterialsPage() {
             <div className="form-field">
               <label>品名 *</label>
               <input value={formName} onChange={(e) => setFormName(e.target.value)} />
-            </div>
-            <div className="form-field">
-              <label>别名（逗号或斜杠分隔）</label>
-              <input value={formAliases} onChange={(e) => setFormAliases(e.target.value)} placeholder="例如：王通,亭头" />
             </div>
             <div className="form-field">
               <label>默认单位</label>

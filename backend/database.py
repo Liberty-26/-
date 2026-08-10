@@ -5,6 +5,7 @@ SQLite，文件 database，单机部署零配置。
 import sqlite3
 import os
 import uuid
+import datetime
 from pathlib import Path
 import config
 
@@ -134,6 +135,21 @@ def init_db():
             created_at TEXT DEFAULT (datetime('now','localtime'))
         )
     """)
+
+    # 别名建议（数据回流 v1：人工修正 → 待确认别名）
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS alias_suggestions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            before_val TEXT NOT NULL,
+            after_val TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT DEFAULT (datetime('now','localtime'))
+        )
+    """)
+    cursor.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_alias_sugg_pair ON alias_suggestions(before_val, after_val)"
+    )
 
     # 技能表
     cursor.execute("""
@@ -683,6 +699,8 @@ def get_monitor_stats():
 
 
 # ---- 品名参考库 materials ----
+# 概念统一：materials.aliases 即「错误名」（形近词/别名不区分，均来自人工修正的数据回流，
+# 代码级规则、不经 LLM；内置维护，前端不展示，识别校准自动匹配生效）
 
 def list_materials(search: str = "", limit: int = 500, offset: int = 0):
     """品名列表，支持品名/别名模糊搜索"""
@@ -796,3 +814,168 @@ def get_material_unit(name: str) -> str | None:
     ).fetchone()
     conn.close()
     return row["unit"] if row else None
+
+
+# ---- 别名建议（数据回流 v1：人工修正 → 待确认别名） ----
+
+def aggregate_alias_suggestions(min_count: int = 2) -> list:
+    """从 correction_log 聚合 name 修正对，生成待确认别名建议。
+    筛选：频次 ≥ min_count；排除冲突（同一 before 出现多个 after）；
+    排除已在库的别名/标准名；已处理（accepted/ignored）的建议不重复生成。"""
+    conn = get_conn()
+    try:
+        rows = conn.execute(
+            """SELECT before_val, after_val, COUNT(*) AS cnt
+               FROM correction_log
+               WHERE field = 'name' AND TRIM(before_val) != '' AND TRIM(after_val) != ''
+                 AND before_val != after_val
+               GROUP BY before_val, after_val
+               HAVING cnt >= ?
+               ORDER BY cnt DESC""",
+            [min_count],
+        ).fetchall()
+        mats = conn.execute("SELECT name, aliases FROM materials").fetchall()
+        known = set()
+        for m in mats:
+            known.add(m["name"].strip())
+            for a in (m["aliases"] or "").replace("，", ",").replace("/", ",").split(","):
+                a = a.strip()
+                if a:
+                    known.add(a)
+        processed = set()
+        for r in conn.execute(
+            "SELECT before_val, after_val FROM alias_suggestions WHERE status != 'pending'"
+        ).fetchall():
+            processed.add((r["before_val"], r["after_val"]))
+
+        before_after: dict[str, list] = {}
+        for r in rows:
+            before_after.setdefault(r["before_val"], []).append((r["after_val"], r["cnt"]))
+        for before, pairs in before_after.items():
+            # 冲突：同一 before 多个 after → 不生成建议（人工修正不稳定）
+            if len(pairs) != 1:
+                continue
+            after, cnt = pairs[0]
+            if before in known or (before, after) in processed:
+                continue
+            cur = conn.execute(
+                "SELECT id FROM alias_suggestions WHERE before_val = ? AND after_val = ?",
+                (before, after),
+            ).fetchone()
+            if cur:
+                conn.execute("UPDATE alias_suggestions SET count = ? WHERE id = ?", (cnt, cur["id"]))
+            else:
+                conn.execute(
+                    "INSERT INTO alias_suggestions (before_val, after_val, count, status) VALUES (?, ?, ?, 'pending')",
+                    (before, after, cnt),
+                )
+        conn.commit()
+        out = conn.execute(
+            """SELECT id, before_val, after_val, count, status, created_at
+               FROM alias_suggestions WHERE status = 'pending' ORDER BY count DESC"""
+        ).fetchall()
+        return [dict(r) for r in out]
+    finally:
+        conn.close()
+
+
+def list_alias_suggestions() -> list:
+    conn = get_conn()
+    try:
+        out = conn.execute(
+            """SELECT id, before_val, after_val, count, status, created_at
+               FROM alias_suggestions WHERE status = 'pending' ORDER BY count DESC"""
+        ).fetchall()
+        return [dict(r) for r in out]
+    finally:
+        conn.close()
+
+
+def accept_alias_suggestion(suggestion_id: int) -> dict:
+    """采纳建议：把 before 写入 after 的别名（after 不在库则新建品名）。"""
+    conn = get_conn()
+    try:
+        row = conn.execute(
+            "SELECT * FROM alias_suggestions WHERE id = ? AND status = 'pending'",
+            (suggestion_id,),
+        ).fetchone()
+        if not row:
+            return {"ok": False, "error": "建议不存在或已处理"}
+        before, after = row["before_val"], row["after_val"]
+        mat = conn.execute("SELECT id, aliases FROM materials WHERE name = ?", (after,)).fetchone()
+        if mat:
+            parts = [a.strip() for a in (mat["aliases"] or "").replace("，", ",").replace("/", ",").split(",") if a.strip()]
+            if before not in parts:
+                parts.append(before)
+            conn.execute("UPDATE materials SET aliases = ? WHERE id = ?", (",".join(parts), mat["id"]))
+        else:
+            conn.execute(
+                "INSERT INTO materials (name, aliases, unit) VALUES (?, ?, '')",
+                (after, before),
+            )
+        conn.execute("UPDATE alias_suggestions SET status = 'accepted' WHERE id = ?", (suggestion_id,))
+        conn.commit()
+        return {"ok": True, "before": before, "after": after}
+    finally:
+        conn.close()
+
+
+def ignore_alias_suggestion(suggestion_id: int) -> bool:
+    conn = get_conn()
+    try:
+        cur = conn.execute(
+            "UPDATE alias_suggestions SET status = 'ignored' WHERE id = ? AND status = 'pending'",
+            (suggestion_id,),
+        )
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+# ---- 数据备份（P7 可恢复性） ----
+
+def create_backup(backup_dir: str = "") -> str:
+    """一键备份：data.db（含 WAL 数据，sqlite backup API）+ uploads → zip。
+    返回备份文件绝对路径。"""
+    import shutil
+    import zipfile
+    base = Path(backup_dir) if backup_dir else Path(config.CONFIG_DIR) / "backups"
+    base.mkdir(parents=True, exist_ok=True)
+    ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tmp_db = base / f"data-{ts}.db"
+    src = sqlite3.connect(DB_PATH)
+    dst = sqlite3.connect(str(tmp_db))
+    try:
+        with dst:
+            src.backup(dst)
+    finally:
+        dst.close()
+        src.close()
+    zip_path = base / f"backup-{ts}.zip"
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+        z.write(tmp_db, "data.db")
+        uploads = Path(config.UPLOAD_DIR)
+        if uploads.exists():
+            for f in uploads.iterdir():
+                if f.is_file():
+                    z.write(f, f"uploads/{f.name}")
+    tmp_db.unlink(missing_ok=True)
+    return str(zip_path)
+
+
+def list_backups(limit: int = 10) -> list:
+    """最近备份列表（新→旧）：名称/大小/时间"""
+    base = Path(config.CONFIG_DIR) / "backups"
+    if not base.exists():
+        return []
+    files = sorted(base.glob("backup-*.zip"), key=lambda p: p.stat().st_mtime, reverse=True)[:limit]
+    out = []
+    for f in files:
+        st = f.stat()
+        out.append({
+            "name": f.name,
+            "size": st.st_size,
+            "created_at": datetime.datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+        })
+    return out

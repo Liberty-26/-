@@ -145,6 +145,11 @@ export function useAgentChat() {
     return true;
   }, [refreshSessions, switchSession, newSession]);
 
+  // 停止生成：中断当前流；已生成的部分由 sendMessage 的 abort 分支保留
+  const stopGenerating = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
   const persistMsg = useCallback(async (role: string, content: string, sid: string, trace?: RunTrace) => {
     try { await saveMessage(role, content, sid, trace); } catch { /* ignore */ }
   }, []);
@@ -230,6 +235,8 @@ export function useAgentChat() {
       let buf = '';
 
       const handleEvent = async (evt: StreamEvent) => {
+        // 停止后忽略后续事件：缓冲中的事件不再处理，立即生效
+        if (abort.signal.aborted) return;
         switch (evt.type) {
           case 'stage':
             pushStep('思考中');
@@ -282,7 +289,7 @@ export function useAgentChat() {
 
       for (;;) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done || abort.signal.aborted) break;
         buf += decoder.decode(value, { stream: true });
         let idx: number;
         while ((idx = buf.indexOf('\n\n')) !== -1) {
@@ -295,7 +302,22 @@ export function useAgentChat() {
           } catch (e) {
             console.error('[chat] SSE 解析失败:', e);
           }
+          if (abort.signal.aborted) break;
         }
+      }
+      // 用户停止：保留已生成的部分作为回复，一条都没有则不留空回复
+      if (abort.signal.aborted) {
+        if (finalReply.trim()) {
+          await finishAssistantMsg(sid, finalReply, {
+            steps: traceSteps,
+            tools: traceTools,
+            elapsed: Math.max(1, Math.round((Date.now() - startTs) / 1000)),
+          });
+        } else {
+          setIsLoading(false);
+          setLive(null);
+        }
+        return null;
       }
       // 流正常结束但没有 done 事件（异常中断兜底）
       await finishOnce(finalReply || '处理完成', {
@@ -305,8 +327,18 @@ export function useAgentChat() {
       });
     } catch (e) {
       if (abort.signal.aborted) {
-        setIsLoading(false);
-        setLive(null);
+        // 用户主动停止：保留已生成的部分作为回复（与 Codex 一致），
+        // 一条都没生成则不留空回复
+        if (finalReply.trim()) {
+          await finishAssistantMsg(sid, finalReply, {
+            steps: traceSteps,
+            tools: traceTools,
+            elapsed: Math.max(1, Math.round((Date.now() - startTs) / 1000)),
+          });
+        } else {
+          setIsLoading(false);
+          setLive(null);
+        }
         return null;
       }
       console.error('[chat] 流式请求失败:', e);
@@ -330,5 +362,6 @@ export function useAgentChat() {
   return {
     messages, isLoading, live, sendMessage, messagesEndRef, loadedFromDb,
     sessions, currentSessionId, switchSession, newSession, deleteSessionById, refreshSessions,
+    stopGenerating,
   };
 }

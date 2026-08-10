@@ -5,7 +5,7 @@ import { useToast } from '../hooks/useToast';
 import { useNav } from '../contexts/NavContext';
 import { useQueue } from '../contexts/QueueContext';
 import SkillModal from '../components/SkillModal';
-import { Table2, CalendarRange, Boxes, Upload } from 'lucide-react';
+import { Table2, CalendarRange, Boxes, Upload, ArrowUp, Square } from 'lucide-react';
 import {
   saveReceipt,
 } from '../utils/api';
@@ -78,7 +78,7 @@ export default function WorkbenchPage() {
   const { queue, addPending } = useQueue();
   const {
     messages, isLoading, live, sendMessage, messagesEndRef,
-    sessions, currentSessionId, switchSession, newSession, deleteSessionById,
+    sessions, currentSessionId, switchSession, newSession, deleteSessionById, stopGenerating,
   } = useAgentChat();
   const [flow, setFlow] = useState<'stream' | 'sessions'>('stream');
   const [flowItems, setFlowItems] = useState<FlowItem[]>([]);
@@ -565,15 +565,16 @@ export default function WorkbenchPage() {
               }}
             />
             <button
-              className="btn"
-              disabled={isLoading}
+              className={`chat-send ${isLoading ? 'stop' : ''}`}
+              title={isLoading ? '停止生成' : '发送'}
               onClick={(e) => {
+                if (isLoading) { stopGenerating(); return; }
                 const inp = (e.currentTarget.parentElement!.querySelector('input'))!;
                 const v = inp.value.trim();
                 if (v) { sendMessage(v, []); inp.value = ''; }
               }}
             >
-              {isLoading ? '处理中…' : '发送'}
+              {isLoading ? <Square size={16} strokeWidth={3} /> : <ArrowUp size={20} strokeWidth={2.5} />}
             </button>
           </div>
         </div>

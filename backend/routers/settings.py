@@ -182,6 +182,24 @@ async def scan_scenes():
     return {"success": True, "data": {"scenes": scenes, "current": config.SCAN_SCENE}}
 
 
+@router.post("/backup")
+async def create_backup_api():
+    """一键备份：数据库 + 上传图片 → zip（P7 可恢复性）"""
+    from database import create_backup
+    try:
+        path = create_backup()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"备份失败: {str(e)}")
+    return {"success": True, "data": {"path": path}}
+
+
+@router.get("/backups")
+async def list_backups_api(limit: int = 10):
+    """最近备份列表"""
+    from database import list_backups
+    return {"success": True, "data": {"backups": list_backups(limit)}}
+
+
 @router.post("/test-scan")
 async def test_scan(req: dict):
     """测试扫描王连接并测速：用 1 张最小图片真实调用一次 API（消耗一次识别额度）"""

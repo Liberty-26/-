@@ -98,6 +98,17 @@ export interface MaterialCandidate {
   name: string;
   count: number;
   latest_date: string;
+  source?: 'correction' | 'recognition'; // 数据回流：人工修正优先
+}
+
+// 别名建议（数据回流 v1：人工修正 → 待确认别名）
+export interface AliasSuggestion {
+  id: number;
+  before_val: string;
+  after_val: string;
+  count: number;
+  status: 'pending' | 'accepted' | 'ignored';
+  created_at: string;
 }
 
 /** 校正记录（记忆·校正层） */

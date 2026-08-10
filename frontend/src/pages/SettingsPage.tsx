@@ -4,6 +4,7 @@ import { useToast } from '../hooks/useToast';
 import {
   getSettings, saveSettings, getScanScenes, testScanConnection,
   getFacts, addFact, deleteFact, getCorrections, deleteCorrection, clearCorrections,
+  exportBackup, getBackups,
 } from '../utils/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import type { AssistantFact, CorrectionRecord } from '../types';
@@ -12,6 +13,110 @@ const S = { aKey: 'steel_agent_key', aBase: 'steel_agent_base', aModel: 'steel_a
 import { CheckCircle2 } from 'lucide-react';
 
 interface ScanScene { scene: string; label: string; type: string }
+
+// 训练数据图表（lieflat-charts 模板语法：F1 梯档柱 / F2 发丝折线）
+const INK = '#1C1C1A';
+const MUTED = '#8A8983';
+const GRID = '#D8D7D1';
+const FAINT = '#B0AFA9';
+const FIELD_LABEL: Record<string, string> = { name: '品名', spec: '规格', unit: '单位', qty: '数量', price: '单价' };
+
+function TrainingCharts({ corrections }: { corrections: { field: string; before_val: string; after_val: string; created_at?: string }[] }) {
+  // F5 · Tick Rows：字段分布，1 tick = 1 次修正（横排，类目名左对齐）
+  const fields = (['name', 'spec', 'unit', 'qty', 'price'] as const)
+    .map((f) => ({ f, n: corrections.filter((c) => c.field === f).length }))
+    .filter((x) => x.n > 0);
+
+  // F2 · Hairline Line：近 7 天修正趋势
+  const days: { label: string; n: number; key: string }[] = [];
+  const now = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    days.push({ label: `${String(d.getMonth() + 1)}-${String(d.getDate()).padStart(2, '0')}`, key, n: 0 });
+  }
+  corrections.forEach((c) => {
+    const k = (c.created_at || '').slice(0, 10);
+    const hit = days.find((x) => x.key === k);
+    if (hit) hit.n += 1;
+  });
+  const maxDay = Math.max(1, ...days.map((x) => x.n));
+
+  const W = 400, H = 150;
+  const rowY = (i: number) => 16 + i * 24;
+  const TICK_X0 = 104, TICK_PX = 6;
+
+  return (
+    <div className="td-charts">
+      <div className="td-chart">
+        <div className="td-chart-title">哪类最容易改错</div>
+        <div className="td-chart-sub">1 tick = 1 次人工修正 · 行尾大数</div>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 150 }}>
+          {fields.map((x, i) => {
+            const y = rowY(i);
+            const ticks = Math.min(x.n, 26);
+            return (
+              <g key={x.f}>
+                <text x={94} y={y + 3} fontSize={9} fontWeight={700} fill="#6A6963" textAnchor="end" letterSpacing="0.04em">
+                  {FIELD_LABEL[x.f] || x.f}
+                </text>
+                <line x1={TICK_X0} y1={y + 10} x2={TICK_X0 + 34 * TICK_PX} y2={y + 10} stroke={GRID} strokeWidth={0.6} />
+                {Array.from({ length: ticks }, (_, k) => (
+                  <line
+                    key={k}
+                    x1={TICK_X0 + k * TICK_PX + TICK_PX / 2}
+                    x2={TICK_X0 + k * TICK_PX + TICK_PX / 2}
+                    y1={y + 10}
+                    y2={y + 1}
+                    stroke={INK}
+                    strokeWidth={0.9}
+                    opacity={0.55 + (k % 3) * 0.15}
+                  />
+                ))}
+                <text x={TICK_X0 + x.n * TICK_PX + 10} y={y + 4} fontSize={11} fontWeight={800} fill={INK}>
+                  {x.n}
+                </text>
+              </g>
+            );
+          })}
+          {fields.length === 0 && (
+            <text x={200} y={70} fontSize={11} fill={FAINT} textAnchor="middle">暂无数据</text>
+          )}
+        </svg>
+        <div className="td-chart-src">ONE TICK = ONE CORRECTION · 累计 {corrections.length} 条修正</div>
+      </div>
+
+      <div className="td-chart">
+        <div className="td-chart-title">近 7 天修正趋势</div>
+        <div className="td-chart-sub">1 点 = 1 天 · 发丝折线 = 修正量变化</div>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 150 }}>
+          {days.map((_, i) => {
+            const x = 26 + i * 58;
+            return <line key={i} x1={x} y1={118} x2={x} y2={111} stroke="#CFCEC7" strokeWidth={0.6} />;
+          })}
+          <line x1={20} y1={118} x2={W - 20} y2={118} stroke={GRID} strokeWidth={0.8} />
+          {(() => {
+            const pts = days.map((d, i) => `${26 + i * 58} ${118 - (d.n / maxDay) * 78}`).join(' L ');
+            return <path d={`M${pts}`} fill="none" stroke={INK} strokeWidth={1} />;
+          })()}
+          {days.map((d, i) => {
+            const x = 26 + i * 58;
+            const y = 118 - (d.n / maxDay) * 78;
+            const peak = d.n > 0 && d.n === maxDay;
+            return (
+              <g key={i}>
+                <circle cx={x} cy={y} r={d.n === 0 ? 1.6 : peak ? 4 : 2.2} fill={d.n === 0 ? '#fff' : INK} stroke={INK} strokeWidth={d.n === 0 ? 1 : 0} />
+                {peak && <text x={x} y={y - 9} fontSize={9} fontWeight={800} fill={INK} textAnchor="middle">{d.n}</text>}
+                <text x={x} y={136} fontSize={7.5} fontWeight={600} fill={MUTED} textAnchor="middle" letterSpacing="0.06em">{d.label}</text>
+              </g>
+            );
+          })}
+        </svg>
+        <div className="td-chart-src">LAST 7 DAYS · 实心 = 有修正 · 空心 = 无</div>
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { showToast } = useToast();
@@ -40,6 +145,8 @@ export default function SettingsPage() {
   const [factVal, setFactVal] = useState('');
   const [clearOpen, setClearOpen] = useState(false);
   const [appVersion, setAppVersion] = useState('');
+  const [backups, setBackups] = useState<{ name: string; size: number; created_at: string }[]>([]);
+  const [backingUp, setBackingUp] = useState(false);
 
   // 桌面端自动更新状态
   const [upd, setUpd] = useState<{
@@ -65,6 +172,25 @@ export default function SettingsPage() {
     });
     return off;
   }, []);
+
+  const refreshBackups = useCallback(async () => {
+    const res = await getBackups();
+    if (res.success && res.data) setBackups(res.data.backups);
+  }, []);
+
+  useEffect(() => { refreshBackups(); }, [refreshBackups]);
+
+  const handleBackup = async () => {
+    setBackingUp(true);
+    const res = await exportBackup();
+    setBackingUp(false);
+    if (res.success && res.data) {
+      showToast('备份完成：' + res.data.path, 'success');
+      refreshBackups();
+    } else {
+      showToast(res.error || '备份失败', 'error');
+    }
+  };
 
   const handleCheckUpdate = async () => {
     const steel = (window as any).steel;
@@ -121,7 +247,7 @@ export default function SettingsPage() {
 
   const loadMemory = useCallback(() => {
     getFacts().then((r) => { if (r.success && r.data) setFacts(r.data.facts); });
-    getCorrections().then((r) => { if (r.success && r.data) setCorrections(r.data.corrections); });
+    getCorrections(500).then((r) => { if (r.success && r.data) setCorrections(r.data.corrections); });
   }, []);
 
   useEffect(() => { if (panel === 'memory') loadMemory(); }, [panel, loadMemory]);
@@ -335,22 +461,33 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="set-card">
-            <h3>校正层（纠正记录）</h3>
-            <div className="desc">每次人工修改识别结果都会记录，用于以后识别得更准</div>
-            {corrections.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>还没有纠正记录</div>}
+            <h3>训练数据（校正记录）</h3>
+            <div className="desc">审核区每次人工修改都会记录「识别结果 → 人工修正」，用于生成错误名规则</div>
+            {corrections.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>暂无训练数据：在审核区修改识别结果后，会自动在这里积累</div>}
+            {corrections.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                <span className="pill gray">共 {corrections.length} 条</span>
+                {(['name', 'spec', 'unit', 'qty', 'price'] as const).map((f) => {
+                  const n = corrections.filter((c) => c.field === f).length;
+                  return n > 0 ? <span key={f} className={`pill ${f === 'name' ? 'amber' : 'blue'}`}>{f} × {n}</span> : null;
+                })}
+              </div>
+            )}
+            <TrainingCharts corrections={corrections} />
             {corrections.map((c) => (
               <div key={c.id} className="mem-item">
-                <span className="num" style={{ color: 'var(--text-2)' }}>{c.receipt_no || '—'}</span>
-                <span className="from" style={{ textDecoration: 'line-through', color: 'var(--text-2)' }}>{c.before_val}</span>
-                <span className="arrow">→</span>
-                <span>{c.after_val}</span>
                 <span className="badge">{c.field}</span>
+                <span className="num" style={{ color: 'var(--text-2)', fontSize: 12 }}>{c.receipt_no || '—'}</span>
+                <span style={{ textDecoration: 'line-through', color: 'var(--text-2)' }}>{c.before_val || '（空）'}</span>
+                <span className="arrow">→</span>
+                <span style={{ color: 'var(--ok)' }}>{c.after_val || '（空）'}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 'auto' }}>{(c.created_at || '').slice(5, 16)}</span>
                 <button className="act del" onClick={async () => { await deleteCorrection(c.id); loadMemory(); }}>删除</button>
               </div>
             ))}
             {corrections.length > 0 && (
               <div className="danger-zone" style={{ marginTop: 8 }}>
-                <div><div className="d-title">清空校正记录</div><div className="d-sub">删除全部纠正记录，业务数据不受影响</div></div>
+                <div><div className="d-title">清空训练数据</div><div className="d-sub">删除全部校正记录，业务数据不受影响</div></div>
                 <button className="btn danger sm" style={{ marginLeft: 'auto' }} onClick={() => setClearOpen(true)}>清空</button>
               </div>
             )}
@@ -368,6 +505,24 @@ export default function SettingsPage() {
           <div className="set-row"><span className="k">数据</span><span className="v">全部在本机 SQLite，不上传云端</span></div>
           <div className="set-row"><span className="k">识别</span><span className="v">夸克扫描王 image-to-excel</span></div>
           <div className="set-row"><span className="k">助手</span><span className="v">自研 harness · 技能文件化 · 三层记忆</span></div>
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 10 }}>数据备份</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <button className="btn sm" onClick={handleBackup} disabled={backingUp}>
+                {backingUp ? '备份中…' : '立即备份'}
+              </button>
+              {backups.length > 0 && (
+                <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
+                  最近：{backups[0].name}（{backups[0].created_at}）
+                </span>
+              )}
+            </div>
+            {backups.length > 1 && (
+              <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-3)' }}>
+                共 {backups.length} 份：{backups.slice(1).map((b) => b.name).join('、')}
+              </div>
+            )}
+          </div>
           <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
             <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 10 }}>软件更新</div>
             {upd.state === 'idle' && (

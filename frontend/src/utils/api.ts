@@ -1,7 +1,7 @@
 // SteelDigitize Pro — API 调用封装
 import type {
   ApiResponse, Receipt, PaginatedData, HistoryQuery, MonthStat,
-  MaterialCandidate, CorrectionRecord, AssistantFact,
+  MaterialCandidate, CorrectionRecord, AssistantFact, AliasSuggestion,
 } from '../types';
 
 const BASE = '/api';
@@ -84,6 +84,19 @@ export async function getMaterialCandidates() {
   return request<{ items: MaterialCandidate[] }>('GET', '/materials/candidates');
 }
 
+/** 别名建议（数据回流）：人工修正 → 待确认别名 */
+export async function getAliasSuggestions() {
+  return request<{ items: AliasSuggestion[] }>('GET', '/materials/alias-suggestions');
+}
+
+export async function acceptAliasSuggestion(id: number) {
+  return request<{ before: string; after: string }>('POST', `/materials/alias-suggestions/${id}/accept`);
+}
+
+export async function ignoreAliasSuggestion(id: number) {
+  return request<void>('POST', `/materials/alias-suggestions/${id}/ignore`);
+}
+
 // ---- 历史 CRUD ----
 
 export async function saveReceipt(receipt: Receipt) {
@@ -157,6 +170,16 @@ export async function saveSettings(settings: {
 /** 扫描王官方场景列表 */
 export async function getScanScenes() {
   return request<{ scenes: { scene: string; label: string; type: string }[]; current: string }>('GET', '/settings/scan-scenes');
+}
+
+/** 一键备份（数据 + 上传图片 → zip） */
+export async function exportBackup() {
+  return request<{ path: string }>('POST', '/settings/backup');
+}
+
+/** 最近备份列表 */
+export async function getBackups() {
+  return request<{ backups: { name: string; size: number; created_at: string }[] }>('GET', '/settings/backups');
 }
 
 /** 测试扫描王连接并测速（真实调用一次，消耗额度） */
@@ -305,8 +328,8 @@ export async function deleteFact(id: number) {
   return request<void>('DELETE', `/memory/facts/${id}`);
 }
 
-export async function getCorrections() {
-  return request<{ corrections: CorrectionRecord[] }>('GET', '/memory/corrections');
+export async function getCorrections(limit = 200) {
+  return request<{ corrections: CorrectionRecord[] }>('GET', `/memory/corrections?limit=${limit}`);
 }
 
 export async function addCorrections(changes: { receipt_no: string; field: string; before_val: string; after_val: string }[]) {
