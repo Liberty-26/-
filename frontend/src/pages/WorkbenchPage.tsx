@@ -98,18 +98,16 @@ export default function WorkbenchPage() {
       return;
     }
     setRevealLen(0);
-    // 逐行揭示：每 120ms 推进到下一行行尾（一行一行长出来）；
-    // 单行超长时按每拍 40 字匀速揭示。模型流得慢则实时跟上。
+    // 平滑逐行揭示：打字机式按字符匀速展开（≈270 字/秒），
+    // 换行自然呈现，配合自动跟随滚动形成「逐行长出来」的连续感
     const timer = window.setInterval(() => {
       setRevealLen((prev) => {
         const text = liveReplyRef.current;
         const total = text.length;
         if (prev >= total) return total;
-        const nl = text.indexOf('\n', prev);
-        if (nl !== -1) return Math.min(total, nl + 1);
-        return Math.min(total, prev + 40);
+        return Math.min(total, prev + 8);
       });
-    }, 120);
+    }, 30);
     return () => window.clearInterval(timer);
   }, [live?.phase]);
 
@@ -462,33 +460,24 @@ export default function WorkbenchPage() {
             )}
             {messages.map(renderMsg)}
             {live && (
-              <div className="task-card live-card">
-                <div className="task-head">
-                  <span className="task-title">{live.phase === 'streaming' ? '正在回复' : '助手处理中'}</span>
-                  <span className={`task-status ${live.phase === 'streaming' ? '' : 'running'}`}>
-                    {live.phase === 'thinking' ? '思考中' : live.phase === 'tool' ? '调用工具' : '生成中'}
-                    <span className="think-dots"><i /><i /><i /></span>
-                  </span>
-                  <span className="task-elapsed">⏱ {formatElapsed(elapsed)}</span>
+              <div className="assistant-turn">
+                <div className="live-status" key={live.phase}>
+                  <span className="live-spinner" />
+                  <span>{live.phase === 'thinking' ? '思考中' : live.phase === 'tool' ? '执行中' : '生成中'}</span>
+                  <span className="live-elapsed">· {formatElapsed(elapsed)}</span>
                 </div>
-                <div className="task-body">
-                  {live.phase !== 'streaming' && (
-                    <div className="task-stage">{live.stageLabel || '处理中'}</div>
-                  )}
-                  {live.toolCalls.map((t, i) => (
-                    <div key={i} className="tool-row">
-                      <span className={`tool-dot ${t.ok === null ? 'wait' : t.ok ? 'ok' : 'fail'}`}>
-                        {t.ok === null ? '…' : t.ok ? '✓' : '✗'}
-                      </span>
-                      <span className="tool-name">{t.name}</span>
-                      <span className="tool-sum">{t.summary ?? '执行中…'}</span>
-                    </div>
-                  ))}
-                  {live.reply && (
-                    <div className="msg assistant live-msg">{live.reply.slice(0, revealLen)}<span className="caret" /></div>
-                  )}
-                </div>
-                <div className="task-bar"><i /></div>
+                {live.toolCalls.map((t, i) => (
+                  <div key={i} className="live-tool">
+                    <span className={`live-tool-dot ${t.ok === null ? 'wait' : t.ok ? 'ok' : 'fail'}`}>
+                      {t.ok === null ? '…' : t.ok ? '✓' : '✗'}
+                    </span>
+                    <span className="live-tool-name">{t.name}</span>
+                    <span className="live-tool-sum">{t.summary ?? '执行中…'}</span>
+                  </div>
+                ))}
+                {live.reply && (
+                  <div className="msg assistant live-reply">{live.reply.slice(0, revealLen)}<span className="caret" /></div>
+                )}
               </div>
             )}
             {taskCard && (
