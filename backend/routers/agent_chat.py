@@ -2,14 +2,21 @@
 Agent 接口：聊天 + 单据列表 + 技能 + 监控 + 消息持久化 + 上传文件
 """
 import json
+import os
 import time
 import shutil
+import uuid
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
 from models import AgentChatRequest
-from agent import agent_loop
+from agent import agent_loop, agent_loop_stream
+from database import (
+    list_sessions, create_session, delete_session,
+    load_chat_messages, save_chat_message, clear_chat_messages,
+)
 
 router = APIRouter(prefix="/api/agent", tags=["agent"])
 
@@ -40,7 +47,13 @@ async def agent_chat(req: AgentChatRequest):
         raise HTTPException(status_code=400, detail="消息不能为空")
 
     try:
-        result = agent_loop(req.message, req.history, selected_ids=req.selected_ids or [], uploaded_file=req.uploaded_file or "")
+        result = agent_loop(
+            req.message,
+            req.history,
+            selected_ids=req.selected_ids or [],
+            uploaded_file=req.uploaded_file or "",
+            session_id=req.session_id or "",
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Agent 处理失败: {str(e)}")
 
@@ -51,6 +64,29 @@ async def agent_chat(req: AgentChatRequest):
             "history": result["history"],
         }
     }
+
+
+@router.post("/chat/stream")
+async def agent_chat_stream(req: AgentChatRequest, mock: int = 0):
+    """流式 Agent 聊天：SSE 事件（stage / tool_call / tool_result / delta / done / error）。
+    前端逐条渲染思考过程、工具调用与逐字回复。"""
+    if not req.message.strip():
+        raise HTTPException(status_code=400, detail="消息不能为空")
+
+    use_mock = bool(mock and os.getenv("STEEL_MOCK_CHAT") == "1")
+
+    def event_stream():
+        for evt in agent_loop_stream(
+            req.message,
+            req.history,
+            selected_ids=req.selected_ids or [],
+            uploaded_file=req.uploaded_file or "",
+            session_id=req.session_id or "",
+            mock=use_mock,
+        ):
+            yield f"data: {json.dumps(evt, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 # ---- 单据列表 ----
@@ -74,28 +110,47 @@ async def mark_exported_api(req: dict):
 
 # ---- 对话消息持久化 ----
 
+@router.get("/sessions")
+async def get_sessions(limit: int = 50):
+    """会话列表（按最近活跃倒序），供前端「会话」面板展示与切换"""
+    return {"success": True, "data": {"sessions": list_sessions(limit)}}
+
+
+@router.post("/sessions", status_code=201)
+async def new_session(req: dict):
+    title = (req.get("title") or "").strip()
+    sid = create_session(title or "新对话")
+    return {"success": True, "data": {"id": sid, "title": title or "新对话"}}
+
+
+@router.delete("/sessions/{session_id}")
+async def remove_session(session_id: str):
+    if session_id == "default":
+        raise HTTPException(status_code=400, detail="默认会话不可删除")
+    delete_session(session_id)
+    return {"success": True}
+
+
 @router.get("/messages")
-async def get_messages():
-    from database import load_chat_messages
-    msgs = load_chat_messages()
+async def get_messages(session_id: str = ""):
+    msgs = load_chat_messages(session_id.strip())
     return {"success": True, "data": {"messages": msgs}}
 
 
 @router.post("/messages")
 async def save_message(req: dict):
-    from database import save_chat_message
     role = req.get("role", "")
     content = req.get("content", "")
+    session_id = (req.get("session_id") or "").strip() or "default"
     if role not in ("user", "assistant"):
         raise HTTPException(status_code=400, detail="role 必须是 user 或 assistant")
-    save_chat_message(role, content)
+    save_chat_message(role, content, session_id)
     return {"success": True}
 
 
 @router.delete("/messages")
-async def clear_messages():
-    from database import clear_chat_messages
-    clear_chat_messages()
+async def clear_messages(session_id: str = ""):
+    clear_chat_messages(session_id.strip())
     return {"success": True}
 
 

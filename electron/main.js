@@ -179,6 +179,7 @@ async function startBackend() {
       CONFIG_DIR: workDir,
       FRONTEND_DIR: path.join(process.resourcesPath, 'frontend', 'dist'),
       MATERIALS_SEED_CSV: path.join(process.resourcesPath, '品名种子清单.csv'),
+      STEEL_VERSION: app.getVersion(),
     },
   });
   backendProc.on('exit', (code) => {
@@ -242,9 +243,13 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (backendProc) {
-    try { backendProc.kill(); } catch { /* ignore */ }
-    backendProc = null;
+  // macOS 习惯：关窗不退出，保留后端以便再次点开立即可用；
+  // 其他平台关窗即退出，由 before-quit 统一清理后端。
+  if (process.platform !== 'darwin') {
+    if (backendProc) {
+      try { backendProc.kill(); } catch { /* ignore */ }
+      backendProc = null;
+    }
   }
   if (process.platform !== 'darwin') app.quit();
 });
@@ -257,5 +262,8 @@ app.on('before-quit', () => {
 });
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  if (BrowserWindow.getAllWindows().length === 0) {
+    // macOS 上后端可能已被外部终止/从未启动：重新拉起后再开窗
+    startBackend().then(createWindow);
+  }
 });

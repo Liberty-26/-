@@ -7,7 +7,7 @@ import { useQueue } from '../contexts/QueueContext';
 import SkillModal from '../components/SkillModal';
 import { Table2, CalendarRange, Boxes, Upload } from 'lucide-react';
 import {
-  saveReceipt, loadMessages,
+  saveReceipt,
 } from '../utils/api';
 import { compressImage } from '../utils/image';
 import type { AgentMessage } from '../types';
@@ -33,10 +33,12 @@ export default function WorkbenchPage() {
   const { showToast } = useToast();
   const { setPage } = useNav();
   const { queue, addPending } = useQueue();
-  const { messages, isLoading, sendMessage, messagesEndRef } = useAgentChat();
+  const {
+    messages, isLoading, live, sendMessage, messagesEndRef,
+    sessions, currentSessionId, switchSession, newSession,
+  } = useAgentChat();
   const [flow, setFlow] = useState<'stream' | 'sessions'>('stream');
   const [flowItems, setFlowItems] = useState<FlowItem[]>([]);
-  const [sessions, setSessions] = useState<{ day: string; count: number }[]>([]);
   const [skillOpen, setSkillOpen] = useState(false);
   const [taskCard, setTaskCard] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -51,19 +53,6 @@ export default function WorkbenchPage() {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     };
   }, []);
-
-  useEffect(() => {
-    loadMessages().then((res) => {
-      if (!res.success || !res.data) return;
-      const msgs = res.data.messages;
-      const byDay = new Map<string, number>();
-      msgs.forEach((m) => {
-        const day = (m.created_at || '').slice(0, 10) || '未知';
-        byDay.set(day, (byDay.get(day) || 0) + 1);
-      });
-      setSessions([...byDay.entries()].map(([day, count]) => ({ day, count })).reverse());
-    });
-  }, [messages.length]);
 
   // 选择文件：只登记到待识别列表，不读取、不压缩、不识别
   const handleSelectFiles = useCallback((files: FileList | null) => {
@@ -396,6 +385,31 @@ export default function WorkbenchPage() {
               <div className="msg assistant">你好，我是你的本地工作助手。可以让我把单据写入对账单，也可以点上方「表格生成」技能，选好单据直接执行。</div>
             )}
             {messages.map(renderMsg)}
+            {live && (
+              <div className="task-card live-card">
+                <div className="task-head">
+                  <span className="task-title">{live.phase === 'streaming' ? '正在回复' : '助手处理中'}</span>
+                  <span className={`task-status ${live.phase === 'streaming' ? '' : 'running'}`}>
+                    {live.phase === 'streaming' ? '生成中' : live.stageLabel || '处理中'}
+                  </span>
+                </div>
+                <div className="task-body">
+                  {live.toolCalls.map((t, i) => (
+                    <div key={i} className="tool-row">
+                      <span className={`tool-dot ${t.ok === null ? 'wait' : t.ok ? 'ok' : 'fail'}`}>
+                        {t.ok === null ? '…' : t.ok ? '✓' : '✗'}
+                      </span>
+                      <span className="tool-name">{t.name}</span>
+                      <span className="tool-sum">{t.summary ?? '执行中…'}</span>
+                    </div>
+                  ))}
+                  {live.reply && (
+                    <div className="msg assistant live-msg">{live.reply}<span className="caret" /></div>
+                  )}
+                </div>
+                <div className="task-bar"><i /></div>
+              </div>
+            )}
             {taskCard && (
               <div className="task-card">
                 <div className="task-head"><span className="task-title">表格生成</span><span className="task-status">已完成</span></div>
@@ -507,13 +521,19 @@ export default function WorkbenchPage() {
             </>
           ) : (
             <>
-              <div className="flow-section">最近会话（按天分组）</div>
+              <div className="flow-section">最近会话</div>
+              <button className="start-btn" onClick={() => { newSession(); }}>新对话</button>
               {sessions.length === 0 && <div style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: 13, padding: '18px 0' }}>还没有对话记录</div>}
               {sessions.map((s) => (
-                <div key={s.day} className="session-item">
-                  <div className="session-title">{s.day === new Date().toISOString().slice(0, 10) ? '今天 · ' + s.day : s.day}</div>
-                  <div className="session-meta">{s.count} 条消息 · 已保存</div>
-                  <div className="session-count">点击继续对话</div>
+                <div
+                  key={s.id}
+                  className="session-item"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => switchSession(s.id)}
+                >
+                  <div className="session-title">{s.title || '新对话'}</div>
+                  <div className="session-meta">{s.message_count} 条消息 · {(s.updated_at || '').slice(0, 16).replace('T', ' ')}</div>
+                  <div className="session-count">{s.id === currentSessionId ? '当前对话' : '点击继续对话'}</div>
                 </div>
               ))}
             </>

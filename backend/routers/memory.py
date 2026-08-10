@@ -3,7 +3,7 @@
 对应产品三层记忆设计：会话层在 chat_messages（已有）；本模块管理事实与校正。
 """
 from fastapi import APIRouter, HTTPException
-from database import get_conn
+from database import get_conn, upsert_fact, delete_fact, get_facts, memory_usage
 
 router = APIRouter(prefix="/api/memory", tags=["memory"])
 
@@ -54,15 +54,16 @@ def _seed_default_facts():
 
 
 @router.get("/facts")
-async def list_facts():
+async def list_facts(scope: str = ""):
     _ensure_tables()
     _seed_default_facts()
-    conn = get_conn()
-    try:
-        rows = conn.execute("SELECT * FROM assistant_facts ORDER BY id").fetchall()
-        return {"success": True, "data": {"facts": [dict(r) for r in rows]}}
-    finally:
-        conn.close()
+    facts = get_facts(scope.strip())
+    usage = {
+        "memory": memory_usage("memory"),
+        "user": memory_usage("user"),
+        "limits": {"memory": 2200, "user": 1375},
+    }
+    return {"success": True, "data": {"facts": facts, "usage": usage}}
 
 
 @router.post("/facts", status_code=201)
@@ -70,18 +71,13 @@ async def add_fact(req: dict):
     _ensure_tables()
     fact_key = (req.get("fact_key") or "").strip()
     fact_value = (req.get("fact_value") or "").strip()
+    scope = (req.get("scope") or "memory").strip()
     if not fact_key:
         raise HTTPException(status_code=400, detail="fact_key 不能为空")
-    conn = get_conn()
-    try:
-        cur = conn.execute(
-            "INSERT INTO assistant_facts (fact_key, fact_value) VALUES (?, ?)",
-            [fact_key, fact_value],
-        )
-        conn.commit()
-        return {"success": True, "data": {"id": cur.lastrowid}}
-    finally:
-        conn.close()
+    if scope not in ("memory", "user"):
+        raise HTTPException(status_code=400, detail="scope 只能是 memory 或 user")
+    res = upsert_fact(fact_key, fact_value, scope)
+    return {"success": res["ok"], "data": {"fact_key": fact_key, "fact_value": fact_value, "scope": scope, "status": res.get("status")}}
 
 
 @router.delete("/facts/{fact_id}")

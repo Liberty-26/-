@@ -48,10 +48,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 // ---- 识别 ----
 
 export async function recognizeImage(imageBase64: string, receiptNo?: string, date?: string) {
-  // 从 localStorage 读当前选的识图模型，传给后端优先使用（后端未传时用 .env 默认）
-  const model = localStorage.getItem('steel_vision_model') || undefined;
   return request<{ receipt_no: string; date: string; date_suspicious?: boolean; image_path: string; items: import('../types').ReceiptItem[] }>(
-    'POST', '/recognize', { image_base64: imageBase64, receipt_no: receiptNo, date, model }
+    'POST', '/recognize', { image_base64: imageBase64, receipt_no: receiptNo, date }
   );
 }
 
@@ -176,10 +174,39 @@ export async function testQwenConnection(apiKey: string, model: string) {
 
 // ---- Agent ----
 
-export async function agentChat(message: string, history: { role: string; content: string }[], selectedIds?: number[], uploadedFile?: string) {
+export async function agentChat(
+  message: string,
+  history: { role: string; content: string }[],
+  selectedIds?: number[],
+  uploadedFile?: string,
+  sessionId?: string
+) {
   return request<{ reply: string; history: { role: string; content: string }[] }>(
-    'POST', '/agent/chat', { message, history, selected_ids: selectedIds, uploaded_file: uploadedFile }
+    'POST', '/agent/chat', { message, history, selected_ids: selectedIds, uploaded_file: uploadedFile, session_id: sessionId }
   );
+}
+
+/** 流式 Agent 聊天：直接返回 fetch Response，由调用方解析 SSE 事件 */
+export function agentChatStream(
+  message: string,
+  history: { role: string; content: string }[],
+  selectedIds?: number[],
+  uploadedFile?: string,
+  sessionId?: string
+): Promise<Response> {
+  // 预览模式：URL 带 mock=1 时走后端模拟流程（不调用模型、不消耗额度）
+  const mock = window.location.search.includes('mock=1') ? '?mock=1' : '';
+  return fetch('/api/agent/chat/stream' + mock, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message,
+      history,
+      selected_ids: selectedIds,
+      uploaded_file: uploadedFile,
+      session_id: sessionId,
+    }),
+  });
 }
 
 // 上传已有 Excel 文件（Agent 操作目标）
@@ -210,12 +237,34 @@ export async function markExported(receiptId: number) {
 
 // ---- 对话消息持久化 ----
 
-export async function loadMessages() {
-  return request<{ messages: { id: number; role: string; content: string; created_at: string }[] }>('GET', '/agent/messages');
+export async function getSessions() {
+  return request<{ sessions: {
+    id: string; title: string; message_count: number; last_at: string | null; created_at: string; updated_at: string;
+  }[] }>('GET', '/agent/sessions');
 }
 
-export async function saveMessage(role: string, content: string) {
-  return request<void>('POST', '/agent/messages', { role, content });
+export async function createSession(title?: string) {
+  return request<{ id: string; title: string }>('POST', '/agent/sessions', { title });
+}
+
+export async function deleteSession(sessionId: string) {
+  return request<void>('DELETE', `/agent/sessions/${sessionId}`);
+}
+
+export async function loadMessages(sessionId?: string) {
+  const q = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : '';
+  return request<{ messages: { id: number; role: string; content: string; created_at: string }[] }>(
+    'GET', `/agent/messages${q}`
+  );
+}
+
+export async function saveMessage(role: string, content: string, sessionId?: string) {
+  return request<void>('POST', '/agent/messages', { role, content, session_id: sessionId });
+}
+
+export async function clearMessages(sessionId?: string) {
+  const q = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : '';
+  return request<void>('DELETE', `/agent/messages${q}`);
 }
 
 // ---- 技能 ----

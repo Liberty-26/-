@@ -61,7 +61,7 @@ def reload_config():
               "WORK_DIR", "YESCAN_BIN"):
         globals()[k] = os.getenv(k, globals().get(k, ""))
     try:
-        globals()["SCAN_MAX_CONCURRENCY"] = int(os.getenv("SCAN_MAX_CONCURRENCY", "5"))
+        globals()["SCAN_MAX_CONCURRENCY"] = int(os.getenv("SCAN_MAX_CONCURRENCY", "2"))
     except ValueError:
         pass
 
@@ -85,8 +85,12 @@ def save_config(**kwargs):
         "work_dir": "WORK_DIR",
     }
     for short, full in key_map.items():
-        if short in kwargs and kwargs[short]:
-            existing[full] = kwargs[short]
+        if short in kwargs:
+            if kwargs[short]:
+                existing[full] = kwargs[short]
+            else:
+                # 显式传空值 = 清空该配置项（从 .env 移除，回落到默认值）
+                existing.pop(full, None)
 
     with open(env_path, "w", encoding="utf-8") as f:
         f.write("# SteelDigitize Pro 配置文件\n")

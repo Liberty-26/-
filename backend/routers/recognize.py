@@ -23,6 +23,27 @@ router = APIRouter(prefix="/api", tags=["recognize"])
 
 # 批量识别任务表：task_id -> {items: [{index,status,result,error}], done, ok, failed, finished}
 _BATCH_TASKS: dict[str, dict] = {}
+_BATCH_TASK_MAX = 50          # 最多保留任务数（超限淘汰最旧的已完成任务）
+_BATCH_TASK_TTL = 30 * 60     # 已完成任务保留 30 分钟
+
+
+def _prune_batch_tasks():
+    """清理已完成/过期的批量任务，防止桌面端长期运行内存无限增长"""
+    now = time.time()
+    stale = [
+        tid for tid, t in _BATCH_TASKS.items()
+        if t.get("finished") and now - t.get("finished_at", 0) > _BATCH_TASK_TTL
+    ]
+    for tid in stale:
+        _BATCH_TASKS.pop(tid, None)
+    # 仍超过上限时，淘汰最旧的一批（已完成优先）
+    if len(_BATCH_TASKS) > _BATCH_TASK_MAX:
+        ordered = sorted(
+            _BATCH_TASKS.items(),
+            key=lambda kv: (not kv[1].get("finished"), kv[1].get("created_at", 0)),
+        )
+        for tid, _ in ordered[: len(_BATCH_TASKS) - _BATCH_TASK_MAX]:
+            _BATCH_TASKS.pop(tid, None)
 
 
 def _decode_and_save_image(image_base64: str, receipt_no: str = "") -> tuple[str, str, bytes]:
@@ -176,6 +197,7 @@ async def recognize_batch(req: RecognizeBatchRequest):
     task = {
         "task_id": task_id,
         "total": len(req.images),
+        "created_at": time.time(),
         "items": [
             {"index": i, "status": "pending", "stage": 0, "result": None, "error": None}
             for i in range(len(req.images))
@@ -186,6 +208,7 @@ async def recognize_batch(req: RecognizeBatchRequest):
         "finished": False,
     }
     _BATCH_TASKS[task_id] = task
+    _prune_batch_tasks()
 
     async def run():
         sem = asyncio.Semaphore(config.SCAN_MAX_CONCURRENCY)
@@ -214,6 +237,7 @@ async def recognize_batch(req: RecognizeBatchRequest):
             await asyncio.gather(*[one(i, r) for i, r in enumerate(req.images)])
         finally:
             task["finished"] = True
+            task["finished_at"] = time.time()
 
     asyncio.create_task(run())
     return {"success": True, "data": {"task_id": task_id, "total": len(req.images)}}

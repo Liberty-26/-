@@ -12,7 +12,6 @@ class RecognizeRequest(BaseModel):
     image_base64: str = Field(..., description="图片 base64 编码，不含 data:image 前缀亦可")
     receipt_no: Optional[str] = Field(None, description="单据单号")
     date: Optional[str] = Field(None, description="单据日期 YYYY-MM-DD")
-    model: Optional[str] = Field(None, description="识图模型名，前端可选传入；不传则用后端默认")
 
 
 class RecognizeBatchRequest(BaseModel):
@@ -74,6 +73,7 @@ class AgentChatRequest(BaseModel):
     history: List[dict] = []
     selected_ids: Optional[List[int]] = None  # 前端勾选要操作的单据 ID
     uploaded_file: Optional[str] = None       # 前端上传的已有 Excel 文件路径
+    session_id: Optional[str] = None          # 前端会话 ID（用于记录上下文来源）
 
 
 class SaveSettingsRequest(BaseModel):

@@ -2,6 +2,7 @@
 SteelDigitize Pro — FastAPI 入口
 """
 import os
+import json
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,7 +22,18 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 _frontend_env = os.getenv("FRONTEND_DIR", "").strip()
 FRONTEND_DIST = Path(_frontend_env) if _frontend_env else Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
-app = FastAPI(title="SteelDigitize Pro", version="1.0.0")
+def _app_version() -> str:
+    """版本动态读取：桌面版由 Electron 注入 STEEL_VERSION，开发模式读 electron/package.json"""
+    env_ver = os.getenv("STEEL_VERSION", "").strip()
+    if env_ver:
+        return env_ver
+    pkg = Path(__file__).resolve().parent.parent / "electron" / "package.json"
+    try:
+        return json.loads(pkg.read_text(encoding="utf-8")).get("version", "0.0.0")
+    except Exception:
+        return "0.0.0"
+
+app = FastAPI(title="SteelDigitize Pro", version=_app_version())
 
 # CORS：本地使用，允许所有来源
 app.add_middleware(
@@ -76,7 +88,12 @@ async def serve_frontend(full_path: str):
         return JSONResponse({"success": False, "error": "Not Found"}, status_code=404)
     if not FRONTEND_DIST.exists():
         return JSONResponse({"success": False, "error": "前端未构建（开发模式请用 vite dev）"}, status_code=404)
-    file_path = FRONTEND_DIST / full_path
+    # 路径穿越防护：resolve 后必须仍在 dist 目录内，防 ../ 越界读文件
+    try:
+        file_path = (FRONTEND_DIST / full_path).resolve()
+        file_path.relative_to(FRONTEND_DIST.resolve())
+    except (ValueError, OSError):
+        return JSONResponse({"success": False, "error": "Not Found"}, status_code=404)
     if file_path.is_file():
         return FileResponse(file_path)
     return FileResponse(FRONTEND_DIST / "index.html")

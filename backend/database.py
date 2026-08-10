@@ -4,6 +4,7 @@ SQLite，文件 database，单机部署零配置。
 """
 import sqlite3
 import os
+import uuid
 from pathlib import Path
 import config
 
@@ -57,12 +58,76 @@ def init_db():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_receipts_no ON receipts(receipt_no)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_receipt ON receipt_items(receipt_id)")
 
-    # 对话消息表
+    # 对话会话表 + 对话消息表（session 化：多条会话各自独立，互不串扰）
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chat_sessions (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL DEFAULT '新对话',
+            created_at TEXT DEFAULT (datetime('now','localtime')),
+            updated_at TEXT DEFAULT (datetime('now','localtime')),
+            summary TEXT NOT NULL DEFAULT '',
+            summary_count INTEGER NOT NULL DEFAULT 0
+        )
+    """)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             role TEXT NOT NULL,
             content TEXT NOT NULL,
+            session_id TEXT NOT NULL DEFAULT 'default',
+            created_at TEXT DEFAULT (datetime('now','localtime'))
+        )
+    """)
+
+    # 兼容旧库：chat_messages 若没有 session_id 列则补列，并把历史消息归入默认会话
+    cols = [r[1] for r in cursor.execute("PRAGMA table_info(chat_messages)").fetchall()]
+    if "session_id" not in cols:
+        cursor.execute("ALTER TABLE chat_messages ADD COLUMN session_id TEXT NOT NULL DEFAULT 'default'")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_messages_session ON chat_messages(session_id, id)")
+    cursor.execute(
+        "INSERT OR IGNORE INTO chat_sessions (id, title) VALUES ('default', '默认对话')"
+    )
+    cursor.execute(
+        "UPDATE chat_messages SET session_id = 'default' WHERE session_id = ''"
+    )
+
+    # 兼容旧库：chat_sessions 补 summary / summary_count 列
+    s_cols = [r[1] for r in cursor.execute("PRAGMA table_info(chat_sessions)").fetchall()]
+    if "summary" not in s_cols:
+        cursor.execute("ALTER TABLE chat_sessions ADD COLUMN summary TEXT NOT NULL DEFAULT ''")
+    if "summary_count" not in s_cols:
+        cursor.execute("ALTER TABLE chat_sessions ADD COLUMN summary_count INTEGER NOT NULL DEFAULT 0")
+
+    # 消息全文检索（Hermes 式 session search：全量历史入库，按需召回，不占提示词）
+    _init_messages_fts(cursor)
+
+    # 记忆事实表（长期记忆：事实层）
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS assistant_facts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fact_key TEXT NOT NULL UNIQUE,
+            fact_value TEXT NOT NULL DEFAULT '',
+            scope TEXT NOT NULL DEFAULT 'memory',
+            created_at TEXT DEFAULT (datetime('now','localtime'))
+        )
+    """)
+    # 兼容旧库：assistant_facts 补 scope 列
+    f_cols = [r[1] for r in cursor.execute("PRAGMA table_info(assistant_facts)").fetchall()]
+    if "scope" not in f_cols:
+        cursor.execute("ALTER TABLE assistant_facts ADD COLUMN scope TEXT NOT NULL DEFAULT 'memory'")
+    # 兼容旧库：旧表 fact_key 无 UNIQUE，可能已有重复键 —— 先去重再加唯一索引
+    cursor.execute(
+        """DELETE FROM assistant_facts
+           WHERE id NOT IN (SELECT MAX(id) FROM assistant_facts GROUP BY fact_key)"""
+    )
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_facts_key ON assistant_facts(fact_key)")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS correction_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            receipt_no TEXT NOT NULL DEFAULT '',
+            field TEXT NOT NULL DEFAULT '',
+            before_val TEXT NOT NULL DEFAULT '',
+            after_val TEXT NOT NULL DEFAULT '',
             created_at TEXT DEFAULT (datetime('now','localtime'))
         )
     """)
@@ -106,6 +171,46 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+
+def _init_messages_fts(cursor):
+    """创建消息全文检索表与同步触发器。
+    用 trigram 分词器：支持中文连续文本的子串命中（默认分词器对无空格中文无效）；
+    FTS5 不可用时静默降级为 LIKE 搜索。"""
+    try:
+        cursor.execute("DROP TRIGGER IF EXISTS trg_msgs_ai")
+        cursor.execute("DROP TRIGGER IF EXISTS trg_msgs_ad")
+        cursor.execute("DROP TRIGGER IF EXISTS trg_msgs_au")
+        cursor.execute("DROP TABLE IF EXISTS messages_fts")
+        cursor.execute(
+            "CREATE VIRTUAL TABLE messages_fts USING fts5(content, session_id UNINDEXED, tokenize='trigram')"
+        )
+        cursor.execute(
+            """CREATE TRIGGER IF NOT EXISTS trg_msgs_ai AFTER INSERT ON chat_messages BEGIN
+               INSERT INTO messages_fts(rowid, content, session_id) VALUES (new.id, new.content, new.session_id);
+               END"""
+        )
+        cursor.execute(
+            """CREATE TRIGGER IF NOT EXISTS trg_msgs_ad AFTER DELETE ON chat_messages BEGIN
+               INSERT INTO messages_fts(messages_fts, rowid, content, session_id)
+               VALUES ('delete', old.id, old.content, old.session_id);
+               END"""
+        )
+        cursor.execute(
+            """CREATE TRIGGER IF NOT EXISTS trg_msgs_au AFTER UPDATE OF content ON chat_messages BEGIN
+               INSERT INTO messages_fts(messages_fts, rowid, content, session_id)
+               VALUES ('delete', old.id, old.content, old.session_id);
+               INSERT INTO messages_fts(rowid, content, session_id)
+               VALUES (new.id, new.content, new.session_id);
+               END"""
+        )
+        # 重建索引（兼容升级前的存量消息）
+        cursor.execute("DELETE FROM messages_fts")
+        cursor.execute(
+            "INSERT INTO messages_fts(rowid, content, session_id) SELECT id, content, session_id FROM chat_messages"
+        )
+    except sqlite3.OperationalError:
+        pass
 
 
 # ---- Agent 数据库查询工具（H4_DBLookup） ----
@@ -180,28 +285,293 @@ def get_all_receipts_light():
     return [dict(r) for r in rows]
 
 
-# ---- 对话消息 ----
+# ---- 对话会话 ----
 
-def save_chat_message(role: str, content: str):
-    conn = get_conn()
-    conn.execute("INSERT INTO chat_messages (role, content) VALUES (?, ?)", [role, content])
-    conn.commit()
-    conn.close()
-
-def load_chat_messages(limit: int = 100):
+def list_sessions(limit: int = 50):
+    """会话列表（按最近活跃倒序），带消息数与最后活跃时间"""
     conn = get_conn()
     rows = conn.execute(
-        "SELECT id, role, content, created_at FROM chat_messages ORDER BY id ASC LIMIT ?",
+        """SELECT s.id, s.title, s.created_at, s.updated_at,
+                  (SELECT COUNT(*) FROM chat_messages m WHERE m.session_id = s.id) AS message_count,
+                  (SELECT MAX(created_at) FROM chat_messages m WHERE m.session_id = s.id) AS last_at
+           FROM chat_sessions s
+           ORDER BY s.updated_at DESC
+           LIMIT ?""",
         [limit]
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
-def clear_chat_messages():
+
+def create_session(title: str = "新对话") -> str:
+    """创建新会话，返回 session_id"""
+    sid = uuid.uuid4().hex[:16]
     conn = get_conn()
-    conn.execute("DELETE FROM chat_messages")
+    conn.execute(
+        "INSERT INTO chat_sessions (id, title) VALUES (?, ?)",
+        [sid, title.strip() or "新对话"]
+    )
     conn.commit()
     conn.close()
+    return sid
+
+
+def delete_session(session_id: str):
+    """删除会话及其全部消息"""
+    conn = get_conn()
+    conn.execute("DELETE FROM chat_messages WHERE session_id = ?", [session_id])
+    conn.execute("DELETE FROM chat_sessions WHERE id = ?", [session_id])
+    conn.commit()
+    conn.close()
+
+
+def get_session(session_id: str):
+    """会话详情（含摘要字段）"""
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT * FROM chat_sessions WHERE id = ?", [session_id]
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def update_session_summary(session_id: str, summary: str, summarized_count: int):
+    """保存会话滚动摘要：summary 覆盖已出窗口的旧消息，summarized_count 记录已压缩到的消息条数"""
+    conn = get_conn()
+    conn.execute(
+        "UPDATE chat_sessions SET summary = ?, summary_count = ? WHERE id = ?",
+        [summary.strip(), int(summarized_count), session_id]
+    )
+    conn.commit()
+    conn.close()
+
+
+def _touch_session(conn, session_id: str, title_from: str = ""):
+    """会话活跃时间刷新；新对话由首条用户消息生成标题"""
+    row = conn.execute("SELECT title FROM chat_sessions WHERE id = ?", [session_id]).fetchone()
+    if row is None:
+        conn.execute(
+            "INSERT INTO chat_sessions (id, title) VALUES (?, ?)",
+            [session_id, "新对话"]
+        )
+    elif row["title"] == "新对话" and title_from.strip():
+        title = title_from.strip().replace("\n", " ")[:30]
+        conn.execute("UPDATE chat_sessions SET title = ? WHERE id = ?", [title, session_id])
+    conn.execute(
+        "UPDATE chat_sessions SET updated_at = datetime('now','localtime') WHERE id = ?",
+        [session_id]
+    )
+
+
+# ---- 对话消息 ----
+
+def save_chat_message(role: str, content: str, session_id: str = "default"):
+    conn = get_conn()
+    _touch_session(conn, session_id, content if role == "user" else "")
+    conn.execute(
+        "INSERT INTO chat_messages (role, content, session_id) VALUES (?, ?, ?)",
+        [role, content, session_id]
+    )
+    conn.commit()
+    conn.close()
+
+def load_chat_messages(session_id: str = "", limit: int = 100):
+    """加载会话消息（时间正序，最多 limit 条）。session_id 为空时加载全部。"""
+    conn = get_conn()
+    where = "WHERE session_id = ?" if session_id else ""
+    params = [session_id] if session_id else []
+    rows = conn.execute(
+        f"""SELECT id, role, content, session_id, created_at FROM (
+                SELECT id, role, content, session_id, created_at FROM chat_messages
+                {where}
+                ORDER BY id DESC LIMIT ?
+            ) ORDER BY id ASC""",
+        params + [limit]
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def clear_chat_messages(session_id: str = ""):
+    """清空会话消息；session_id 为空时清空全部"""
+    conn = get_conn()
+    if session_id:
+        conn.execute("DELETE FROM chat_messages WHERE session_id = ?", [session_id])
+    else:
+        conn.execute("DELETE FROM chat_messages")
+    conn.commit()
+    conn.close()
+
+
+# ---- 会话全文检索（Hermes 式 session search） ----
+
+def search_messages(query: str, session_id: str = "", limit: int = 10):
+    """全文检索历史消息。优先 FTS5，查询语法异常/不可用时降级 LIKE。
+    返回消息列表（新→旧），含命中内容与时间。"""
+    query = (query or "").strip()
+    if not query:
+        return []
+    conn = get_conn()
+    # trigram 分词器不支持 <3 字符查询，直接走 LIKE
+    if len(query) < 3:
+        like = f"%{query}%"
+        if session_id:
+            rows = conn.execute(
+                """SELECT id, role, content, session_id, created_at FROM chat_messages
+                   WHERE session_id = ? AND content LIKE ?
+                   ORDER BY id DESC LIMIT ?""",
+                [session_id, like, limit]
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """SELECT id, role, content, session_id, created_at FROM chat_messages
+                   WHERE content LIKE ?
+                   ORDER BY id DESC LIMIT ?""",
+                [like, limit]
+            ).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
+    try:
+        if session_id:
+            rows = conn.execute(
+                """SELECT m.id, m.role, m.content, m.session_id, m.created_at
+                   FROM messages_fts f JOIN chat_messages m ON m.id = f.rowid
+                   WHERE messages_fts MATCH ? AND m.session_id = ?
+                   ORDER BY m.id DESC LIMIT ?""",
+                [query, session_id, limit]
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """SELECT m.id, m.role, m.content, m.session_id, m.created_at
+                   FROM messages_fts f JOIN chat_messages m ON m.id = f.rowid
+                   WHERE messages_fts MATCH ?
+                   ORDER BY m.id DESC LIMIT ?""",
+                [query, limit]
+            ).fetchall()
+    except sqlite3.OperationalError:
+        # FTS5 不可用或 MATCH 语法报错 → LIKE 降级
+        like = f"%{query}%"
+        if session_id:
+            rows = conn.execute(
+                """SELECT id, role, content, session_id, created_at FROM chat_messages
+                   WHERE session_id = ? AND (content LIKE ? OR role LIKE ?)
+                   ORDER BY id DESC LIMIT ?""",
+                [session_id, like, like, limit]
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """SELECT id, role, content, session_id, created_at FROM chat_messages
+                   WHERE content LIKE ? OR role LIKE ?
+                   ORDER BY id DESC LIMIT ?""",
+                [like, like, limit]
+            ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+# ---- 长期记忆（事实） ----
+
+def get_facts(scope: str = ""):
+    """长期记忆条目；scope 为空返回全部"""
+    conn = get_conn()
+    if scope:
+        rows = conn.execute(
+            "SELECT id, fact_key, fact_value, scope, created_at FROM assistant_facts WHERE scope = ? ORDER BY id",
+            [scope]
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT id, fact_key, fact_value, scope, created_at FROM assistant_facts ORDER BY id"
+        ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def upsert_fact(fact_key: str, fact_value: str, scope: str = "memory"):
+    """保存/更新一条长期事实（按 fact_key 唯一）。
+    返回 {'ok': bool, 'status': 'added'|'updated'|'duplicate'}"""
+    conn = get_conn()
+    try:
+        existing = conn.execute(
+            "SELECT fact_key, fact_value FROM assistant_facts WHERE fact_key = ?",
+            [fact_key.strip()]
+        ).fetchone()
+        if existing:
+            if existing["fact_value"] == fact_value.strip():
+                conn.rollback()
+                return {"ok": True, "status": "duplicate"}
+            conn.execute(
+                """UPDATE assistant_facts SET fact_value = ?, scope = ?
+                   WHERE fact_key = ?""",
+                [fact_value.strip(), scope, fact_key.strip()]
+            )
+            conn.commit()
+            return {"ok": True, "status": "updated"}
+        conn.execute(
+            """INSERT INTO assistant_facts (fact_key, fact_value, scope) VALUES (?, ?, ?)
+               ON CONFLICT(fact_key) DO UPDATE SET fact_value = excluded.fact_value""",
+            [fact_key.strip(), fact_value.strip(), scope]
+        )
+        conn.commit()
+        return {"ok": True, "status": "added"}
+    except sqlite3.Error:
+        conn.rollback()
+        return {"ok": False, "status": "error"}
+    finally:
+        conn.close()
+
+
+def delete_fact(fact_key: str):
+    conn = get_conn()
+    cur = conn.execute("DELETE FROM assistant_facts WHERE fact_key = ?", [fact_key.strip()])
+    conn.commit()
+    conn.close()
+    return cur.rowcount > 0
+
+
+def memory_usage(scope: str):
+    """某 scope 记忆的总字符数（含条目分隔符开销）"""
+    facts = get_facts(scope)
+    return sum(len(f.get("fact_value", "")) + 2 for f in facts)
+
+
+def find_fact_by_substring(scope: str, old_text: str):
+    """在指定 scope 内按子串找记忆条目；返回 (entries, ambiguous)"""
+    facts = get_facts(scope)
+    matches = [f for f in facts if old_text in f.get("fact_value", "")]
+    return matches, len(matches) > 1
+
+
+def replace_fact_by_substring(scope: str, old_text: str, new_content: str):
+    """Hermes 式 replace：用唯一子串定位一条记忆并替换内容"""
+    facts = get_facts(scope)
+    matches = [f for f in facts if old_text in f.get("fact_value", "")]
+    if len(matches) == 0:
+        return {"ok": False, "error": f"未找到包含「{old_text}」的记忆条目"}
+    if len(matches) > 1:
+        return {"ok": False, "error": f"「{old_text}」匹配到 {len(matches)} 条记忆，请用更具体的内容定位"}
+    conn = get_conn()
+    conn.execute(
+        "UPDATE assistant_facts SET fact_value = ?, scope = ? WHERE id = ?",
+        [new_content.strip(), scope, matches[0]["id"]]
+    )
+    conn.commit()
+    conn.close()
+    return {"ok": True, "fact_key": matches[0]["fact_key"]}
+
+
+def remove_fact_by_substring(scope: str, old_text: str):
+    """Hermes 式 remove：用唯一子串定位并删除一条记忆"""
+    facts = get_facts(scope)
+    matches = [f for f in facts if old_text in f.get("fact_value", "")]
+    if len(matches) == 0:
+        return {"ok": False, "error": f"未找到包含「{old_text}」的记忆条目"}
+    if len(matches) > 1:
+        return {"ok": False, "error": f"「{old_text}」匹配到 {len(matches)} 条记忆，请用更具体的内容定位"}
+    conn = get_conn()
+    conn.execute("DELETE FROM assistant_facts WHERE id = ?", [matches[0]["id"]])
+    conn.commit()
+    conn.close()
+    return {"ok": True, "fact_key": matches[0]["fact_key"]}
 
 
 # ---- 技能 ----
