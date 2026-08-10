@@ -173,13 +173,20 @@ export function useAgentChat() {
     try {
       const resp = await agentChatStream(text, history, selectedIds, uploadedFile, sid);
       if (!resp.ok) {
-        let detail = `HTTP ${resp.status}`;
+        // 后端缺少流式接口（旧版本后端残留）→ 降级为阻塞接口，保证聊天可用
+        console.warn('[chat] 流式接口不可用（HTTP ' + resp.status + '），降级为阻塞模式');
         try {
-          const j = await resp.json();
-          detail = j.detail || detail;
-        } catch { /* ignore */ }
-        await finishAssistantMsg(sid, `处理失败：${detail}`);
-        return null;
+          const res = await apiAgentChat(text, history, selectedIds, uploadedFile, sid);
+          if (res.success && res.data) {
+            await finishAssistantMsg(sid, res.data.reply);
+            return res.data.reply;
+          }
+          await finishAssistantMsg(sid, `处理失败：${res.error || '未知错误'}`);
+          return null;
+        } catch (e2) {
+          await finishAssistantMsg(sid, `处理失败：${(e2 as Error).message || '网络错误'}`);
+          return null;
+        }
       }
       if (!resp.body) throw new Error('无响应流');
 

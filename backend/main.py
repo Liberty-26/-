@@ -71,13 +71,29 @@ def startup():
 def health():
     # 返回进程 PID 与前端构建指纹：Electron 据此判断 8000 端口上的后端是否与当前安装版本一致
     dist_mtime = None
+    dist_hash = None
     try:
         idx = FRONTEND_DIST / "index.html"
         if idx.exists():
             dist_mtime = str(int(idx.stat().st_mtime * 1000))
+            # 内容哈希比 mtime 更可靠：同一目录覆盖安装后 mtime 可能一致，哈希不会
+            try:
+                import hashlib
+                dist_hash = hashlib.sha256(idx.read_bytes()).hexdigest()[:16]
+            except Exception:
+                pass
     except Exception:
         pass
-    return {"success": True, "data": {"status": "ok", "pid": os.getpid(), "dist_mtime": dist_mtime}}
+    return {
+        "success": True,
+        "data": {
+            "status": "ok",
+            "pid": os.getpid(),
+            "version": _app_version(),
+            "dist_mtime": dist_mtime,
+            "dist_hash": dist_hash,
+        },
+    }
 
 
 # 路由式 fallback：serve 前端 dist（必须在所有 API 路由之后注册）

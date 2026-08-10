@@ -115,6 +115,18 @@ function getDistMtime() {
   return '';
 }
 
+function getDistHash() {
+  // 前端构建产物内容哈希：与后端 health.dist_hash 比对，覆盖安装后也不会误判
+  try {
+    const p = path.join(process.resourcesPath, 'frontend', 'dist', 'index.html');
+    if (fs.existsSync(p)) {
+      const crypto = require('crypto');
+      return crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0, 16);
+    }
+  } catch (e) { /* ignore */ }
+  return '';
+}
+
 function fetchHealth(timeoutMs = 1200) {
   return new Promise((resolve) => {
     const req = http.get(PROD_URL + '/api/health', { timeout: timeoutMs }, (res) => {
@@ -147,6 +159,30 @@ function killProcess(pid) {
   });
 }
 
+// 按端口找出监听进程 PID（Windows: netstat；macOS/Linux: lsof）
+function getPortPids(port) {
+  return new Promise((resolve) => {
+    const { execFile } = require('child_process');
+    if (process.platform === 'win32') {
+      execFile('netstat', ['-ano'], (err, stdout) => {
+        if (err) return resolve([]);
+        const pids = new Set();
+        const re = new RegExp(`\\s*TCP\\s+127\\.0\\.0\\.1:${port}\\s+\\S+\\s+LISTENING\\s+(\\d+)`);
+        for (const line of String(stdout).split(/\r?\n/)) {
+          const m = line.match(re);
+          if (m) pids.add(m[1]);
+        }
+        resolve([...pids]);
+      });
+    } else {
+      execFile('lsof', ['-ti', `tcp:${port}`], (err, stdout) => {
+        if (err) return resolve([]);
+        resolve(String(stdout).trim().split(/\s+/).filter(Boolean));
+      });
+    }
+  });
+}
+
 async function startBackend() {
   if (!app.isPackaged) return; // 开发模式：后端由外部 uvicorn 提供
   const exe = backendExePath();
@@ -158,12 +194,29 @@ async function startBackend() {
   const health = await fetchHealth();
   if (health) {
     const myDist = getDistMtime();
-    if (health.dist_mtime && myDist && health.dist_mtime === myDist) {
+    const myHash = getDistHash();
+    const myVersion = app.getVersion();
+    const versionMatch = Boolean(health.version && myVersion && health.version === myVersion);
+    const hashMatch = Boolean(health.dist_hash && myHash && health.dist_hash === myHash);
+    const mtimeMatch = Boolean(health.dist_mtime && myDist && health.dist_mtime === myDist);
+    // 版本一致且（哈希一致或旧后端不返回哈希但 mtime 一致）→ 复用
+    const sameBuild = versionMatch && (hashMatch || (!health.dist_hash && mtimeMatch));
+    if (sameBuild) {
       console.log('[electron] 复用已运行的后端服务');
       return;
     }
-    console.log('[electron] 检测到旧版本残留后端，关闭后启动新版');
+    console.log('[electron] 检测到旧版本残留后端（version=' + (health.version || '?') + '），关闭后启动新版');
     await killProcess(health.pid);
+    await new Promise((r) => setTimeout(r, 800));
+  }
+  // 兜底：health 探测不到但端口仍被占用（残留进程不响应/异常）→ 按端口强清
+  const portPids = await getPortPids(8000);
+  if (portPids.length) {
+    console.log('[electron] 端口 8000 存在残留监听进程，清理后启动新版');
+    for (const pid of portPids) {
+      if (Number(pid) === process.pid) continue;
+      await killProcess(pid);
+    }
     await new Promise((r) => setTimeout(r, 800));
   }
   // 工作目录放在用户数据目录，数据与安装目录分离（Windows 上 Program Files 只读）
