@@ -280,6 +280,10 @@ async function createWindow() {
     } catch (e) {
       console.error('[electron] 后端未就绪，仍尝试打开页面:', e.message);
     }
+    // 升级后清一次 HTTP 缓存，避免窗口加载到旧版前端资源
+    try {
+      await mainWindow.webContents.session.clearCache();
+    } catch (e) { /* ignore */ }
     mainWindow.loadURL(PROD_URL);
   } else {
     mainWindow.loadURL(DEV_URL);

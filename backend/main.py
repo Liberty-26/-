@@ -111,5 +111,5 @@ async def serve_frontend(full_path: str):
     except (ValueError, OSError):
         return JSONResponse({"success": False, "error": "Not Found"}, status_code=404)
     if file_path.is_file():
-        return FileResponse(file_path)
-    return FileResponse(FRONTEND_DIST / "index.html")
+        return FileResponse(file_path, headers={"Cache-Control": "no-cache"})
+    return FileResponse(FRONTEND_DIST / "index.html", headers={"Cache-Control": "no-cache"})

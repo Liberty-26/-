@@ -56,7 +56,7 @@ export default function Layout({ children }: { children: ReactNode[] }) {
         </nav>
         <div className="sidebar-foot">
           <span className="dot" />
-          数据都在本机 · 未连接云端
+          数据都在本机 · v{__APP_VERSION__}
         </div>
       </aside>
       <main>
