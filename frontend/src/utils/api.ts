@@ -229,13 +229,23 @@ export function agentChatStream(
   history: { role: string; content: string }[],
   selectedIds?: number[],
   uploadedFile?: string,
-  sessionId?: string
+  sessionId?: string,
+  externalSignal?: AbortSignal
 ): Promise<Response> {
   // 预览模式：URL 带 mock=1 时走后端模拟流程（不调用模型、不消耗额度）
   const mock = window.location.search.includes('mock=1') ? '?mock=1' : '';
+  // 流式请求必须有超时保护：后端/模型卡住时不能让输入框被永久禁用
+  const ctrl = new AbortController();
+  const headerTimeout = window.setTimeout(() => ctrl.abort(), 60000); // 60s 等响应头
+  const onExternalAbort = () => ctrl.abort();
+  if (externalSignal) {
+    if (externalSignal.aborted) ctrl.abort();
+    else externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+  }
   return fetch('/api/agent/chat/stream' + mock, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    signal: ctrl.signal,
     body: JSON.stringify({
       message,
       history,
@@ -243,6 +253,9 @@ export function agentChatStream(
       uploaded_file: uploadedFile,
       session_id: sessionId,
     }),
+  }).finally(() => {
+    window.clearTimeout(headerTimeout);
+    externalSignal?.removeEventListener('abort', onExternalAbort);
   });
 }
 

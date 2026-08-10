@@ -4,6 +4,7 @@ import {
   agentChat as apiAgentChat, agentChatStream, loadMessages, saveMessage,
   getSessions, createSession, deleteSession,
 } from '../utils/api';
+import { useToast } from './useToast';
 import type { AgentMessage, RunTrace } from '../types';
 
 const SESSION_KEY = 'steel_session_id';
@@ -39,6 +40,7 @@ type StreamEvent =
   | { type: 'error'; message: string };
 
 export function useAgentChat() {
+  const { showToast } = useToast();
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
@@ -214,6 +216,18 @@ export function useAgentChat() {
     const history: { role: string; content: string }[] = [];
     const abort = new AbortController();
     abortRef.current = abort;
+    // 防卡死安全网：模型/后端无响应时自动中止，输入框绝不会被永久禁用
+    let timedOut = false;
+    let lastActivity = Date.now();
+    const hardTimeout = window.setTimeout(() => {
+      if (!abort.signal.aborted) { timedOut = true; abort.abort(); }
+    }, 600000); // 绝对兜底 10 分钟（正常任务远到不了）
+    const watchdog = window.setInterval(() => {
+      if (!abort.signal.aborted && Date.now() - lastActivity > 90000) {
+        timedOut = true;
+        abort.abort(); // 90s 无任何数据/事件 → 判定停滞
+      }
+    }, 5000);
 
     const applyLive = (patch: Partial<LiveState>) => {
       setLive((prev) => (prev ? { ...prev, ...patch } : prev));
@@ -236,8 +250,24 @@ export function useAgentChat() {
       if (sessionIdRef.current !== sid) return;
       await finishAssistantMsg(sid, content, trace);
     };
+    // 中止后的统一收尾：无论用户停止还是超时，都保证输入框恢复
+    const handleAborted = async (): Promise<string | null> => {
+      if (finalReply.trim()) {
+        await finishAssistantMsg(sid, finalReply, {
+          steps: traceSteps,
+          tools: traceTools,
+          elapsed: Math.max(1, Math.round((Date.now() - startTs) / 1000)),
+        });
+        if (timedOut) showToast('生成超时，已保留已生成的内容', 'warning');
+      } else {
+        setIsLoading(false);
+        setLive(null);
+        if (timedOut) showToast('生成超时，请重试', 'warning');
+      }
+      return null;
+    };
     try {
-      const resp = await agentChatStream(text, history, selectedIds, uploadedFile, sid);
+      const resp = await agentChatStream(text, history, selectedIds, uploadedFile, sid, abort.signal);
       if (!resp.ok) {
         // 后端缺少流式接口（旧版本后端残留）→ 降级为阻塞接口，保证聊天可用
         console.warn('[chat] 流式接口不可用（HTTP ' + resp.status + '），降级为阻塞模式');
@@ -263,6 +293,7 @@ export function useAgentChat() {
       const handleEvent = async (evt: StreamEvent) => {
         // 停止后忽略后续事件：缓冲中的事件不再处理，立即生效
         if (abort.signal.aborted) return;
+        lastActivity = Date.now();
         switch (evt.type) {
           case 'stage':
             pushStep('思考中');
@@ -316,6 +347,7 @@ export function useAgentChat() {
       for (;;) {
         const { done, value } = await reader.read();
         if (done || abort.signal.aborted) break;
+        lastActivity = Date.now();
         buf += decoder.decode(value, { stream: true });
         let idx: number;
         while ((idx = buf.indexOf('\n\n')) !== -1) {
@@ -331,19 +363,9 @@ export function useAgentChat() {
           if (abort.signal.aborted) break;
         }
       }
-      // 用户停止：保留已生成的部分作为回复，一条都没有则不留空回复
+      // 用户停止 / 超时中止：保留已生成的部分作为回复，一条都没有则恢复输入框
       if (abort.signal.aborted) {
-        if (finalReply.trim()) {
-          await finishAssistantMsg(sid, finalReply, {
-            steps: traceSteps,
-            tools: traceTools,
-            elapsed: Math.max(1, Math.round((Date.now() - startTs) / 1000)),
-          });
-        } else {
-          setIsLoading(false);
-          setLive(null);
-        }
-        return null;
+        return await handleAborted();
       }
       // 流正常结束但没有 done 事件（异常中断兜底）
       await finishOnce(finalReply || '处理完成', {
@@ -353,21 +375,17 @@ export function useAgentChat() {
       });
     } catch (e) {
       if (abort.signal.aborted) {
-        // 用户主动停止：保留已生成的部分作为回复（与 Codex 一致），
-        // 一条都没生成则不留空回复
-        if (finalReply.trim()) {
-          await finishAssistantMsg(sid, finalReply, {
-            steps: traceSteps,
-            tools: traceTools,
-            elapsed: Math.max(1, Math.round((Date.now() - startTs) / 1000)),
-          });
-        } else {
-          setIsLoading(false);
-          setLive(null);
-        }
-        return null;
+        // 用户主动停止 / 超时中止
+        return await handleAborted();
       }
       console.error('[chat] 流式请求失败:', e);
+      // 流式接口自身的响应头超时（AbortError 且非用户中止）→ 直接恢复，不再走 5 分钟阻塞降级
+      if ((e as Error).name === 'AbortError' || (e as Error).message?.includes('abort')) {
+        setIsLoading(false);
+        setLive(null);
+        showToast('请求超时，请重试', 'warning');
+        return null;
+      }
       // 降级：切回阻塞式接口，保证功能可用
       try {
         const res = await apiAgentChat(text, history, selectedIds, uploadedFile, sid);
@@ -381,9 +399,12 @@ export function useAgentChat() {
         await finishOnce(`处理失败：${(e2 as Error).message || '网络错误'}`);
         return null;
       }
+    } finally {
+      window.clearTimeout(hardTimeout);
+      window.clearInterval(watchdog);
     }
     return finalReply || null;
-  }, [isLoading, liveRef, persistMsg, refreshSessions, finishAssistantMsg]);
+  }, [isLoading, liveRef, persistMsg, refreshSessions, finishAssistantMsg, showToast]);
 
   return {
     messages, isLoading, live, sendMessage, messagesEndRef, loadedFromDb,
