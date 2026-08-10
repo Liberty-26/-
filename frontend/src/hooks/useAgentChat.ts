@@ -175,6 +175,8 @@ export function useAgentChat() {
     const finishOnce = async (content: string) => {
       if (finished) return;
       finished = true;
+      // 用户已切走会话则丢弃本次落库（避免回复写到别的会话）
+      if (sessionIdRef.current !== sid) return;
       await finishAssistantMsg(sid, content);
     };
     try {
@@ -227,6 +229,8 @@ export function useAgentChat() {
             setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 30);
             break;
           case 'done':
+            // 最少让流程卡展示 ~0.9s：短消息秒回时也不会一闪而过
+            await new Promise((r) => setTimeout(r, 900));
             await finishOnce(evt.reply || finalReply || '处理完成');
             break;
           case 'error':

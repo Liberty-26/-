@@ -98,14 +98,18 @@ export default function WorkbenchPage() {
       return;
     }
     setRevealLen(0);
-    // 每 40ms 最多揭示 60 字符（≈1500 字/秒）：模型流得慢就实时显示，
-    // 一次吐一大段也会逐段长出来
+    // 逐行揭示：每 120ms 推进到下一行行尾（一行一行长出来）；
+    // 单行超长时按每拍 40 字匀速揭示。模型流得慢则实时跟上。
     const timer = window.setInterval(() => {
       setRevealLen((prev) => {
-        const total = liveReplyRef.current.length;
-        return prev >= total ? total : Math.min(total, prev + 60);
+        const text = liveReplyRef.current;
+        const total = text.length;
+        if (prev >= total) return total;
+        const nl = text.indexOf('\n', prev);
+        if (nl !== -1) return Math.min(total, nl + 1);
+        return Math.min(total, prev + 40);
       });
-    }, 40);
+    }, 120);
     return () => window.clearInterval(timer);
   }, [live?.phase]);
 
