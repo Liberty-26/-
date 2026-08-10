@@ -144,13 +144,13 @@ main{flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;}
 .chat-head{padding:12px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px;}
 .chat-head .live{font-size:12px; color:var(--ok); display:flex; align-items:center; gap:6px; margin-left:auto; font-weight:400;}
 .chat-body{flex:1; min-height:0; overflow:auto; padding:18px; display:flex; flex-direction:column; gap:12px;}
-.msg{max-width:78%; padding:10px 14px; border-radius:10px; font-size:14px; white-space:pre-wrap;}
+.msg{flex-shrink:0; max-width:78%; padding:10px 14px; border-radius:10px; font-size:14px; white-space:pre-wrap;}
 .msg.user{align-self:flex-end; background:var(--primary); color:#fff; border-bottom-right-radius:2px;}
 .msg.assistant{align-self:flex-start; background:#f3f4f6; color:var(--text); border-bottom-left-radius:2px;}
 .tool-line{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-2);}
 .tool-line .k{font-family:"SF Mono", Consolas, monospace; font-size:12px; background:var(--border); border-radius:5px; padding:0 6px;}
 .task-card{
-  align-self:flex-start; width:100%; max-width:90%; background:var(--card); border:1px solid var(--border);
+  flex-shrink:0; align-self:flex-start; width:100%; max-width:90%; background:var(--card); border:1px solid var(--border);
   border-radius:10px; overflow:hidden; margin-top:2px;
 }
 .task-head{display:flex; align-items:center; gap:10px; padding:10px 14px; background:#fafbfc; border-bottom:1px solid var(--border);}
