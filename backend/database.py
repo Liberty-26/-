@@ -298,6 +298,34 @@ def get_items(receipt_id):
     return [dict(r) for r in rows]
 
 
+def get_receipts_for_export(receipt_ids: list[int]):
+    """按用户指定顺序返回单据头与明细；导出时以数据库为唯一权威来源。"""
+    if not receipt_ids:
+        return [], []
+    conn = get_conn()
+    try:
+        rows = conn.execute(
+            f"SELECT * FROM receipts WHERE id IN ({','.join('?' for _ in receipt_ids)})",
+            receipt_ids,
+        ).fetchall()
+        by_id = {row["id"]: dict(row) for row in rows}
+        missing = [rid for rid in receipt_ids if rid not in by_id]
+        receipts = []
+        for rid in receipt_ids:
+            receipt = by_id.get(rid)
+            if not receipt:
+                continue
+            item_rows = conn.execute(
+                "SELECT name, spec, unit, qty, price FROM receipt_items WHERE receipt_id = ? ORDER BY row_num",
+                [rid],
+            ).fetchall()
+            receipt["items"] = [dict(item) for item in item_rows]
+            receipts.append(receipt)
+        return receipts, missing
+    finally:
+        conn.close()
+
+
 def mark_verified(receipt_id):
     """标记单据为已核对"""
     conn = get_conn()

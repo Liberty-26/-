@@ -204,6 +204,9 @@ main{flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;}
 .trace-body{display:flex; flex-direction:column; gap:6px; padding:2px 0 4px; animation:fadeSlide .2s ease-out;}
 .trace-empty{font-size:12px; color:var(--text-3);}
 .trace-tool{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-2);}
+.trace-audit{font-size:11.5px; color:var(--text-3); padding:4px 0 0 24px;}
+.tool-risk,.tool-guard{display:inline-flex; align-items:center; flex-shrink:0; border-radius:999px; padding:1px 6px; font-size:10px; font-weight:600; line-height:1.45;}
+.tool-risk.read{color:#1d4ed8; background:#eff6ff;}.tool-risk.write{color:#9a3412; background:#fff7ed;}.tool-risk.memory{color:#6d28d9; background:#f5f3ff;}.tool-guard{color:#b45309; background:#fffbeb;}
 .trace-divider{height:1px; background:var(--border); margin:4px 0 8px;}
 .caret{display:inline-block; width:2px; height:14px; background:var(--primary); margin-left:2px; vertical-align:-2px; animation:caret-blink .9s steps(1) infinite;}
 @keyframes caret-blink{50%{opacity:0;}}

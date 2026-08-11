@@ -10,12 +10,13 @@ import uuid
 from openai import OpenAI
 import config
 from database import (
-    query_receipt, get_items, mark_exported,
+    query_receipt, get_items, get_receipts_for_export, mark_exported,
     get_facts, upsert_fact, memory_usage,
     replace_fact_by_substring, remove_fact_by_substring,
     search_messages, get_session, update_session_summary, load_chat_messages,
 )
-from spreadsheet import find_last_row, write_batch, verify_batch, create_new
+from spreadsheet import find_last_row, write_batch, verify_batch, create_new, export_receipts
+from agent_runtime import AgentRunState, TOOL_RISK
 
 # ---- 长期记忆（Hermes 式：有界、可策展、冻结快照注入） ----
 MEMORY_LIMIT = 2200     # MEMORY 预算（字符）
@@ -45,7 +46,7 @@ SYSTEM_PROMPT = """你是 SteelDigitize Pro 的数字助理，帮助钢材贸易
 
 ### Skill 1: fill-spreadsheet（填写对账单）
 - 用途：将数据库中已识别的送货单写入 WPS 对账单 Excel
-- 可用工具：db_lookup_receipt / db_get_receipt_items / spreadsheet_find_last_row / spreadsheet_write_batch / spreadsheet_verify
+- 可用工具：db_lookup_receipt / db_get_receipt_items / spreadsheet_export_receipts
 - 输入：用户提供单号或日期
 - 输出：写入的行范围、条数、合计金额
 - 限制：只追加不覆盖；写入前必须等用户确认
@@ -54,20 +55,19 @@ SYSTEM_PROMPT = """你是 SteelDigitize Pro 的数字助理，帮助钢材贸易
 超出上述清单的请求必须明确告知无法执行，不做、不编、不凑合。
 
 ## 工作流程（fill-spreadsheet）
-1. 用户已勾选单据 → 在同一轮中同时调 db_get_receipt_items 查询所有勾选单据（并行调用多个 tool）
-2. 文件不存在 → 调 spreadsheet_create_new 创建
-3. 将同一 sheet 的所有单据合并成一次 spreadsheet_write_batch（write_batch 的 items 可以包含多个单据的数据）
-4. spreadsheet_verify 验证
-5. 报告结果
+1. 查到或收到用户勾选的单据 ID 后，调用 spreadsheet_export_receipts
+2. 只传 receipt_ids、文件名和 sheet；品名、数量、单价等数据由系统从数据库读取，禁止自行转述或编造
+3. 系统负责逐张写入、计算金额、校验，并在全部成功后返回结果
+4. 报告结果
 
 ## 规则
-- **能并行的就并行**：查多张单据时，一次回复中同时发多个 db_get_receipt_items 调用
-- **能合并的就合并**：多张单据写同一个 sheet 时，合并成一次 write_batch 调用
+- **批量导出只用原子工具**：多张单据写同一个 sheet 时，只调用一次 spreadsheet_export_receipts；不要调用底层写入工具，更不能把数据库明细重新手写进参数。
 - **确认优先，但不啰嗦**：用户说"新建表格""写入"本身就是确认，直接执行
 - **用户已勾选单据 = 已确认**：右侧面板勾选的单据，用户就是让你操作的，查出后直接写入，不要再问"是否确认"
 - 只追加不覆盖
 - 写入后验证
 - **长期记忆（Hermes 式）**：主动记住值得长期保留的信息——
+  仅当用户明确说“记住 / 保存到记忆 / 以后默认”时才可以写入。不得把推测、一次性任务、模型判断写成长期事实。
   用户偏好/习惯/客户信息 → scope=user；环境事实/工作流/经验教训 → scope=memory。
   用 memory_add 添加，memory_replace 更新，memory_remove 删除（子串定位，必须唯一）。
   记忆有字数预算，接近上限（>80%）时应先合并/删除旧条目再添加；
@@ -78,8 +78,10 @@ SYSTEM_PROMPT = """你是 SteelDigitize Pro 的数字助理，帮助钢材贸易
 - **本会话摘要**：系统提示中的「本会话历史摘要」是较早对话的压缩记录，
   与最近对话窗口共同构成当前上下文；摘要与实际记录冲突时以实际记录为准。
 - **无路径提醒配置**：用户说写入但系统未配置对账单路径时，提醒用户去「API与模型」页配置
-- **禁止追问路径和sheet**：不问"文件路径""sheet名称""写入顺序"。新建就用默认值
-- **文件不存在自动创建**：find_last_row 报不存在时，直接调 write_batch mode=new 创建
+- **路径与 sheet**：新建文件使用已配置工作目录；追加文件只能使用用户上传或明确指定的文件。未配置工作目录时，提示用户去设置页配置，不猜测目标文件。
+- **文件不存在自动创建**：使用 spreadsheet_export_receipts 的 new 模式时，系统自动创建表格和表头。
+- **真实结果优先**：只能依据工具返回的结果说“已写入 / 已验证 / 已保存”；工具失败或未验证时要如实说明，不能用自然语言猜测成功。
+- **执行授权**：用户已在已确认的单据选择器中勾选，或明确要求写入/导出/生成表格时，才可执行写表；查询、解释、预览请求一律不写文件。
 
 ## 对账单 Excel 格式参考
 10列：序号|单号|日期|品种|规格|单位|数量|单价|金额|合计金额
@@ -273,6 +275,34 @@ TOOLS = [
     }
 ]
 
+# 给模型的工具面只保留业务级能力。底层 Excel 原语仍在后端保留，
+# 但不能由模型直接拼装业务数据，从源头避免“模型转述后写错”。
+_LOW_LEVEL_SPREADSHEET_TOOLS = {
+    "spreadsheet_find_last_row", "spreadsheet_create_new",
+    "spreadsheet_write_batch", "spreadsheet_verify",
+}
+EXPORT_RECEIPTS_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "spreadsheet_export_receipts",
+        "description": "将已审核的数据库单据批量写入对账单。系统按 receipt_ids 读取权威明细、写入并自动校验；不能传品名、数量、单价。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "receipt_ids": {"type": "array", "items": {"type": "integer"}, "description": "要导出的单据 ID 列表"},
+                "filepath": {"type": "string", "description": "目标 .xlsx 文件路径或文件名"},
+                "sheet": {"type": "string", "description": "目标 sheet 名称"},
+                "mode": {"type": "string", "enum": ["new", "append"], "description": "新建或追加"},
+            },
+            "required": ["receipt_ids", "filepath", "sheet", "mode"],
+        },
+    },
+}
+AGENT_TOOLS = [
+    tool for tool in TOOLS
+    if tool["function"]["name"] not in _LOW_LEVEL_SPREADSHEET_TOOLS
+] + [EXPORT_RECEIPTS_TOOL]
+
 MAX_ITERATIONS = 8
 
 
@@ -391,19 +421,30 @@ def execute_tool(name: str, args: dict, current_session_id: str = "") -> dict:
             fp = (args.get("filepath") or "").strip()
             work_dir = (config.WORK_DIR or "").strip()
             is_new = (name == "spreadsheet_create_new") or \
-                     (name == "spreadsheet_write_batch" and args.get("mode") == "new")
+                     (name in {"spreadsheet_write_batch", "spreadsheet_export_receipts"} and args.get("mode") == "new")
 
             if is_new:
                 # 新建：目录固定 WORK_DIR，文件名取用户指定的（模型传的 basename）
                 fname = os.path.basename(fp) if fp else "对账单.xlsx"
-                if work_dir:
-                    os.makedirs(work_dir, exist_ok=True)
-                    args["filepath"] = os.path.join(work_dir, fname)
-                else:
-                    args["filepath"] = os.path.expanduser(fp)
+                if not work_dir:
+                    return {"success": False, "error": "未配置工作目录，无法安全创建对账单；请先到设置页配置文件存放目录"}
+                os.makedirs(work_dir, exist_ok=True)
+                args["filepath"] = os.path.join(work_dir, fname)
             else:
-                # 已有文件：保留原路径（用户上传的文件），不覆盖、不移动
-                args["filepath"] = os.path.expanduser(fp)
+                # 已有文件只能来自用户上传区或已配置工作目录；模型不能随意访问本机其它 Excel。
+                resolved = os.path.realpath(os.path.expanduser(fp))
+                allowed_roots = [p for p in (config.UPLOAD_DIR, config.WORK_DIR) if p]
+                allowed = False
+                for root in allowed_roots:
+                    try:
+                        if os.path.commonpath([resolved, os.path.realpath(root)]) == os.path.realpath(root):
+                            allowed = True
+                            break
+                    except ValueError:
+                        continue
+                if not allowed:
+                    return {"success": False, "error": "为保护本机文件，只能追加用户上传的 Excel 或工作目录内的文件"}
+                args["filepath"] = resolved
             # openpyxl 不会自动创建目录，写入前确保父目录存在
             parent = os.path.dirname(args["filepath"])
             if parent:
@@ -431,7 +472,27 @@ def execute_tool(name: str, args: dict, current_session_id: str = "") -> dict:
         elif name == "spreadsheet_create_new":
             return create_new(args["filepath"], args["sheet"])
         elif name == "spreadsheet_write_batch":
-            return write_batch(**args)
+            # 写文件是高风险动作：由 Harness 在写完后立刻做一次确定性校验，
+            # 不依赖模型是否“记得”再调 spreadsheet_verify。
+            written = write_batch(**args)
+            if not written.get("success"):
+                return written
+            verification = verify_batch(
+                args["filepath"], args["sheet"],
+                written["start_row"], written["end_row"],
+            )
+            written["verification"] = verification
+            written["verified"] = bool(verification.get("success")) and not verification.get("mismatches")
+            if not written["verified"]:
+                written["success"] = False
+                written["error"] = verification.get("error") or "写入后校验未通过"
+            return written
+        elif name == "spreadsheet_export_receipts":
+            receipt_ids = args.get("receipt_ids") or []
+            receipts, missing = get_receipts_for_export(receipt_ids)
+            if missing:
+                return {"success": False, "error": f"单据不存在：{', '.join(str(rid) for rid in missing)}"}
+            return export_receipts(args["filepath"], args["sheet"], args["mode"], receipts)
         elif name == "spreadsheet_verify":
             return verify_batch(**args)
         elif name == "memory_list":
@@ -621,7 +682,9 @@ def _tool_result_summary(name: str, result: dict) -> str:
     if name == "spreadsheet_create_new":
         return "已创建新对账单文件"
     if name == "spreadsheet_write_batch":
-        return f"已写入 {result.get('written_rows', '?')} 行"
+        return f"已写入并校验 {result.get('item_count', '?')} 行"
+    if name == "spreadsheet_export_receipts":
+        return f"已导出并校验 {len(result.get('receipt_ids') or [])} 张单据，共 {result.get('item_count', 0)} 行"
     if name == "spreadsheet_verify":
         return "核对无误"
     if name == "memory_list":
@@ -635,6 +698,17 @@ def _tool_result_summary(name: str, result: dict) -> str:
     if name == "session_search":
         return f"检索到 {result.get('count', 0)} 条相关记录"
     return "执行完成"
+
+
+def _finalize_export(run_state: AgentRunState) -> None:
+    """仅在本轮真实写入且校验通过后更新单据状态，不能再靠模型回复关键词判断。"""
+    if not run_state.export_confirmed:
+        return
+    for rid in run_state.verified_receipt_ids:
+        try:
+            mark_exported(rid)
+        except Exception:
+            pass
 
 
 def _mock_stream():
@@ -670,6 +744,7 @@ def agent_loop_stream(user_message: str, history: list, selected_ids: list = Non
     system_prompt, messages, clean_history = _prepare_context(
         client, user_message, history, selected_ids or [], uploaded_file or "", session_id
     )
+    run_state = AgentRunState(user_message=user_message, selected_ids=selected_ids or [])
 
     iteration = 0
     while iteration < MAX_ITERATIONS:
@@ -679,7 +754,7 @@ def agent_loop_stream(user_message: str, history: list, selected_ids: list = Non
         stream = client.chat.completions.create(
             model=config.AGENT_MODEL,
             messages=messages,
-            tools=TOOLS,
+            tools=AGENT_TOOLS,
             stream=True,
         )
 
@@ -730,15 +805,22 @@ def agent_loop_stream(user_message: str, history: list, selected_ids: list = Non
                 try:
                     args = json.loads(tc["function"]["arguments"] or "{}")
                 except json.JSONDecodeError:
-                    args = {}
-                yield {"type": "tool_call", "name": tc["function"]["name"], "args": args}
-                result = execute_tool(tc["function"]["name"], args, current_session_id=session_id)
+                    args = None
+                tool_name = tc["function"]["name"]
+                allowed, reason, args = run_state.authorize(tool_name, args)
+                yield {"type": "tool_call", "name": tool_name, "args": args, "risk": TOOL_RISK.get(tool_name, "unknown")}
+                result = (
+                    execute_tool(tool_name, args, current_session_id=session_id)
+                    if allowed else {"success": False, "error": reason, "blocked": True}
+                )
+                run_state.record(tool_name, result)
                 ok = bool(result.get("success", True))
                 yield {
                     "type": "tool_result",
-                    "name": tc["function"]["name"],
+                    "name": tool_name,
                     "ok": ok,
-                    "summary": _tool_result_summary(tc["function"]["name"], result),
+                    "blocked": bool(result.get("blocked")),
+                    "summary": _tool_result_summary(tool_name, result),
                 }
                 messages.append({
                     "role": "tool",
@@ -753,13 +835,8 @@ def agent_loop_stream(user_message: str, history: list, selected_ids: list = Non
             {"role": "user", "content": user_message},
             {"role": "assistant", "content": reply},
         ])
-        if selected_ids and any(kw in reply for kw in ['已写入', '写入成功', '写入完成']):
-            for rid in selected_ids:
-                try:
-                    mark_exported(rid)
-                except Exception:
-                    pass
-        yield {"type": "done", "reply": reply, "history": new_history}
+        _finalize_export(run_state)
+        yield {"type": "done", "reply": reply, "history": new_history, "audit": run_state.audit()}
         return
 
     yield {"type": "error", "message": "处理超时，请简化指令重试。"}
@@ -793,6 +870,7 @@ def agent_loop(user_message: str, history: list, selected_ids: list = None,
     system_prompt, messages, clean_history = _prepare_context(
         client, user_message, history, selected_ids or [], uploaded_file or "", session_id
     )
+    run_state = AgentRunState(user_message=user_message, selected_ids=selected_ids or [])
 
     iteration = 0
 
@@ -802,7 +880,7 @@ def agent_loop(user_message: str, history: list, selected_ids: list = None,
         response = client.chat.completions.create(
             model=config.AGENT_MODEL,
             messages=messages,
-            tools=TOOLS
+            tools=AGENT_TOOLS
         )
 
         # 记录 token 消耗
@@ -814,8 +892,16 @@ def agent_loop(user_message: str, history: list, selected_ids: list = None,
             # DeepSeek 要求调工具
             messages.append(message)
             for tool_call in message.tool_calls:
-                args = json.loads(tool_call.function.arguments)
-                result = execute_tool(tool_call.function.name, args, current_session_id=session_id)
+                try:
+                    args = json.loads(tool_call.function.arguments or "{}")
+                except json.JSONDecodeError:
+                    args = None
+                allowed, reason, args = run_state.authorize(tool_call.function.name, args)
+                result = (
+                    execute_tool(tool_call.function.name, args, current_session_id=session_id)
+                    if allowed else {"success": False, "error": reason, "blocked": True}
+                )
+                run_state.record(tool_call.function.name, result)
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
@@ -829,14 +915,8 @@ def agent_loop(user_message: str, history: list, selected_ids: list = None,
                 {"role": "user", "content": user_message},
                 {"role": "assistant", "content": reply},
             ])
-            # 写入成功 → 自动标记已导出
-            if selected_ids and any(kw in reply for kw in ['已写入', '写入成功', '写入完成']):
-                for rid in selected_ids:
-                    try:
-                        mark_exported(rid)
-                    except Exception:
-                        pass
-            return {"reply": reply, "history": new_history}
+            _finalize_export(run_state)
+            return {"reply": reply, "history": new_history, "audit": run_state.audit()}
 
     # 超限
     return {

@@ -36,13 +36,15 @@ COL_WIDTHS = {
 
 def _check_file_lock(filepath: str) -> dict | None:
     """检测文件是否被 WPS/Excel 占用。被占用返回 error dict，否则 None。"""
+    # 不能用 a/a+：文件不存在时会被悄悄创建成 0 字节，
+    # 随后 _open_workbook 会把这个空文件当成损坏的 xlsx 打开。
+    if not os.path.exists(filepath):
+        return None
     try:
-        with open(filepath, 'a') as f:
+        with open(filepath, 'rb+') as f:
             pass
     except PermissionError:
         return {"success": False, "error": "文件被 WPS/Excel 占用，请关闭后重试"}
-    except FileNotFoundError:
-        pass  # 文件不存在，允许创建
     return None
 
 
@@ -130,6 +132,16 @@ def write_batch(
             ws = wb[sheet]
         else:
             ws = wb.create_sheet(title=sheet)
+
+        if mode not in {"new", "append"}:
+            return {"success": False, "error": "mode 必须是 new 或 append"}
+        # 新建模式只允许空表或仅含表头的表，不能把已有对账单从第 1 行覆盖掉。
+        if mode == "new" and any(
+            ws.cell(row=row, column=col).value is not None
+            for row in range(2, ws.max_row + 1)
+            for col in range(1, 11)
+        ):
+            return {"success": False, "error": "目标表格已有数据；为保护历史数据，请使用 append 追加"}
 
         # 设置列宽
         _set_column_widths(ws)
@@ -308,3 +320,91 @@ def create_new(filepath: str, sheet: str) -> dict:
         return {"success": False, "error": f"创建文件失败: {str(e)}"}
     finally:
         wb.close()
+
+
+def _next_sequence(filepath: str, sheet: str) -> int:
+    """读取已有序号的最大值；非数字或空值不参与计算。"""
+    if not os.path.exists(filepath):
+        return 1
+    wb = load_workbook(filepath, data_only=True)
+    try:
+        if sheet not in wb.sheetnames:
+            return 1
+        ws = wb[sheet]
+        values = []
+        for row in range(2, ws.max_row + 1):
+            value = ws.cell(row=row, column=1).value
+            if isinstance(value, (int, float)):
+                values.append(int(value))
+        return max(values, default=0) + 1
+    finally:
+        wb.close()
+
+
+def export_receipts(filepath: str, sheet: str, mode: str, receipts: list[dict]) -> dict:
+    """将数据库权威单据批量导出；模型不传递品名、数量、单价等业务数据。"""
+    if not receipts:
+        return {"success": False, "error": "没有可导出的单据"}
+    if mode not in {"new", "append"}:
+        return {"success": False, "error": "mode 必须是 new 或 append"}
+
+    # 追加到不存在的文件时自动转成新建，防止没有表头。
+    effective_mode = "new" if mode == "append" and not os.path.exists(filepath) else mode
+    if effective_mode == "new":
+        start_row, seq = 2, 1
+    else:
+        position = find_last_row(filepath, sheet)
+        if not position.get("success", True):
+            return position
+        start_row = max(2, int(position.get("next_row", 2)))
+        seq = _next_sequence(filepath, sheet)
+
+    exported = []
+    for index, receipt in enumerate(receipts):
+        write_mode = "new" if index == 0 and effective_mode == "new" else "append"
+        written = write_batch(
+            filepath=filepath,
+            sheet=sheet,
+            mode=write_mode,
+            start_row=start_row,
+            seq=seq,
+            receipt_no=str(receipt.get("receipt_no", "")),
+            date=str(receipt.get("date", "")),
+            items=receipt.get("items", []),
+        )
+        if not written.get("success"):
+            return {
+                "success": False,
+                "error": written.get("error", "写入失败"),
+                "receipt_ids": [item["receipt_id"] for item in exported],
+                "partial": bool(exported),
+            }
+        verification = verify_batch(filepath, sheet, written["start_row"], written["end_row"])
+        if not verification.get("success") or verification.get("mismatches"):
+            return {
+                "success": False,
+                "error": verification.get("error") or "写入后校验未通过",
+                "receipt_ids": [item["receipt_id"] for item in exported],
+                "partial": bool(exported),
+            }
+        exported.append({
+            "receipt_id": receipt["id"],
+            "receipt_no": receipt.get("receipt_no", ""),
+            "start_row": written["start_row"],
+            "end_row": written["end_row"],
+            "item_count": written["item_count"],
+            "total_amount": written["total_amount"],
+        })
+        start_row = written["end_row"] + 1
+        seq += 1
+
+    return {
+        "success": True,
+        "verified": True,
+        "filepath": filepath,
+        "sheet": sheet,
+        "receipt_ids": [item["receipt_id"] for item in exported],
+        "receipts": exported,
+        "item_count": sum(item["item_count"] for item in exported),
+        "total_amount": round(sum(item["total_amount"] for item in exported), 2),
+    }

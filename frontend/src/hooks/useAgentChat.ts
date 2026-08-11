@@ -22,6 +22,8 @@ export interface LiveToolCall {
   name: string;
   ok: boolean | null;
   summary: string | null;
+  risk?: string;
+  blocked?: boolean;
 }
 
 export interface LiveState {
@@ -33,10 +35,10 @@ export interface LiveState {
 
 type StreamEvent =
   | { type: 'stage'; label: string }
-  | { type: 'tool_call'; name: string; args: unknown }
-  | { type: 'tool_result'; name: string; ok: boolean; summary: string }
+  | { type: 'tool_call'; name: string; args: unknown; risk?: string }
+  | { type: 'tool_result'; name: string; ok: boolean; summary: string; blocked?: boolean }
   | { type: 'delta'; content: string }
-  | { type: 'done'; reply: string; history: unknown[] }
+  | { type: 'done'; reply: string; history: unknown[]; audit?: RunTrace['audit'] }
   | { type: 'error'; message: string };
 
 export function useAgentChat() {
@@ -240,7 +242,7 @@ export function useAgentChat() {
     // 运行痕迹收集：状态序列 + 工具调用 + 总耗时（完成后随消息落库，可收起展开）
     const startTs = Date.now();
     const traceSteps: string[] = [];
-    const traceTools: { name: string; ok: boolean; summary: string }[] = [];
+    const traceTools: RunTrace['tools'] = [];
     const pushStep = (label: string) => {
       if (traceSteps[traceSteps.length - 1] !== label) traceSteps.push(label);
     };
@@ -306,10 +308,10 @@ export function useAgentChat() {
             break;
           case 'tool_call':
             pushStep('执行中');
-            traceTools.push({ name: evt.name, ok: false, summary: '执行中…' });
+            traceTools.push({ name: evt.name, ok: false, summary: '执行中…', risk: evt.risk });
             applyLive({
               phase: 'tool',
-              toolCalls: [...(liveRef.current?.toolCalls || []), { name: evt.name, ok: null, summary: null }],
+              toolCalls: [...(liveRef.current?.toolCalls || []), { name: evt.name, ok: null, summary: null, risk: evt.risk }],
             });
             break;
           case 'tool_result':
@@ -318,12 +320,13 @@ export function useAgentChat() {
               if (last && last.name === evt.name) {
                 last.ok = evt.ok;
                 last.summary = evt.summary;
+                last.blocked = evt.blocked;
               }
             }
             applyLive({
               toolCalls: (liveRef.current?.toolCalls || []).map((t, i) =>
                 i === (liveRef.current?.toolCalls.length || 0) - 1 && t.name === evt.name
-                  ? { ...t, ok: evt.ok, summary: evt.summary }
+                  ? { ...t, ok: evt.ok, summary: evt.summary, blocked: evt.blocked }
                   : t
               ),
             });
@@ -340,6 +343,7 @@ export function useAgentChat() {
               steps: traceSteps,
               tools: traceTools,
               elapsed: Math.max(1, Math.round((Date.now() - startTs) / 1000)),
+              audit: evt.audit,
             };
             await finishOnce(evt.reply || finalReply || '处理完成', trace);
             break;

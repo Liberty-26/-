@@ -42,6 +42,7 @@ const TOOL_LABELS: Record<string, string> = {
 };
 
 const formatToolName = (name: string) => (TOOL_LABELS[name] || '执行操作') + ' · ' + name;
+const RISK_LABELS: Record<string, string> = { read: '查询', write: '写入', memory: '记忆' };
 
 const timeNow = () =>
   new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
@@ -79,9 +80,18 @@ function RunTraceView({ trace }: { trace: RunTrace }) {
             <div key={i} className="trace-tool">
               <span className={`live-tool-dot ${t.ok ? 'ok' : 'fail'}`}>{t.ok ? '✓' : '✗'}</span>
               <span className="live-tool-name" title={t.name}>{formatToolName(t.name)}</span>
+              {t.risk && <span className={`tool-risk ${t.risk}`}>{RISK_LABELS[t.risk] || '操作'}</span>}
+              {t.blocked && <span className="tool-guard">已拦截</span>}
               <span className="live-tool-sum">{t.summary}</span>
             </div>
           ))}
+          {trace.audit && (
+            <div className="trace-audit">
+              本次调用 {trace.audit.tool_calls} 次工具
+              {trace.audit.blocked_calls > 0 ? ` · 护栏拦截 ${trace.audit.blocked_calls} 次` : ''}
+              {trace.audit.verified_writes > 0 ? ` · 已验证写入 ${trace.audit.verified_writes} 次` : ''}
+            </div>
+          )}
         </div>
       )}
       <div className="trace-divider" />
@@ -577,6 +587,8 @@ export default function WorkbenchPage() {
                       {t.ok === null ? '…' : t.ok ? '✓' : '✗'}
                     </span>
                     <span className="live-tool-name">{t.name}</span>
+                    {t.risk && <span className={`tool-risk ${t.risk}`}>{RISK_LABELS[t.risk] || '操作'}</span>}
+                    {t.blocked && <span className="tool-guard">已拦截</span>}
                     <span className="live-tool-sum">{t.summary ?? '执行中…'}</span>
                   </div>
                 ))}

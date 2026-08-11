@@ -62,6 +62,7 @@ async def agent_chat(req: AgentChatRequest):
         "data": {
             "reply": result["reply"],
             "history": result["history"],
+            "audit": result.get("audit", {}),
         }
     }
 

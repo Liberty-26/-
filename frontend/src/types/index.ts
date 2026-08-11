@@ -91,8 +91,9 @@ export interface AgentMessage {
 // 运行痕迹：一次助手回复的完整执行过程
 export interface RunTrace {
   steps: string[];   // 状态序列，如 ['思考中', '执行中', '生成中']
-  tools: { name: string; ok: boolean; summary: string }[]; // 工具调用记录
+  tools: { name: string; ok: boolean; summary: string; risk?: string; blocked?: boolean }[]; // 工具调用记录
   elapsed: number;   // 总耗时（秒）
+  audit?: { tool_calls: number; blocked_calls: number; verified_writes: number; write_authorized: boolean; memory_authorized: boolean };
 }
 
 // ---- 新工作台类型 ----
