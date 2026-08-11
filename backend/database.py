@@ -252,6 +252,21 @@ def init_db():
         )
     """)
 
+    # Agent 工具审计：追加写入，记录真实执行链，不依赖模型最后一句话。
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS agent_audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id TEXT NOT NULL,
+            user_message TEXT NOT NULL DEFAULT '',
+            tool_name TEXT NOT NULL,
+            risk TEXT NOT NULL DEFAULT 'unknown',
+            allowed INTEGER NOT NULL DEFAULT 0,
+            args_json TEXT NOT NULL DEFAULT '{}',
+            result_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT DEFAULT (datetime('now','localtime'))
+        )
+    """)
+
     # 品名参考库
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS materials (
@@ -856,6 +871,26 @@ def record_token_usage(source: str, model: str, prompt_tokens: int, completion_t
     )
     conn.commit()
     conn.close()
+
+
+def record_agent_audit(run_id: str, user_message: str, tool_name: str, risk: str,
+                       allowed: bool, args: dict, result: dict):
+    """追加一条工具审计记录；参数和结果限制长度，避免审计表无限膨胀。"""
+    import json
+    args_json = json.dumps(args or {}, ensure_ascii=False, default=str)[:4000]
+    result_json = json.dumps(result or {}, ensure_ascii=False, default=str)[:4000]
+    conn = get_conn()
+    try:
+        conn.execute(
+            """INSERT INTO agent_audit_log
+               (run_id, user_message, tool_name, risk, allowed, args_json, result_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            [run_id, str(user_message or "")[:2000], tool_name, risk or "unknown",
+             1 if allowed else 0, args_json, result_json],
+        )
+        conn.commit()
+    finally:
+        conn.close()
 
 
 # ---- 监控数据 ----

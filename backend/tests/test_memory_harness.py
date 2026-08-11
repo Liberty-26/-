@@ -51,8 +51,25 @@ class MemoryHarnessTest(unittest.TestCase):
         initial = MemoryHarness.read()
         full = MemoryHarness.replace("a" * COMPACTION_THRESHOLD, initial["revision"], "settings")
         self.assertTrue(full["success"], full)
-        blocked = MemoryHarness.replace("b" * (COMPACTION_TARGET + 1), full["revision"], "agent")
+        blocked = MemoryHarness.replace("a" * COMPACTION_THRESHOLD + "b", full["revision"], "agent")
         self.assertFalse(blocked["success"])
         self.assertEqual(blocked["code"], "compaction_required")
-        compacted = MemoryHarness.replace("c" * COMPACTION_TARGET, full["revision"], "agent")
+        compacted = MemoryHarness.replace(
+            "c" * COMPACTION_TARGET, full["revision"], "agent", destructive_authorized=True,
+        )
         self.assertTrue(compacted["success"], compacted)
+
+    def test_agent_cannot_delete_existing_memory_without_confirmation(self):
+        initial = MemoryHarness.read()
+        saved = MemoryHarness.replace("必须先核验金额。\n默认使用水电 sheet。", initial["revision"], "settings")
+        self.assertTrue(saved["success"], saved)
+        blocked = MemoryHarness.replace(
+            "必须先核验金额。\n新增规则。", saved["revision"], "agent",
+        )
+        self.assertFalse(blocked["success"])
+        self.assertEqual(blocked["code"], "memory_confirmation_required")
+        confirmed = MemoryHarness.replace(
+            "必须先核验金额。\n新增规则。", saved["revision"], "agent",
+            destructive_authorized=True,
+        )
+        self.assertTrue(confirmed["success"], confirmed)

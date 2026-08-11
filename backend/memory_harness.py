@@ -60,7 +60,8 @@ class MemoryHarness:
         return True, "", clean
 
     @classmethod
-    def replace(cls, content: Any, expected_revision: Any, source: str) -> dict[str, Any]:
+    def replace(cls, content: Any, expected_revision: Any, source: str,
+                destructive_authorized: bool = False) -> dict[str, Any]:
         """一次完整、可比较、可恢复的替换。"""
         try:
             revision = int(expected_revision)
@@ -85,6 +86,18 @@ class MemoryHarness:
                 "error": f"Memory 已进入压缩区，候选完整版本必须不超过 {COMPACTION_TARGET} 字符",
                 "code": "compaction_required",
                 "capacity": current["capacity"],
+            }
+        old_lines = [line.strip() for line in current["content"].splitlines() if line.strip()]
+        new_lines = [line.strip() for line in clean.splitlines() if line.strip()]
+        deleted = [line for line in old_lines if line not in new_lines]
+        if source == "agent" and deleted and not destructive_authorized:
+            return {
+                "success": False,
+                "error": "候选 Memory 删除或改写了已有内容，需要用户明确确认后才能保存",
+                "code": "memory_confirmation_required",
+                "deleted_count": len(deleted),
+                "deleted_preview": deleted[:3],
+                "revision": revision,
             }
         result = replace_memory_content(clean, expected_revision=revision, source=source)
         if not result.get("ok"):

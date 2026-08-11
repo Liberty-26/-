@@ -6,6 +6,7 @@ import json
 import re
 from pathlib import Path
 from typing import Any
+import uuid
 
 
 MAX_TOOL_CALLS = 16
@@ -30,6 +31,7 @@ WRITE_INTENT_RE = re.compile(
 )
 NEGATIVE_WRITE_RE = re.compile(r"(?:不要|先别|暂不|仅|只).{0,10}(?:写入|导出|生成|创建|追加)")
 MEMORY_INTENT_RE = re.compile(r"(?:记住|保存.{0,8}记忆|以后.{0,8}(?:按|使用|默认)|长期.{0,8}(?:保存|记住))")
+MEMORY_DESTRUCTIVE_RE = re.compile(r"(?:确认|同意|删除|移除|替换|清空|压缩|精简).{0,20}(?:记忆|Memory|长期)", re.I)
 SAFE_SHEET_RE = re.compile(r"^[^\\/:*?\[\]]{1,31}$")
 
 
@@ -54,6 +56,8 @@ class AgentRunState:
     blocked_calls: int = 0
     verified_receipt_ids: set[int] = field(default_factory=set)
     memory_read_revision: int | None = None
+    run_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    execution_failures: list[str] = field(default_factory=list)
 
     @property
     def write_authorized(self) -> bool:
@@ -67,6 +71,10 @@ class AgentRunState:
     def memory_authorized(self) -> bool:
         # 长期记忆宁可少记，也不能把模型推测写成用户要求。
         return bool(MEMORY_INTENT_RE.search(self.user_message.strip()))
+
+    @property
+    def memory_destructive_authorized(self) -> bool:
+        return bool(MEMORY_DESTRUCTIVE_RE.search(self.user_message.strip()))
 
     def authorize(self, name: str, args: Any) -> tuple[bool, str, dict[str, Any]]:
         """校验工具、规范化参数、执行权限。失败时返回可直接反馈给模型的原因。"""
@@ -145,6 +153,7 @@ class AgentRunState:
             if expected_revision != self.memory_read_revision:
                 return False, "Memory 版本已变化，必须依据本次读取结果整段替换", {}
             clean["expected_revision"] = expected_revision
+            clean["_destructive_authorized"] = self.memory_destructive_authorized
 
         if name == "spreadsheet_create_new" and not self.write_authorized:
             return False, "未获得明确授权，不能新建表格", {}
@@ -162,6 +171,8 @@ class AgentRunState:
         ok = bool(result.get("success", True))
         if result.get("blocked"):
             self.blocked_calls += 1
+        if not ok and result.get("error"):
+            self.execution_failures.append(str(result["error"])[:240])
         if name == "spreadsheet_write_batch" and ok and result.get("verified") is True:
             self.verified_writes += 1
         if name == "spreadsheet_export_receipts" and ok and result.get("verified") is True:
@@ -188,4 +199,6 @@ class AgentRunState:
             "write_authorized": self.write_authorized,
             "memory_authorized": self.memory_authorized,
             "memory_read_revision": self.memory_read_revision,
+            "run_id": self.run_id,
+            "execution_failures": self.execution_failures[:3],
         }

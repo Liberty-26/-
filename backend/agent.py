@@ -16,6 +16,7 @@ from spreadsheet import find_last_row, write_batch, verify_batch, create_new, ex
 from agent_runtime import AgentRunState, TOOL_RISK
 from memory_harness import MemoryHarness
 from session_harness import SessionHarness
+from response_harness import format_reply
 
 # 会话上下文：全量历史存库，提示词只放「摘要 + 最近窗口」
 MAX_HISTORY_MESSAGES = int(os.getenv("AGENT_HISTORY_WINDOW", "30"))  # 最近 30 条 ≈ 15 轮
@@ -61,6 +62,13 @@ SYSTEM_PROMPT = """你是 SteelDigitize Pro 的数字助理，帮助钢材贸易
 - **文件不存在自动创建**：使用 spreadsheet_export_receipts 的 new 模式时，系统自动创建表格和表头。
 - **真实结果优先**：只能依据工具返回的结果说“已写入 / 已验证 / 已保存”；工具失败或未验证时要如实说明，不能用自然语言猜测成功。
 - **执行授权**：用户已在已确认的单据选择器中勾选，或明确要求写入/导出/生成表格时，才可执行写表；查询、解释、预览请求一律不写文件。
+
+## 回复协议
+- 正文优先使用四段：`### 结论`、`### 已执行`、`### 依据`、`### 下一步`；没有内容的段落可以省略。
+- 先说用户最关心的结论，再给关键数字、文件名、单据数和校验结果。
+- 不要展示内部思维链；可以展示正在查询、读取、校验的动作和工具结果。
+- 没有工具成功结果时，不得写“已完成”“已保存”“已写入”；需要说明“未执行/需确认/无法完成”。
+- 查询类问题保持简洁；执行类问题展示过程和可核对结果；失败类问题说明原因和下一步。
 
 ## 对账单 Excel 格式参考
 10列：序号|单号|日期|品种|规格|单位|数量|单价|金额|合计金额
@@ -263,7 +271,20 @@ def _memory_replace(args: dict) -> dict:
     """Memory 最终写入统一交给版本化硬约束层。"""
     return MemoryHarness.replace(
         args.get("content"), args.get("expected_revision"), source="agent",
+        destructive_authorized=bool(args.get("_destructive_authorized")),
     )
+
+
+def _record_tool_audit(run_state: AgentRunState, name: str, args: dict,
+                       result: dict, allowed: bool) -> None:
+    try:
+        from database import record_agent_audit
+        record_agent_audit(
+            run_state.run_id, run_state.user_message, name, TOOL_RISK.get(name, "unknown"),
+            allowed, args or {}, result or {},
+        )
+    except Exception:
+        pass
 
 
 def _memory_block() -> str:
@@ -664,6 +685,7 @@ def agent_loop_stream(user_message: str, history: list, selected_ids: list = Non
                     if allowed else {"success": False, "error": reason, "blocked": True}
                 )
                 run_state.record(tool_name, result)
+                _record_tool_audit(run_state, tool_name, args or {}, result, allowed)
                 ok = bool(result.get("success", True))
                 yield {
                     "type": "tool_result",
@@ -680,7 +702,7 @@ def agent_loop_stream(user_message: str, history: list, selected_ids: list = Non
             continue
 
         # 最终回复（已随流逐字推送）
-        reply = "".join(content_parts) or "处理完成"
+        reply = format_reply("".join(content_parts) or "处理完成", run_state.audit())
         new_history = trim_history(clean_history + [
             {"role": "user", "content": user_message},
             {"role": "assistant", "content": reply},
@@ -752,6 +774,7 @@ def agent_loop(user_message: str, history: list, selected_ids: list = None,
                     if allowed else {"success": False, "error": reason, "blocked": True}
                 )
                 run_state.record(tool_call.function.name, result)
+                _record_tool_audit(run_state, tool_call.function.name, args or {}, result, allowed)
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
@@ -760,7 +783,7 @@ def agent_loop(user_message: str, history: list, selected_ids: list = None,
             continue
         else:
             # 最终回复
-            reply = message.content or "处理完成"
+            reply = format_reply(message.content or "处理完成", run_state.audit())
             new_history = trim_history(clean_history + [
                 {"role": "user", "content": user_message},
                 {"role": "assistant", "content": reply},
