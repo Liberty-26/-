@@ -1,5 +1,5 @@
 // SteelDigitize Pro — 工作台（首页）：今日概览 + 技能 + 对话 + 右侧单据流/会话
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useAgentChat } from '../hooks/useAgentChat';
 import { useToast } from '../hooks/useToast';
 import { useNav } from '../contexts/NavContext';
@@ -95,6 +95,70 @@ function RunTraceView({ trace }: { trace: RunTrace }) {
       <div className="trace-divider" />
     </div>
   );
+}
+
+const splitTableRow = (line: string): string[] => {
+  const raw = line.trim().replace(/^\|/, '').replace(/\|$/, '');
+  return raw.split('|').map((cell) => cell.trim());
+};
+
+const isTableDivider = (line: string): boolean =>
+  /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+
+/** 将助手的轻量 Markdown 渲染成工作台结果内容；不引入笨重编辑器依赖。 */
+function AssistantContent({ content }: { content: string }) {
+  const lines = String(content || '').split(/\r?\n/);
+  const nodes: ReactNode[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.trim() === '') {
+      nodes.push(<div className="assistant-space" key={`space-${i}`} />);
+      i += 1;
+      continue;
+    }
+    if (i + 1 < lines.length && line.includes('|') && isTableDivider(lines[i + 1])) {
+      const headers = splitTableRow(line);
+      const rows: string[][] = [];
+      i += 2;
+      while (i < lines.length && lines[i].includes('|') && lines[i].trim() !== '') {
+        rows.push(splitTableRow(lines[i]));
+        i += 1;
+      }
+      nodes.push(
+        <div className="assistant-table-wrap" key={`table-${i}`}>
+          <table className="assistant-table">
+            <thead><tr>{headers.map((h, n) => <th key={n}>{h}</th>)}</tr></thead>
+            <tbody>{rows.map((row, r) => <tr key={r}>{headers.map((_, n) => <td key={n}>{row[n] || '—'}</td>)}</tr>)}</tbody>
+          </table>
+        </div>,
+      );
+      continue;
+    }
+    const image = line.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (image) {
+      nodes.push(
+        <figure className="assistant-image" key={`image-${i}`}>
+          <img src={image[2]} alt={image[1] || '助手返回的图片'} />
+          {image[1] && <figcaption>{image[1]}</figcaption>}
+        </figure>,
+      );
+      i += 1;
+      continue;
+    }
+    if (/^\s*[-·]\s+/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\s*[-·]\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\s*[-·]\s+/, ''));
+        i += 1;
+      }
+      nodes.push(<ul className="assistant-list" key={`list-${i}`}>{items.map((item, n) => <li key={n}>{item}</li>)}</ul>);
+      continue;
+    }
+    nodes.push(<p key={`line-${i}`}>{line}</p>);
+    i += 1;
+  }
+  return <div className="assistant-richtext">{nodes}</div>;
 }
 
 export default function WorkbenchPage() {
@@ -506,7 +570,7 @@ export default function WorkbenchPage() {
   const renderMsg = (m: AgentMessage, i: number) => (
     <div key={i} className={`msg ${m.role === 'user' ? 'user' : 'assistant'}`}>
       {m.role === 'assistant' && m.trace && <RunTraceView trace={m.trace} />}
-      {m.content}
+      {m.role === 'assistant' ? <AssistantContent content={m.content} /> : m.content}
     </div>
   );
 

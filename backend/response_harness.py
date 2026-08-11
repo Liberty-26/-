@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 
@@ -28,6 +29,9 @@ def outcome_from_audit(audit: dict[str, Any]) -> str:
 def format_reply(reply: Any, audit: dict[str, Any]) -> str:
     """加上确定性的状态行，并附上代码记录的失败原因。"""
     text = str(reply or "处理完成").strip()
+    # 输出协议禁止粗体和井号标题；表格、列表和图片语法保留，交给前端渲染。
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text, flags=re.S)
+    text = re.sub(r"(?m)^\s*#{1,6}\s*", "", text)
     status = outcome_from_audit(audit)
     label = STATUS_LABELS[status]
     if not text.startswith("【状态："):
