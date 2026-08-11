@@ -12,6 +12,7 @@ interface Props {
   headerRows?: number[];
   resetSignal?: number;
   recTotal?: number | null; // 识别出的合计金额（与计算合计对比审核）
+  materialSet?: Set<string>; // 品名库集合（名称+别名），用于动态"未入库"判断
 }
 
 const COL_LABELS: Record<string, string> = {
@@ -28,7 +29,7 @@ const COLS: { key: string; label: string; align: string }[] = [
   { key: 'price', label: '单价', align: 'right' },
 ];
 
-export default function ReviewTable({ items, onChange, headerRows = [], resetSignal = 0, recTotal = null }: Props) {
+export default function ReviewTable({ items, onChange, headerRows = [], resetSignal = 0, recTotal = null, materialSet }: Props) {
   const { showToast } = useToast();
   const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -40,6 +41,11 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
   const [selectAnchor, setSelectAnchor] = useState<{ row: number; col: string } | null>(null);
   const [selectCurrent, setSelectCurrent] = useState<{ row: number; col: string } | null>(null);
   const selMovedRef = useRef(false);
+  // 框选可视矩形（跟随鼠标展开）
+  const [selRect, setSelRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  // 提交后的选中区域：相邻格子合并为一个选框（与拖拽选框同色）
+  const [committedRects, setCommittedRects] = useState<{ left: number; top: number; width: number; height: number }[]>([]);
 
   useEffect(() => {
     setMultiSelect(false);
@@ -48,6 +54,8 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
     setBatchValue('');
     setSelectAnchor(null);
     setSelectCurrent(null);
+    setSelRect(null);
+    setCommittedRects([]);
     selMovedRef.current = false;
   }, [resetSignal]);
 
@@ -59,6 +67,77 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
   const totalMatch = recTotal != null && Math.abs(recTotal - totalAmount) < 0.01;
   const amtBad = (item: ReceiptItem) =>
     !totalMatch && item.rec_amount != null && Math.abs(item.rec_amount - (item.qty || 0) * (item.price || 0)) > 0.01;
+
+  // 把选中的格子按"4 邻接"聚成若干组，同一组用一个大选框覆盖
+  const computeSelGroups = (sel: Set<string>) => {
+    const colIdx = (c: string) => COLS.findIndex((x) => x.key === c);
+    const groups: { r1: number; r2: number; c1: number; c2: number }[] = [];
+    const visited = new Set<string>();
+    const list = Array.from(sel).map((s) => {
+      const [r, c] = s.split(':');
+      return { r: Number(r), c: colIdx(c) };
+    }).filter((x) => !Number.isNaN(x.r) && x.c >= 0);
+    for (const cell of list) {
+      const k = `${cell.r}:${cell.c}`;
+      if (visited.has(k)) continue;
+      const stack = [cell];
+      visited.add(k);
+      let r1 = cell.r, r2 = cell.r, c1 = cell.c, c2 = cell.c;
+      while (stack.length) {
+        const cur = stack.pop()!;
+        r1 = Math.min(r1, cur.r); r2 = Math.max(r2, cur.r);
+        c1 = Math.min(c1, cur.c); c2 = Math.max(c2, cur.c);
+        for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+          const nr = cur.r + dr, nc = cur.c + dc;
+          const nk = `${nr}:${nc}`;
+          if (!visited.has(nk) && sel.has(`${nr}:${COLS[nc]?.key}`)) {
+            visited.add(nk);
+            stack.push({ r: nr, c: nc });
+          }
+        }
+      }
+      groups.push({ r1, r2, c1, c2 });
+    }
+    return groups;
+  };
+
+  // 选中集合变化后：把每组相邻格子的边界框映射到 DOM 坐标
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap || selectedCells.size === 0) { setCommittedRects([]); return; }
+    const rects: { left: number; top: number; width: number; height: number }[] = [];
+    const wr = wrap.getBoundingClientRect();
+    computeSelGroups(selectedCells).forEach((g) => {
+      const elA = wrap.querySelector(`td[data-row="${g.r1}"][data-col="${COLS[g.c1].key}"]`);
+      const elB = wrap.querySelector(`td[data-row="${g.r2}"][data-col="${COLS[g.c2].key}"]`);
+      if (!elA || !elB) return;
+      const ar = elA.getBoundingClientRect();
+      const br = elB.getBoundingClientRect();
+      const left = Math.min(ar.left, br.left) - wr.left;
+      const top = Math.min(ar.top, br.top) - wr.top;
+      const right = Math.max(ar.right, br.right) - wr.left;
+      const bottom = Math.max(ar.bottom, br.bottom) - wr.top;
+      rects.push({ left, top, width: right - left, height: bottom - top });
+    });
+    setCommittedRects(rects);
+  }, [selectedCells, items]);
+
+  // 计算框选矩形：以 .res-table-wrap 为坐标系，随锚点格与当前格展开
+  const computeSelRect = (a: { row: number; col: string }, c: { row: number; col: string }) => {
+    const wrap = wrapRef.current;
+    if (!wrap) return null;
+    const elA = wrap.querySelector(`td[data-row="${a.row}"][data-col="${a.col}"]`);
+    const elC = wrap.querySelector(`td[data-row="${c.row}"][data-col="${c.col}"]`);
+    if (!elA || !elC) return null;
+    const ar = elA.getBoundingClientRect();
+    const cr = elC.getBoundingClientRect();
+    const wr = wrap.getBoundingClientRect();
+    const left = Math.min(ar.left, cr.left) - wr.left;
+    const top = Math.min(ar.top, cr.top) - wr.top;
+    const right = Math.max(ar.right, cr.right) - wr.left;
+    const bottom = Math.max(ar.bottom, cr.bottom) - wr.top;
+    return { left, top, width: right - left, height: bottom - top };
+  };
 
   const cellBg = (item: ReceiptItem, key: string): string => {
     const issues = item.issues || [];
@@ -157,6 +236,7 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
     selMovedRef.current = false;
     setSelectAnchor({ row, col });
     setSelectCurrent({ row, col });
+    setSelRect(computeSelRect({ row, col }, { row, col }));
   };
 
   // 多选：拖拽经过的格子作为框选终点
@@ -170,6 +250,7 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
     if (r !== selectCurrent?.row || c !== selectCurrent?.col) {
       selMovedRef.current = true;
       setSelectCurrent({ row: r, col: c });
+      if (selectAnchor) setSelRect(computeSelRect(selectAnchor, { row: r, col: c }));
     }
   };
 
@@ -195,6 +276,7 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
       }
       setSelectAnchor(null);
       setSelectCurrent(null);
+      setSelRect(null);
       selMovedRef.current = false;
     };
     document.addEventListener('mouseup', up);
@@ -307,28 +389,18 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
         )}
       </div>
 
-      <div className="res-table-wrap" onMouseMove={multiSelect ? handleSelMove : undefined}>
+      <div className="res-table-wrap" ref={wrapRef} onMouseMove={multiSelect ? handleSelMove : undefined}>
         <table className="res-table">
           <thead>
             <tr>
               <th style={{ width: 44 }}>序号</th>
               {COLS.map((c) => (
-                <th
-                  key={c.key}
-                  className={totalMatch && (c.key === 'qty' || c.key === 'price') ? 'amt-ok' : ''}
-                  style={{ textAlign: c.align === 'right' ? 'right' : c.align === 'center' ? 'center' : 'left' }}
-                >
+                <th key={c.key} style={{ textAlign: c.align === 'right' ? 'right' : c.align === 'center' ? 'center' : 'left' }}>
                   {c.label}
                 </th>
               ))}
-              <th
-                className={totalMatch ? 'amt-ok' : ''}
-                style={{ textAlign: 'right' }}
-                title={recTotal != null ? (totalMatch ? `识别合计 ¥${recTotal.toFixed(2)} = 计算合计，已核对` : `识别合计 ¥${recTotal.toFixed(2)} ≠ 计算合计 ¥${totalAmount.toFixed(2)}，红色行需复核`) : undefined}
-              >
-                金额
-              </th>
-              <th style={{ width: 34 }}></th>
+              <th style={{ textAlign: 'right' }}>金额</th>
+              <th style={{ width: 30 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -344,14 +416,13 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
                   <td className="num" style={{ textAlign: 'center', color: 'var(--text-3)' }}>{i + 1}</td>
                   {COLS.map((c) => {
                     const isEditing = editingCell?.row === i && editingCell?.col === c.key;
-                    const isSelected = multiSelect && selectedCells.has(`${i}:${c.key}`);
                     const val = item[c.key as keyof ReceiptItem];
                     return (
                       <td
                         key={c.key}
                         data-row={i}
                         data-col={c.key}
-                        className={`${cellBg(item, c.key)} ${(c.key === 'qty' || c.key === 'price') && amtBad(item) ? 'amt-err' : ''} ${isSelected ? 'cell-selected' : ''}`}
+                        className={cellBg(item, c.key)}
                         style={{ textAlign: c.align === 'right' ? 'right' : c.align === 'center' ? 'center' : 'left' }}
                         title={cellTitle(item, c.key) || undefined}
                         onClick={() => handleCellClick(i, c.key)}
@@ -370,7 +441,7 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
                           />
                         ) : (
                           <span className={c.key === 'qty' || c.key === 'price' ? 'num' : ''}>
-                            {c.key === 'name' && item.not_in_library && !header && (
+                            {c.key === 'name' && materialSet && item.name && !materialSet.has(item.name) && !header && (
                               <span className="pill amber" style={{ marginRight: 6, fontSize: 11 }} title="品名不在参考库中">未入库</span>
                             )}
                             {val || (c.key === 'qty' || c.key === 'price' ? '0' : '')}
@@ -379,7 +450,7 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
                       </td>
                     );
                   })}
-                  <td className={`num ${amtBad(item) ? 'amt-err' : ''}`} style={{ textAlign: 'right', fontWeight: 700 }}>
+                  <td className={`num ${amtBad(item) ? 'amt-err' : ''}`} style={{ textAlign: 'right', fontWeight: 700 }} title={amtBad(item) ? `识别金额 ¥${(item.rec_amount || 0).toFixed(2)} ≠ 计算金额` : undefined}>
                     {((item.qty || 0) * (item.price || 0)).toFixed(2)}
                   </td>
                   <td style={{ textAlign: 'center' }}>
@@ -399,18 +470,31 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
               );
             })}
             {items.length === 0 && (
-              <tr><td colSpan={9} style={{ padding: '28px', textAlign: 'center', color: 'var(--text-3)' }}>暂无数据，请上传图片并识别</td></tr>
+              <tr><td colSpan={8} style={{ padding: '28px', textAlign: 'center', color: 'var(--text-3)' }}>暂无数据，请上传图片并识别</td></tr>
             )}
           </tbody>
           <tfoot>
             <tr style={{ background: '#f7f8fa' }}>
-              <td colSpan={7} style={{ textAlign: 'right', fontWeight: 600 }}>合计金额</td>
+              <td colSpan={6} style={{ textAlign: 'right', fontWeight: 600 }}>合计金额</td>
               <td className="num" colSpan={2} style={{ textAlign: 'left', fontWeight: 700, color: 'var(--primary)' }}>
                 {totalAmount.toFixed(2)}
               </td>
             </tr>
           </tfoot>
         </table>
+        {selRect && (
+          <div
+            className="sel-rect"
+            style={{ left: selRect.left, top: selRect.top, width: selRect.width, height: selRect.height }}
+          />
+        )}
+        {committedRects.map((r, idx) => (
+          <div
+            key={idx}
+            className="sel-rect sel-committed"
+            style={{ left: r.left, top: r.top, width: r.width, height: r.height }}
+          />
+        ))}
       </div>
 
       <div style={{ padding: '10px 14px' }}>

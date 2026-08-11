@@ -8,7 +8,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { Inbox, RotateCcw, Plus, Minus, BookOpen } from 'lucide-react';
 import {
   getReceiptDetail, updateReceipt, verifyReceipt, deleteReceipt,
-  calibrateItemsSSE, recognizeImage, addCorrections,
+  calibrateItemsSSE, recognizeImage, addCorrections, getMaterials,
 } from '../utils/api';
 import { fetchUploadAsDataUrl } from '../utils/image';
 import type { ReceiptSummary, ReceiptItem } from '../types';
@@ -37,7 +37,26 @@ export default function ReviewPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // 品名库集合：用于动态计算"品名对齐/未入库"（修改品名后即时更新）
+  const [materialSet, setMaterialSet] = useState<Set<string>>(new Set());
   const origRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getMaterials().then((res) => {
+      if (res.success && res.data) {
+        const set = new Set<string>();
+        (res.data.items || []).forEach((m) => {
+          const name = (m.name || '').trim();
+          if (name) set.add(name);
+          (m.aliases || '').split(/[,，/]/).forEach((a) => {
+            const t = a.trim();
+            if (t) set.add(t);
+          });
+        });
+        setMaterialSet(set);
+      }
+    });
+  }, []);
 
   // 原图滚轮缩放：原生非 passive 监听，阻止页面滚动，只缩原图；
   // 依赖 currentId/imageUrl：原图容器挂载后重新绑定（此前只在组件挂载时绑定一次，单据加载后失效）
@@ -119,7 +138,8 @@ export default function ReviewPage() {
     items.forEach((it, i) => {
       const orig = originalItems[i];
       if (!orig) return;
-      (['name', 'spec', 'unit', 'qty', 'price'] as const).forEach((f) => {
+      // 训练数据只收集品名错误与修改（规格/单位/数量/单价不再入训练集）
+      (['name'] as const).forEach((f) => {
         const b = String(orig[f] ?? '');
         const a = String(it[f] ?? '');
         if (b !== a) changes.push({ receipt_no: no, field: f, before_val: b, after_val: a });
@@ -231,10 +251,15 @@ export default function ReviewPage() {
     else groups.push({ month: m, list: [q] });
   });
 
+  // 动态状态：品名对齐 / 未入库 / 金额识别状态（每次编辑即时更新）
+  const nonHeader = items.filter((_, i) => !headerRows.includes(i));
+  const aligned = nonHeader.filter((it) => it.name && materialSet.has(it.name)).length;
+  const notInLib = nonHeader.filter((it) => it.name && !materialSet.has(it.name)).length;
+  const computedTotal = nonHeader.reduce((s, it) => s + (it.qty || 0) * (it.price || 0), 0);
+  const amountOk = recTotal != null && Math.abs(recTotal - computedTotal) < 0.01;
+  const amountBad = recTotal != null && !amountOk;
   const summary = {
-    corrected: items.filter((it) => (it.corrections || []).length > 0).length,
     issues: items.filter((it) => (it.issues || []).length > 0).length,
-    headers: headerRows.length,
   };
 
   return (
@@ -292,11 +317,6 @@ export default function ReviewPage() {
       </aside>
 
       <div className="work">
-        <div className="ai-strip" style={{ marginTop: 0, marginBottom: 14 }}>
-          <span className="lab">AI 已完成</span>
-          <span>提取单号 / 日期 · 品名对齐 {summary.corrected} 处 · 金额由代码计算</span>
-          <span className="ac">{currentId != null ? '请你核对数量与单价后确认入库' : '等待识别结果'}</span>
-        </div>
         {currentId == null ? (
           <>
             <div className="work-head">
@@ -368,10 +388,11 @@ export default function ReviewPage() {
             </div>
 
             <div className="work-status">
-              <span className="pill green">品名对齐 {items.length - summary.corrected - summary.issues}/{items.length}</span>
-              {summary.corrected > 0 && <span className="pill amber">已修正 {summary.corrected}</span>}
+              <span className="pill green">品名对齐 {aligned}/{nonHeader.length}</span>
+              <span className={`pill ${notInLib > 0 ? 'amber' : 'gray'}`}>未入库 {notInLib}</span>
+              {amountOk && <span className="pill green">金额识别正确</span>}
+              {amountBad && <span className="pill gray" style={{ color: 'var(--err)', background: 'var(--err-soft)' }}>请审核金额</span>}
               {summary.issues > 0 && <span className="pill gray" style={{ color: 'var(--err)', background: 'var(--err-soft)' }}>异常 {summary.issues}</span>}
-              <span className="pill gray">金额由代码计算</span>
             </div>
 
             <div className="split">
@@ -420,7 +441,7 @@ export default function ReviewPage() {
                 {loading ? (
                   <div className="empty" style={{ margin: '40px auto' }}>加载中…</div>
                 ) : (
-                  <ReviewTable items={items} onChange={setItems} headerRows={headerRows} resetSignal={tableReset} recTotal={recTotal} />
+                  <ReviewTable items={items} onChange={setItems} headerRows={headerRows} resetSignal={tableReset} recTotal={recTotal} materialSet={materialSet} />
                 )}
                 <div className="res-foot">
                   <span>共 {items.length} 行</span>

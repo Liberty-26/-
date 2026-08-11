@@ -34,6 +34,11 @@ SPEC_LIKE_STRIP_RE = re.compile(
     r'[0-9×xX*÷#DNdnΦφ.+\-/\s()（）,，、]|[' + SPEC_LIKE_UNIT_CHARS + r']'
 )
 
+# 汉字规格穷举（用户确认 2026-08-11）："一通/二通/三通/对通"这类词出现在
+# 名称栏 = 规格误写（与数字规格同理），移入规格列并继承上方品名。
+# 当前用模式匹配覆盖 一~十/对 + 通 的组合，后续遇到新词直接补进字符集。
+HANZI_SPEC_RE = re.compile(r'^[一二三四五六七八九十对]{1,2}通$')
+
 
 def is_pure_spec(name: str) -> bool:
     """name 全由数字和规格符号组成，不可能是品名"""
@@ -160,7 +165,7 @@ def structural_decompose(items: list) -> list:
 
         # 纯规格检测（原版"纯规格错位"规则）：name 是纯数字规格，或数字+单位字规格
         # （如 "6,5米×12支"、"3.2米"）→ 并入 spec，name 清空，由下方继承品名
-        if is_pure_spec(name) or is_spec_like(name):
+        if is_pure_spec(name) or is_spec_like(name) or HANZI_SPEC_RE.match(name):
             item["spec"] = (name + spec) if spec else name
             item["name"] = ""
             name = ""

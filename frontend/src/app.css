@@ -285,7 +285,7 @@ main{flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;}
 .pill.teal{background:var(--teal-soft); color:var(--teal);}
 /* ---------- 审核区 ---------- */
 .review{display:flex; height:100%; width:100%; min-height:0;}
-.queue{width:304px; flex-shrink:0; background:var(--card); border-right:1px solid var(--border); display:flex; flex-direction:column; min-height:0;}
+.queue{width:264px; flex-shrink:0; background:var(--card); border-right:1px solid var(--border); display:flex; flex-direction:column; min-height:0;}
 .queue-head{padding:18px 18px 12px; border-bottom:1px solid var(--border);}
 .queue-title{font-size:17px; font-weight:700; display:flex; align-items:center; gap:8px;}
 .queue-title .badge{background:var(--warn-soft); color:var(--warn); font-size:12px; padding:1px 9px; border-radius:999px; font-weight:600;}
@@ -338,15 +338,28 @@ main{flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;}
 }
 .res-head{padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px;}
 .res-head .pill{margin-left:auto;}
-.res-table-wrap{overflow:auto; flex:1; min-height:0;}
+.res-table-wrap{overflow:auto; flex:1; min-height:0; position:relative;}
+.sel-rect{
+  position:absolute; z-index:6; pointer-events:none; box-sizing:border-box;
+  border:1.5px solid var(--primary); background:rgba(3,105,161,.12);
+  border-radius:3px;
+  /* 必须永远覆盖整格：不做位移/尺寸插值过渡（插值会把框边压在格子中间） */
+}
+.sel-rect.sel-committed{
+  animation:selIn .18s var(--ease);
+}
+@keyframes selIn{
+  from{opacity:0;}
+  to{opacity:1; transform:none;}
+}
 table.res-table{width:100%; border-collapse:collapse; font-size:13px;}
 .res-table th{
   text-align:left; padding:8px 10px; background:#fafbfc; color:var(--text-2); font-weight:600; font-size:12px;
   border-bottom:1px solid var(--border); position:sticky; top:0; white-space:nowrap;
 }
-.res-table th.amt-ok{background:var(--ok-soft); color:var(--ok);}
 .res-table tbody tr:hover{background:#fafbfc;}
 .res-table td{padding:4px 6px; border-bottom:1px solid #f0f1f3; vertical-align:middle;}
+.res-table th:not(:last-child), .res-table td:not(:last-child){border-right:1px solid #eef0f2;}
 .res-table td.amt-err{background:var(--err-soft);}
 .res-table tr:hover td.amt-err{background:var(--err-soft);}
 .res-table input{
@@ -357,7 +370,7 @@ table.res-table{width:100%; border-collapse:collapse; font-size:13px;}
 .res-table tr.flag-err td{background:var(--err-soft);}
 .res-table tr.flag-new td{background:var(--warn-soft);}
 .res-table tr.row-header td{background:#f5f6f7; color:var(--text-3); font-style:italic;}
-.res-table td.cell-selected{box-shadow:inset 0 0 0 2px var(--primary); background:#eef4ff !important;}
+.res-table td:last-child{padding:4px 2px;}
 .cell-flag{font-size:11px; white-space:nowrap;}
 .flag-err .cell-flag{color:var(--err); font-weight:600;}
 .flag-new .cell-flag{color:var(--warn); font-weight:600;}
@@ -365,7 +378,7 @@ table.res-table{width:100%; border-collapse:collapse; font-size:13px;}
 .res-foot .total{margin-left:auto; font-weight:700; color:var(--text); font-size:15px;}
 .res-foot .total .num{color:var(--primary);}
 .row-del{
-  display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px;
+  display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px;
   border-radius:7px; color:var(--text-3); transition:color .15s ease-out, background .15s ease-out;
 }
 .row-del:hover{color:var(--err); background:var(--err-soft);}
