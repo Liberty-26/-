@@ -2,11 +2,15 @@
 SteelDigitize Pro — 数据库初始化与查询函数
 SQLite，文件 database，单机部署零配置。
 """
+from __future__ import annotations
+
 import sqlite3
 import os
 import uuid
 import datetime
+import re
 from pathlib import Path
+from typing import Optional
 import config
 
 DB_PATH = config.DATABASE_PATH
@@ -138,7 +142,21 @@ def init_db():
         CREATE TABLE IF NOT EXISTS assistant_memory (
             id INTEGER PRIMARY KEY CHECK (id = 1),
             content TEXT NOT NULL DEFAULT '',
+            revision INTEGER NOT NULL DEFAULT 0,
             updated_at TEXT DEFAULT (datetime('now','localtime'))
+        )
+    """)
+    memory_cols = [r[1] for r in cursor.execute("PRAGMA table_info(assistant_memory)").fetchall()]
+    if "revision" not in memory_cols:
+        cursor.execute("ALTER TABLE assistant_memory ADD COLUMN revision INTEGER NOT NULL DEFAULT 0")
+    # Memory 的历史版本只用于并发保护和可恢复性；界面仍然只有一段完整 Prompt。
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS assistant_memory_versions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            revision INTEGER NOT NULL UNIQUE,
+            content TEXT NOT NULL DEFAULT '',
+            source TEXT NOT NULL DEFAULT 'system',
+            created_at TEXT DEFAULT (datetime('now','localtime'))
         )
     """)
     memory_row = cursor.execute("SELECT content FROM assistant_memory WHERE id = 1").fetchone()
@@ -148,7 +166,7 @@ def init_db():
         ).fetchall()
         legacy_content = "\n".join(str(row[0]).strip() for row in legacy_rows if str(row[0]).strip())
         cursor.execute(
-            "INSERT INTO assistant_memory (id, content) VALUES (1, ?)",
+            "INSERT INTO assistant_memory (id, content, revision) VALUES (1, ?, 0)",
             [legacy_content],
         )
     cursor.execute("""
@@ -207,9 +225,19 @@ def init_db():
             prompt TEXT NOT NULL,
             system_instruction TEXT DEFAULT '',
             enabled INTEGER DEFAULT 1,
+            triggers TEXT NOT NULL DEFAULT '',
+            usage_count INTEGER NOT NULL DEFAULT 0,
+            last_used_at TEXT DEFAULT '',
             created_at TEXT DEFAULT (datetime('now','localtime'))
         )
     """)
+    skill_cols = [r[1] for r in cursor.execute("PRAGMA table_info(skills)").fetchall()]
+    if "triggers" not in skill_cols:
+        cursor.execute("ALTER TABLE skills ADD COLUMN triggers TEXT NOT NULL DEFAULT ''")
+    if "usage_count" not in skill_cols:
+        cursor.execute("ALTER TABLE skills ADD COLUMN usage_count INTEGER NOT NULL DEFAULT 0")
+    if "last_used_at" not in skill_cols:
+        cursor.execute("ALTER TABLE skills ADD COLUMN last_used_at TEXT DEFAULT ''")
 
     # Token 消耗表
     cursor.execute("""
@@ -589,28 +617,69 @@ def get_memory_content() -> dict:
     """读取唯一的 Agent 长期记忆 Prompt。"""
     conn = get_conn()
     row = conn.execute(
-        "SELECT content, updated_at FROM assistant_memory WHERE id = 1"
+        "SELECT content, revision, updated_at FROM assistant_memory WHERE id = 1"
     ).fetchone()
     conn.close()
-    return dict(row) if row else {"content": "", "updated_at": ""}
+    return dict(row) if row else {"content": "", "revision": 0, "updated_at": ""}
 
 
-def save_memory_content(content: str) -> dict:
-    """原子替换 Agent 长期记忆 Prompt。"""
+def replace_memory_content(content: str, expected_revision: Optional[int] = None,
+                           source: str = "direct") -> dict:
+    """带版本比对的整段替换，并在写入前保存旧版本。
+
+    这是 Memory 的最终写入闸门：调用方只能提供完整内容，不能做条目级增删。
+    expected_revision 非空时采用 compare-and-swap，拒绝覆盖期间被其他入口更新的内容。
+    """
     conn = get_conn()
     try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute(
+            "SELECT content, revision, updated_at FROM assistant_memory WHERE id = 1"
+        ).fetchone()
+        if row is None:
+            current = {"content": "", "revision": 0, "updated_at": ""}
+            conn.execute(
+                "INSERT INTO assistant_memory (id, content, revision) VALUES (1, '', 0)"
+            )
+        else:
+            current = dict(row)
+        current_revision = int(current.get("revision") or 0)
+        if expected_revision is not None and int(expected_revision) != current_revision:
+            conn.rollback()
+            return {
+                "ok": False,
+                "error": "stale_revision",
+                "current": current,
+            }
+        new_content = content.strip()
+        if new_content == str(current.get("content") or ""):
+            conn.rollback()
+            return {"ok": True, "status": "unchanged", "memory": current}
         conn.execute(
-            """INSERT INTO assistant_memory (id, content, updated_at) VALUES (1, ?, datetime('now','localtime'))
-               ON CONFLICT(id) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at""",
-            [content.strip()],
+            """INSERT OR IGNORE INTO assistant_memory_versions (revision, content, source)
+               VALUES (?, ?, ?)""",
+            [current_revision, str(current.get("content") or ""), source],
+        )
+        next_revision = current_revision + 1
+        conn.execute(
+            """UPDATE assistant_memory
+               SET content = ?, revision = ?, updated_at = datetime('now','localtime')
+               WHERE id = 1""",
+            [new_content, next_revision],
         )
         conn.commit()
         row = conn.execute(
-            "SELECT content, updated_at FROM assistant_memory WHERE id = 1"
+            "SELECT content, revision, updated_at FROM assistant_memory WHERE id = 1"
         ).fetchone()
-        return dict(row)
+        return {"ok": True, "status": "updated", "memory": dict(row)}
     finally:
         conn.close()
+
+
+def save_memory_content(content: str) -> dict:
+    """兼容旧调用。新代码应使用 replace_memory_content 并传入 revision。"""
+    result = replace_memory_content(content, source="legacy")
+    return result.get("memory", {})
 
 
 def upsert_fact(fact_key: str, fact_value: str, scope: str = "memory"):
@@ -717,11 +786,13 @@ def get_skill(skill_id: int):
     conn.close()
     return dict(row) if row else None
 
-def create_skill(name: str, description: str, prompt: str, system_instruction: str = "") -> int:
+def create_skill(name: str, description: str, prompt: str, system_instruction: str = "",
+                 triggers: str = "") -> int:
     conn = get_conn()
+    cleaned_triggers = normalize_skill_triggers(triggers or name)
     cur = conn.execute(
-        "INSERT INTO skills (name, description, prompt, system_instruction) VALUES (?, ?, ?, ?)",
-        [name, description, prompt, system_instruction]
+        "INSERT INTO skills (name, description, prompt, system_instruction, triggers) VALUES (?, ?, ?, ?, ?)",
+        [name, description, prompt, system_instruction, cleaned_triggers]
     )
     conn.commit()
     sid = cur.lastrowid
@@ -734,14 +805,45 @@ def delete_skill(skill_id: int):
     conn.commit()
     conn.close()
 
-def get_enabled_skills():
-    """获取所有已启用的技能（用于注入 Agent System Prompt）"""
+def normalize_skill_triggers(value: str) -> str:
+    """将用户定义的触发词固定成一个可审计的、去重的列表。"""
+    pieces = re.split(r"[,，\n\r;；|]+", str(value or ""))
+    seen = []
+    for raw in pieces:
+        token = raw.strip().lower()
+        if 1 <= len(token) <= 30 and token not in seen:
+            seen.append(token)
+    return ",".join(seen[:12])
+
+
+def get_enabled_skills(context: str = "", limit: int = 3):
+    """按显式触发词选择技能，默认绝不把全部技能注入模型上下文。"""
+    query = str(context or "").strip().lower()
+    if not query:
+        return []
     conn = get_conn()
     rows = conn.execute(
         "SELECT * FROM skills WHERE enabled = 1 AND system_instruction != ''"
     ).fetchall()
+    matched = []
+    for row in rows:
+        skill = dict(row)
+        triggers = [t for t in str(skill.get("triggers") or "").split(",") if t]
+        score = sum(len(t) for t in triggers if t in query)
+        if score:
+            skill["_match_score"] = score
+            matched.append(skill)
+    matched.sort(key=lambda item: (-item["_match_score"], item["id"]))
+    selected = matched[:max(1, min(int(limit), 5))]
+    if selected:
+        conn.executemany(
+            """UPDATE skills SET usage_count = usage_count + 1,
+               last_used_at = datetime('now','localtime') WHERE id = ?""",
+            [(skill["id"],) for skill in selected],
+        )
+        conn.commit()
     conn.close()
-    return [dict(r) for r in rows]
+    return selected
 
 
 # ---- Token 消耗 ----

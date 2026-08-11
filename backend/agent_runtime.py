@@ -53,6 +53,7 @@ class AgentRunState:
     verified_writes: int = 0
     blocked_calls: int = 0
     verified_receipt_ids: set[int] = field(default_factory=set)
+    memory_read_revision: int | None = None
 
     @property
     def write_authorized(self) -> bool:
@@ -129,11 +130,24 @@ class AgentRunState:
             if len(clean["receipt_ids"]) > 50:
                 return False, "单次最多导出 50 张单据", {}
 
-        if name in {"spreadsheet_create_new", "memory_replace"} and not (
-            self.write_authorized if name == "spreadsheet_create_new" else self.memory_authorized
-        ):
-            action = "新建表格" if name == "spreadsheet_create_new" else "写入长期记忆"
-            return False, f"未获得明确授权，不能{action}", {}
+        if name == "memory_replace":
+            if not self.memory_authorized:
+                return False, "未获得用户明确授权，不能写入长期记忆", {}
+            if self.memory_read_revision is None:
+                return False, "Memory 写入前必须先读取当前版本；这是系统强制的并发保护", {}
+            content = clean.get("content")
+            if not isinstance(content, str) or not content.strip():
+                return False, "content 必须是完整的非空 Memory 文本", {}
+            try:
+                expected_revision = int(clean.get("expected_revision"))
+            except (TypeError, ValueError):
+                return False, "expected_revision 必须等于本次读取到的 Memory 版本号", {}
+            if expected_revision != self.memory_read_revision:
+                return False, "Memory 版本已变化，必须依据本次读取结果整段替换", {}
+            clean["expected_revision"] = expected_revision
+
+        if name == "spreadsheet_create_new" and not self.write_authorized:
+            return False, "未获得明确授权，不能新建表格", {}
 
         if risk in {"write", "memory"}:
             signature = name + ":" + json.dumps(clean, ensure_ascii=False, sort_keys=True, default=str)
@@ -153,6 +167,11 @@ class AgentRunState:
         if name == "spreadsheet_export_receipts" and ok and result.get("verified") is True:
             self.verified_writes += 1
             self.verified_receipt_ids.update(int(rid) for rid in result.get("receipt_ids", []))
+        if name == "memory_list" and ok:
+            try:
+                self.memory_read_revision = int(result.get("revision"))
+            except (TypeError, ValueError):
+                self.memory_read_revision = None
         self.tool_calls.append(ToolCallRecord(name=name, risk=risk, ok=ok))
 
     @property
@@ -168,4 +187,5 @@ class AgentRunState:
             "verified_receipt_count": len(self.verified_receipt_ids),
             "write_authorized": self.write_authorized,
             "memory_authorized": self.memory_authorized,
+            "memory_read_revision": self.memory_read_revision,
         }

@@ -169,11 +169,16 @@ async def list_skills():
 @router.post("/skills")
 async def create_skill_manual(req: dict):
     from database import create_skill
+    from skill_harness import SkillHarness
+    ok, error, skill = SkillHarness.normalize(req)
+    if not ok:
+        raise HTTPException(status_code=400, detail=error)
     sid = create_skill(
-        name=req.get("name", ""),
-        description=req.get("description", ""),
-        prompt=req.get("prompt", ""),
-        system_instruction=req.get("system_instruction", ""),
+        name=skill["name"],
+        description=skill["description"],
+        prompt=skill["prompt"],
+        system_instruction=skill["system_instruction"],
+        triggers=skill["triggers"],
     )
     return {"success": True, "data": {"id": sid}}
 
@@ -210,14 +215,16 @@ async def generate_skill(req: SkillGenRequest):
   "name": "技能名称（简短，≤10个字）",
   "description": "一句话描述这个技能做什么",
   "prompt": "点击这个技能快捷指令时，会自动发送给Agent的提示词（告诉Agent用户想要什么）",
-  "system_instruction": "当这个技能启用时，会注入到Agent的System Prompt中的指令（告诉Agent在处理任何任务时都要遵守的额外规则）。如果不需要就留空字符串。"
+  "system_instruction": "该技能被触发时，提供给 Agent 的业务规则。不能改变系统能力边界。如果不需要就留空字符串。",
+  "triggers": "逗号分隔的触发词，例如：对账,导出,Excel"
 }}
 
 规则：
 1. name要简短直观
 2. prompt是快捷指令模板，用户点一下就发送
-3. system_instruction是给Agent的持久规则，只有真正需要时才填写
-4. 只输出JSON，不要其他文字"""
+3. system_instruction只在技能触发时加载，不能写系统权限、密钥或覆盖规则
+4. triggers 填 1-5 个用户会实际说出的触发词
+5. 只输出JSON，不要其他文字"""
 
     client = OpenAI(api_key=api_key, base_url=config.AGENT_API_BASE, timeout=60.0)
     resp = client.chat.completions.create(

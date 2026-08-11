@@ -1,18 +1,9 @@
 """Agent 长期记忆与识别纠错记录接口。"""
-import re
 from fastapi import APIRouter, HTTPException
 from database import get_conn
+from memory_harness import MemoryHarness
 
 router = APIRouter(prefix="/api/memory", tags=["memory"])
-
-MEMORY_LIMIT = 6000
-_SENSITIVE_RE = re.compile(
-    r"(ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|"
-    r"-----BEGIN [A-Z ]*PRIVATE KEY-----|password\s*[=:]\s*\S+@|"
-    r"SCAN_WEBSERVICE_KEY|VISION_API_KEY|AGENT_API_KEY)", re.I
-)
-_INVISIBLE_RE = re.compile(r"[\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]")
-
 
 def _ensure_tables():
     conn = get_conn()
@@ -29,7 +20,20 @@ def _ensure_tables():
             """CREATE TABLE IF NOT EXISTS assistant_memory (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
                 content TEXT NOT NULL DEFAULT '',
+                revision INTEGER NOT NULL DEFAULT 0,
                 updated_at TEXT DEFAULT (datetime('now','localtime'))
+            )"""
+        )
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(assistant_memory)").fetchall()]
+        if "revision" not in cols:
+            conn.execute("ALTER TABLE assistant_memory ADD COLUMN revision INTEGER NOT NULL DEFAULT 0")
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS assistant_memory_versions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                revision INTEGER NOT NULL UNIQUE,
+                content TEXT NOT NULL DEFAULT '',
+                source TEXT NOT NULL DEFAULT 'system',
+                created_at TEXT DEFAULT (datetime('now','localtime'))
             )"""
         )
         conn.execute(
@@ -61,46 +65,29 @@ def _ensure_tables():
 async def get_memory():
     """读取唯一的 Agent 长期记忆 Prompt。"""
     _ensure_tables()
-    conn = get_conn()
-    try:
-        row = conn.execute("SELECT content, updated_at FROM assistant_memory WHERE id = 1").fetchone()
-        content = str(row["content"] if row else "")
-        return {
-            "success": True,
-            "data": {
-                "content": content,
-                "chars": len(content),
-                "limit": MEMORY_LIMIT,
-                "updated_at": str(row["updated_at"] if row else ""),
-            },
-        }
-    finally:
-        conn.close()
+    memory = MemoryHarness.read()
+    return {"success": True, "data": {
+        "content": memory["content"], "chars": memory["usage"]["chars"],
+        "limit": memory["usage"]["limit"], "revision": memory["revision"],
+        "capacity": memory["capacity"],
+        "updated_at": memory["updated_at"],
+    }}
 
 
 @router.put("")
 async def save_memory(req: dict):
-    """原子替换完整的 Agent 长期记忆 Prompt。"""
+    """设置页的版本化整段替换；过期编辑不能覆盖新版本。"""
     _ensure_tables()
-    content = str(req.get("content") or "").strip()
-    if len(content) > MEMORY_LIMIT:
-        raise HTTPException(status_code=400, detail=f"长期记忆不能超过 {MEMORY_LIMIT} 个字符")
-    if _SENSITIVE_RE.search(content):
-        raise HTTPException(status_code=400, detail="内容包含疑似密钥或凭据，不能保存到长期记忆")
-    if _INVISIBLE_RE.search(content):
-        raise HTTPException(status_code=400, detail="内容包含不可见字符，请清理后再保存")
-    conn = get_conn()
-    try:
-        conn.execute(
-            """INSERT INTO assistant_memory (id, content, updated_at) VALUES (1, ?, datetime('now','localtime'))
-               ON CONFLICT(id) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at""",
-            [content],
-        )
-        conn.commit()
-        row = conn.execute("SELECT content, updated_at FROM assistant_memory WHERE id = 1").fetchone()
-        return {"success": True, "data": {"content": row["content"], "chars": len(row["content"]), "limit": MEMORY_LIMIT, "updated_at": row["updated_at"]}}
-    finally:
-        conn.close()
+    result = MemoryHarness.replace(req.get("content"), req.get("revision"), source="settings")
+    if not result.get("success"):
+        status = 409 if result.get("code") == "stale_revision" else 400
+        raise HTTPException(status_code=status, detail=result.get("error", "保存 Agent 记忆失败"))
+    return {"success": True, "data": {
+        "content": result["content"], "chars": result["usage"]["chars"],
+        "limit": result["usage"]["limit"], "revision": result["revision"],
+        "capacity": result["capacity"],
+        "updated_at": result["updated_at"],
+    }}
 
 
 @router.get("/corrections")

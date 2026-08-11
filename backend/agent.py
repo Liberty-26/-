@@ -4,28 +4,18 @@ DeepSeek function calling + openpyxl MCP 工具执行
 """
 import json
 import os
-import re
 import traceback
 from openai import OpenAI
 import config
 from database import (
     query_receipt, get_items, get_receipts_for_export, mark_exported,
-    get_memory_content, save_memory_content,
+    get_memory_content,
     search_messages, get_session, update_session_summary, load_chat_messages,
 )
 from spreadsheet import find_last_row, write_batch, verify_batch, create_new, export_receipts
 from agent_runtime import AgentRunState, TOOL_RISK
-
-# ---- 长期记忆（Hermes 式：有界、可策展、冻结快照注入） ----
-MEMORY_LIMIT = 6000     # Agent Memory 单一 Prompt 预算（字符）
-
-# 记忆条目安全扫描：拒绝凭据泄露/提示注入特征/隐形 Unicode
-_SENSITIVE_RE = re.compile(
-    r"(ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|"
-    r"-----BEGIN [A-Z ]*PRIVATE KEY-----|password\s*[=:]\s*\S+@|"
-    r"SCAN_WEBSERVICE_KEY|VISION_API_KEY|AGENT_API_KEY)", re.I
-)
-_INVISIBLE_RE = re.compile(r"[\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]")
+from memory_harness import MemoryHarness
+from session_harness import SessionHarness
 
 # 会话上下文：全量历史存库，提示词只放「摘要 + 最近窗口」
 MAX_HISTORY_MESSAGES = int(os.getenv("AGENT_HISTORY_WINDOW", "30"))  # 最近 30 条 ≈ 15 轮
@@ -62,10 +52,6 @@ SYSTEM_PROMPT = """你是 SteelDigitize Pro 的数字助理，帮助钢材贸易
 - **用户已勾选单据 = 已确认**：右侧面板勾选的单据，用户就是让你操作的，查出后直接写入，不要再问"是否确认"
 - 只追加不覆盖
 - 写入后验证
-- **Agent Memory（长期记忆）**：这是一个完整的长期记忆 Prompt，不再拆分成多个记忆区。
-  仅当用户明确说“记住 / 保存到记忆 / 以后默认”时才可以写入。不得把推测、一次性任务、模型判断写成长期记忆。
-  需要修改时，先读取完整 Memory，再把整段精炼后的新 Prompt 通过 memory_replace 原子替换；不要追加碎片、不要保留重复内容。
-  记忆有字数上限；不要保存一次性路径、大段数据或系统中能直接查到的内容。
 - **会话检索**：本会话/历史会话的全量消息都存在数据库里，但不会全部放进上下文。
   需要回忆更早说过什么时，用 session_search 按关键词检索真实消息，不要凭空编造。
 - **本会话摘要**：系统提示中的「本会话历史摘要」是较早对话的压缩记录，
@@ -200,7 +186,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "memory_list",
-            "description": "读取完整的 Agent 长期记忆 Prompt 及字数用量。修改前必须先调用。",
+            "description": "读取当前完整的 Agent 长期记忆及其版本号。",
             "parameters": {"type": "object", "properties": {}}
         }
     },
@@ -208,13 +194,14 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "memory_replace",
-            "description": "用完整的新 Prompt 原子替换 Agent 长期记忆。必须保留仍然有效的内容，不能只提交一条碎片。",
+            "description": "提交完整的新 Agent 长期记忆候选文本，并携带刚读取到的版本号。",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "content": {"type": "string", "description": "完整、精炼后的 Agent 长期记忆 Prompt"}
+                    "content": {"type": "string", "description": "完整的新 Agent 长期记忆 Prompt"},
+                    "expected_revision": {"type": "integer", "description": "memory_list 返回的 revision"}
                 },
-                "required": ["content"]
+                "required": ["content", "expected_revision"]
             }
         }
     },
@@ -267,39 +254,16 @@ AGENT_TOOLS = [
 MAX_ITERATIONS = 8
 
 
-def _security_scan(content: str) -> str:
-    """记忆内容安全扫描：命中敏感模式/隐形字符时返回错误说明，否则返回空串"""
-    if _SENSITIVE_RE.search(content):
-        return "内容包含疑似凭据/密钥/危险指令特征，禁止写入记忆"
-    if _INVISIBLE_RE.search(content):
-        return "内容包含隐形 Unicode 字符，禁止写入记忆"
-    return ""
-
-
 def _memory_list_payload() -> dict:
-    """当前 Agent Memory 全文与字数用量。"""
-    memory = get_memory_content()
-    content = str(memory.get("content", ""))
-    return {
-        "success": True,
-        "content": content,
-        "usage": {"chars": len(content), "limit": MEMORY_LIMIT},
-        "updated_at": memory.get("updated_at", ""),
-    }
+    """通过硬约束层读取当前冻结版本。"""
+    return MemoryHarness.read()
 
 
 def _memory_replace(args: dict) -> dict:
-    """原子替换完整 Memory，不再按条目、键值或分区操作。"""
-    content = str(args.get("content", "")).strip()
-    if not content:
-        return {"success": False, "error": "content 不能为空"}
-    sec = _security_scan(content)
-    if sec:
-        return {"success": False, "error": sec}
-    if len(content) > MEMORY_LIMIT:
-        return {"success": False, "error": f"长期记忆不能超过 {MEMORY_LIMIT} 个字符"}
-    saved = save_memory_content(content)
-    return {"success": True, "status": "updated", "content": saved.get("content", ""), "usage": {"chars": len(content), "limit": MEMORY_LIMIT}}
+    """Memory 最终写入统一交给版本化硬约束层。"""
+    return MemoryHarness.replace(
+        args.get("content"), args.get("expected_revision"), source="agent",
+    )
 
 
 def _memory_block() -> str:
@@ -436,8 +400,8 @@ def trim_history(history: list, max_messages: int = MAX_HISTORY_MESSAGES) -> lis
     return keep
 
 
-def _build_system_prompt() -> str:
-    """构建 System Prompt，注入已启用的技能指令和配置路径"""
+def _build_system_prompt(user_message: str = "") -> str:
+    """构建 System Prompt；Skill 的筛选由代码的触发词路由完成。"""
     prompt = SYSTEM_PROMPT
     # 注入文件存放目录
     wd = config.WORK_DIR
@@ -448,7 +412,7 @@ def _build_system_prompt() -> str:
     # 注入已启用的技能
     try:
         from database import get_enabled_skills
-        skills = get_enabled_skills()
+        skills = get_enabled_skills(user_message)
         if skills:
             extra = "\n\n## 已启用的自定义技能规则\n"
             for s in skills:
@@ -456,7 +420,7 @@ def _build_system_prompt() -> str:
             prompt += extra
     except Exception:
         pass
-    # 注入长期记忆（Hermes 式冻结快照：MEMORY + USER 两区，带字数预算）
+    # 每轮只注入同一份 Memory 的冻结快照；写入权限不在 Prompt 内判定。
     try:
         prompt += "\n\n" + _memory_block()
     except Exception:
@@ -487,13 +451,11 @@ def _ensure_session_summary(client, session_id: str, msgs: list) -> str:
     try:
         if not session_id or os.getenv("AGENT_AUTO_SUMMARY", "1") != "1":
             return ""
-        if len(msgs) <= MAX_HISTORY_MESSAGES + SUMMARY_MARGIN:
-            return (get_session(session_id) or {}).get("summary", "") or ""
-        cutoff = len(msgs) - MAX_HISTORY_MESSAGES
         sess = get_session(session_id) or {}
-        if sess.get("summary_count", 0) >= cutoff:
+        plan = SessionHarness.plan(sess, msgs, MAX_HISTORY_MESSAGES, SUMMARY_MARGIN)
+        if plan is None:
             return sess.get("summary", "") or ""
-        old = msgs[:cutoff]
+        old = plan["messages"]
         prompt = (
             "你是对话压缩器。把下面这段对话压缩成简洁的中文要点摘要，保留："
             "涉及的单据/单号/日期、用户的要求与确认、做出的决定、提到的事实与偏好。"
@@ -508,8 +470,8 @@ def _ensure_session_summary(client, session_id: str, msgs: list) -> str:
         summary = (resp.choices[0].message.content or "").strip()
         if summary:
             old_summary = (sess.get("summary") or "").strip()
-            merged = f"{old_summary}\n\n（后续补充）{summary}" if old_summary else summary
-            update_session_summary(session_id, merged, cutoff)
+            merged = SessionHarness.normalize_candidate(summary, old_summary)
+            update_session_summary(session_id, merged, plan["cutoff"])
             return merged
         return sess.get("summary", "") or ""
     except Exception:
@@ -526,7 +488,7 @@ def _prepare_context(client, user_message: str, history: list,
     返回 (system_prompt, messages, clean_history)
     """
     # 构建 System Prompt（技能 + 文件目录 + 冻结记忆快照）
-    system_prompt = _build_system_prompt()
+    system_prompt = _build_system_prompt(user_message)
 
     if session_id:
         try:

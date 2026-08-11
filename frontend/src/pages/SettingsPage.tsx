@@ -40,6 +40,7 @@ export default function SettingsPage() {
   const [memoryContent, setMemoryContent] = useState('');
   const [memoryChars, setMemoryChars] = useState(0);
   const [memoryLimit, setMemoryLimit] = useState(6000);
+  const [memoryRevision, setMemoryRevision] = useState(0);
   const [memorySaving, setMemorySaving] = useState(false);
 
   // 关于：版本 / 备份 / 更新
@@ -164,6 +165,7 @@ export default function SettingsPage() {
         setMemoryContent(r.data.content || '');
         setMemoryChars(r.data.chars || 0);
         setMemoryLimit(r.data.limit || 6000);
+        setMemoryRevision(r.data.revision || 0);
       } else showToast(r.error || '读取 Agent 记忆失败', 'error');
     });
   }, [showToast]);
@@ -256,11 +258,12 @@ export default function SettingsPage() {
 
   const handleSaveMemory = async () => {
     setMemorySaving(true);
-    const res = await saveMemory(memoryContent);
+    const res = await saveMemory(memoryContent, memoryRevision);
     setMemorySaving(false);
     if (res.success && res.data) {
       setMemoryContent(res.data.content || '');
       setMemoryChars(res.data.chars || 0);
+      setMemoryRevision(res.data.revision || 0);
       showToast('Agent 记忆已保存', 'success');
     } else showToast(res.error || '保存 Agent 记忆失败', 'error');
   };
@@ -386,7 +389,7 @@ export default function SettingsPage() {
             <div><h3>长期记忆 Memory</h3><div className="desc">这段内容会在每次任务开始前提供给 Agent。直接写规则、偏好和长期经验即可。</div></div>
             <span className="memory-badge">本机持久化</span>
           </div>
-          <div className="memory-explain">只保存长期有效的内容，不要写一次性任务、临时文件路径、密钥或大段业务数据。你可以把它当作给 Agent 的长期说明。</div>
+          <div className="memory-explain">直接编辑这一段长期说明。保存时系统会检查版本，避免覆盖另一处刚刚更新的内容；清空后保存即可移除全部记忆。</div>
           <textarea className="memory-editor" value={memoryContent} onChange={(e) => { setMemoryContent(e.target.value); setMemoryChars(e.target.value.length); }} placeholder="例如：\n这是一个建材厂商的单据数字化工作台。\n生成表格时，金额必须由程序计算并自动核验。\n用户希望看到详细的查询、操作和验证过程。" spellCheck={false} />
           <div className="memory-editor-foot"><span>{memoryChars.toLocaleString('zh-CN')} / {memoryLimit.toLocaleString('zh-CN')} 字符</span><button className="btn" onClick={handleSaveMemory} disabled={memorySaving}>{memorySaving ? '保存中…' : '保存 Agent 记忆'}</button></div>
         </div>

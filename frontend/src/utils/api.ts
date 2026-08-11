@@ -337,14 +337,14 @@ export async function clearMessages(sessionId?: string) {
 // ---- 技能 ----
 
 export async function getSkills() {
-  return request<{ skills: { id: number; name: string; description: string; prompt: string; system_instruction: string; enabled: number; created_at: string }[] }>('GET', '/agent/skills');
+  return request<{ skills: { id: number; name: string; description: string; prompt: string; system_instruction: string; triggers: string; enabled: number; created_at: string }[] }>('GET', '/agent/skills');
 }
 
 export async function generateSkill(description: string) {
-  return request<{ name: string; description: string; prompt: string; system_instruction: string }>('POST', '/agent/skills/generate', { description });
+  return request<{ name: string; description: string; prompt: string; system_instruction: string; triggers: string }>('POST', '/agent/skills/generate', { description });
 }
 
-export async function createSkill(skill: { name: string; description: string; prompt: string; system_instruction: string }) {
+export async function createSkill(skill: { name: string; description: string; prompt: string; system_instruction: string; triggers?: string }) {
   return request<{ id: number }>('POST', '/agent/skills', skill);
 }
 
@@ -361,11 +361,11 @@ export async function getMonitor() {
 // ---- Agent 长期记忆（单一 Prompt） ----
 
 export async function getMemory() {
-  return request<{ content: string; chars: number; limit: number; updated_at: string }>('GET', '/memory');
+  return request<{ content: string; chars: number; limit: number; revision: number; capacity: { needs_compaction: boolean; compaction_target: number; remaining: number }; updated_at: string }>('GET', '/memory');
 }
 
-export async function saveMemory(content: string) {
-  return request<{ content: string; chars: number; limit: number; updated_at: string }>('PUT', '/memory', { content });
+export async function saveMemory(content: string, revision: number) {
+  return request<{ content: string; chars: number; limit: number; revision: number; capacity: { needs_compaction: boolean; compaction_target: number; remaining: number }; updated_at: string }>('PUT', '/memory', { content, revision });
 }
 
 export async function getCorrections(limit = 200) {

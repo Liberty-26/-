@@ -35,13 +35,34 @@ class AgentRunStateTest(unittest.TestCase):
 
     def test_memory_requires_explicit_request(self):
         state = AgentRunState("我喜欢按日期排序")
-        ok, reason, _ = state.authorize("memory_replace", {"content": "偏好按日期排序"})
+        ok, reason, _ = state.authorize("memory_replace", {
+            "content": "偏好按日期排序", "expected_revision": 0,
+        })
         self.assertFalse(ok)
         self.assertIn("长期记忆", reason)
 
         explicit = AgentRunState("请记住：以后默认按日期排序")
-        ok, reason, _ = explicit.authorize("memory_replace", {"content": "默认按日期排序"})
+        ok, reason, _ = explicit.authorize("memory_replace", {
+            "content": "默认按日期排序", "expected_revision": 0,
+        })
+        self.assertFalse(ok)
+        self.assertIn("先读取", reason)
+
+        explicit.record("memory_list", {"success": True, "revision": 7})
+        ok, reason, args = explicit.authorize("memory_replace", {
+            "content": "默认按日期排序", "expected_revision": 7,
+        })
         self.assertTrue(ok, reason)
+        self.assertEqual(args["expected_revision"], 7)
+
+    def test_memory_write_rejects_stale_or_fabricated_revision(self):
+        state = AgentRunState("请记住：默认按日期排序")
+        state.record("memory_list", {"success": True, "revision": 3})
+        ok, reason, _ = state.authorize("memory_replace", {
+            "content": "默认按日期排序", "expected_revision": 2,
+        })
+        self.assertFalse(ok)
+        self.assertIn("版本已变化", reason)
 
     def test_duplicate_mutation_is_blocked(self):
         state = AgentRunState("把单据写入对账单")
