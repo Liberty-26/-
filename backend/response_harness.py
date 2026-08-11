@@ -21,6 +21,9 @@ def outcome_from_audit(audit: dict[str, Any]) -> str:
         return "failed"
     if audit.get("blocked_calls", 0) > 0:
         return "needs_confirmation"
+    # 写入请求没有真实、已校验的写入记录时，绝不能被模型正文包装成成功。
+    if audit.get("write_requested", audit.get("write_authorized", False)) and audit.get("verified_writes", 0) <= 0:
+        return "failed"
     if audit.get("verified_writes", 0) > 0:
         return "completed"
     return "answered"
@@ -32,6 +35,12 @@ def format_reply(reply: Any, audit: dict[str, Any]) -> str:
     # 输出协议禁止粗体和井号标题；表格、列表和图片语法保留，交给前端渲染。
     text = re.sub(r"\*\*(.*?)\*\*", r"\1", text, flags=re.S)
     text = re.sub(r"(?m)^\s*#{1,6}\s*", "", text)
+    write_requested = bool(audit.get("write_requested", audit.get("write_authorized", False)))
+    if write_requested and audit.get("verified_writes", 0) <= 0:
+        # 清掉最容易造成误导的成功措辞，正文仍保留，方便审计模型原话。
+        text = re.sub(r"已(?:完成|生成|保存|写入|导出|创建)|已经(?:完成|生成|保存|写入|导出|创建)", "未完成", text)
+        if "系统未检测到真实写入记录" not in text:
+            text += "\n\n系统核验：未检测到真实写入和校验记录，文件不能视为已生成。"
     status = outcome_from_audit(audit)
     label = STATUS_LABELS[status]
     if not text.startswith("【状态："):

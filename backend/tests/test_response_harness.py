@@ -18,3 +18,9 @@ class ResponseHarnessTest(unittest.TestCase):
         audit = {"verified_writes": 0, "blocked_calls": 0, "execution_failures": ["文件不存在"]}
         reply = format_reply("无法处理", audit)
         self.assertIn("系统核验：文件不存在", reply)
+
+    def test_write_claim_without_verified_write_is_failed(self):
+        audit = {"write_requested": True, "verified_writes": 0, "blocked_calls": 0, "execution_failures": []}
+        reply = format_reply("已完成，文件已写入桌面。", audit)
+        self.assertTrue(reply.startswith("【状态：未完成】"))
+        self.assertIn("未检测到真实写入", reply)

@@ -51,6 +51,7 @@ SYSTEM_PROMPT = """你是“数字化工作台”的工作助手，帮助钢材�
   与最近对话窗口共同构成当前上下文；摘要与实际记录冲突时以实际记录为准。
 · 用户说写入但系统未配置对账单路径时，提醒用户去设置页配置。
 · 新建文件使用已配置工作目录；追加文件只能使用用户上传或明确指定的文件，不猜测目标文件。
+· 用户询问或改变文件存放位置时，先调用 settings_read 获取当前真实工作目录；不能依据历史对话猜测。
 · 使用 spreadsheet_export_receipts 的 new 模式时，系统负责创建表格和表头。
 · 只能依据工具真实返回结果说“已写入”“已验证”“已保存”；失败或未验证时如实说明。
 
@@ -225,6 +226,14 @@ TOOLS = [
                 "required": ["query"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "settings_read",
+            "description": "读取当前真实的文件存放目录和备份目录，不返回 API Key 或其他敏感配置。用户询问或改变文件位置时必须调用。",
+            "parameters": {"type": "object", "properties": {}}
+        }
     }
 ]
 
@@ -270,6 +279,15 @@ def _memory_replace(args: dict) -> dict:
         args.get("content"), args.get("expected_revision"), source="agent",
         destructive_authorized=bool(args.get("_destructive_authorized")),
     )
+
+
+def _settings_read_payload() -> dict:
+    return {
+        "success": True,
+        "work_dir": str(config.WORK_DIR or ""),
+        "backup_dir": str(config.BACKUP_DIR or ""),
+        "work_dir_exists": bool(config.WORK_DIR and os.path.isdir(config.WORK_DIR)),
+    }
 
 
 def _record_tool_audit(run_state: AgentRunState, name: str, args: dict,
@@ -399,6 +417,8 @@ def execute_tool(name: str, args: dict, current_session_id: str = "") -> dict:
                     for r in rows
                 ],
             }
+        elif name == "settings_read":
+            return _settings_read_payload()
         else:
             return {"success": False, "error": f"未知工具: {name}", "tool": name}
     except Exception as e:
@@ -421,10 +441,19 @@ def trim_history(history: list, max_messages: int = MAX_HISTORY_MESSAGES) -> lis
 def _build_system_prompt(user_message: str = "") -> str:
     """构建 System Prompt；Skill 的筛选由代码的触发词路由完成。"""
     prompt = SYSTEM_PROMPT
-    # 注入文件存放目录
-    wd = config.WORK_DIR
+    # 每轮从运行时配置读取，作为结构化上下文注入；模型不能依赖旧会话猜目录。
+    wd = (config.WORK_DIR or "").strip()
+    backup_dir = (config.BACKUP_DIR or "").strip()
+    work_dir_exists = bool(wd and os.path.isdir(wd))
+    prompt += (
+        "\n\n运行时配置（由设置接口在本轮注入，优先级高于历史对话）\n"
+        f"- work_dir: {wd or '未配置'}\n"
+        f"- work_dir_exists: {'true' if work_dir_exists else 'false'}\n"
+        f"- backup_dir: {backup_dir or '未配置'}\n"
+        "- 新建 Excel 必须使用 work_dir；不能把‘已完成’当作文件事实，必须等待写入工具返回并校验。"
+    )
     if wd:
-        prompt += f"\n\n文件存放目录\n新建文件（Excel 等）时存放在此目录: {wd}\n文件名使用用户指定的名称（如用户说\"新建666表格\"就创建 {wd}\\666.xlsx）。\n对用户上传的已有文件操作时，使用该文件的原路径，绝不移动文件位置。"
+        prompt += f"\n文件存放目录\n新建文件（Excel 等）时存放在此目录: {wd}\n文件名使用用户指定的名称（如用户说\"新建666表格\"就创建 {wd}\\666.xlsx）。\n对用户上传的已有文件操作时，使用该文件的原路径，绝不移动文件位置。"
     else:
         prompt += "\n\n文件存放目录\n系统尚未配置文件存放目录。用户要求新建文件时，提醒用户去「API与模型」页配置。"
     # 注入已启用的技能
@@ -563,6 +592,8 @@ def _tool_result_summary(name: str, result: dict) -> str:
         return "已读取记忆条目"
     if name == "memory_replace":
         return "已更新 Agent 长期记忆"
+    if name == "settings_read":
+        return f"当前文件目录：{result.get('work_dir') or '未配置'}"
     if name == "session_search":
         return f"检索到 {result.get('count', 0)} 条相关记录"
     return "执行完成"
@@ -577,6 +608,13 @@ def _finalize_export(run_state: AgentRunState) -> None:
             mark_exported(rid)
         except Exception:
             pass
+
+
+def _tool_choice_for_run(run_state: AgentRunState, iteration: int):
+    """写入型请求首轮必须进入工具链，不能让模型用一句话跳过执行。"""
+    if iteration == 1 and run_state.write_authorized and not run_state.tool_calls:
+        return "required"
+    return "auto"
 
 
 def _mock_stream():
@@ -612,7 +650,11 @@ def agent_loop_stream(user_message: str, history: list, selected_ids: list = Non
     system_prompt, messages, clean_history = _prepare_context(
         client, user_message, history, selected_ids or [], uploaded_file or "", session_id
     )
-    run_state = AgentRunState(user_message=user_message, selected_ids=selected_ids or [])
+    run_state = AgentRunState(
+        user_message=user_message,
+        selected_ids=selected_ids or [],
+        recent_user_messages=[m.get("content", "") for m in clean_history[-6:] if m.get("role") == "user"],
+    )
 
     iteration = 0
     while iteration < MAX_ITERATIONS:
@@ -623,6 +665,7 @@ def agent_loop_stream(user_message: str, history: list, selected_ids: list = Non
             model=config.AGENT_MODEL,
             messages=messages,
             tools=AGENT_TOOLS,
+            tool_choice=_tool_choice_for_run(run_state, iteration),
             stream=True,
         )
 
@@ -739,7 +782,11 @@ def agent_loop(user_message: str, history: list, selected_ids: list = None,
     system_prompt, messages, clean_history = _prepare_context(
         client, user_message, history, selected_ids or [], uploaded_file or "", session_id
     )
-    run_state = AgentRunState(user_message=user_message, selected_ids=selected_ids or [])
+    run_state = AgentRunState(
+        user_message=user_message,
+        selected_ids=selected_ids or [],
+        recent_user_messages=[m.get("content", "") for m in clean_history[-6:] if m.get("role") == "user"],
+    )
 
     iteration = 0
 
@@ -749,7 +796,8 @@ def agent_loop(user_message: str, history: list, selected_ids: list = None,
         response = client.chat.completions.create(
             model=config.AGENT_MODEL,
             messages=messages,
-            tools=AGENT_TOOLS
+            tools=AGENT_TOOLS,
+            tool_choice=_tool_choice_for_run(run_state, iteration),
         )
 
         # 记录 token 消耗

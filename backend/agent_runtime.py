@@ -17,6 +17,7 @@ TOOL_RISK: dict[str, str] = {
     "spreadsheet_find_last_row": "read",
     "spreadsheet_verify": "read",
     "session_search": "read",
+    "settings_read": "read",
     "memory_list": "read",
     "spreadsheet_create_new": "write",
     "spreadsheet_write_batch": "write",
@@ -29,6 +30,7 @@ WRITE_INTENT_RE = re.compile(
     r"|(?:把|将).{0,24}(?:单据|数据).{0,12}(?:写入|导出|填入|追加)",
     re.I,
 )
+WRITE_FOLLOWUP_RE = re.compile(r"(?:重新|再).{0,10}(?:做|生成|导出|写|制作)|(?:做|生成|导出|写).{0,10}(?:一份|表格|对账单)", re.I)
 NEGATIVE_WRITE_RE = re.compile(r"(?:不要|先别|暂不|仅|只).{0,10}(?:写入|导出|生成|创建|追加)")
 MEMORY_INTENT_RE = re.compile(r"(?:记住|保存.{0,8}记忆|以后.{0,8}(?:按|使用|默认)|长期.{0,8}(?:保存|记住))")
 MEMORY_DESTRUCTIVE_RE = re.compile(r"(?:确认|同意|删除|移除|替换|清空|压缩|精简).{0,20}(?:记忆|Memory|长期)", re.I)
@@ -49,6 +51,7 @@ class AgentRunState:
 
     user_message: str
     selected_ids: list[int] = field(default_factory=list)
+    recent_user_messages: list[str] = field(default_factory=list)
     max_tool_calls: int = MAX_TOOL_CALLS
     tool_calls: list[ToolCallRecord] = field(default_factory=list)
     _mutations: set[str] = field(default_factory=set)
@@ -63,9 +66,20 @@ class AgentRunState:
     def write_authorized(self) -> bool:
         # 技能弹窗中“已勾选单据 + 确认执行”会传 selected_ids；自然语言操作必须显式表达写入意图。
         message = self.user_message.strip()
-        return bool(self.selected_ids) or (
+        explicit = bool(self.selected_ids) or (
             bool(WRITE_INTENT_RE.search(message)) and not bool(NEGATIVE_WRITE_RE.search(message))
         )
+        if explicit:
+            return True
+        # “四张，就在桌面”“好的，重新做”属于上一轮明确写入请求的短确认，
+        # 不能因为本轮省略了动词就让模型绕过写入授权和结果门禁。
+        if len(message) <= 32 and not re.search(r"(?:查询|查看|看看|在哪里|打开|什么|多少|为什么|没看到)", message):
+            return any(
+                bool(WRITE_INTENT_RE.search(prev) or WRITE_FOLLOWUP_RE.search(prev))
+                and not bool(NEGATIVE_WRITE_RE.search(prev))
+                for prev in self.recent_user_messages[-3:]
+            )
+        return False
 
     @property
     def memory_authorized(self) -> bool:
@@ -197,6 +211,7 @@ class AgentRunState:
             "verified_writes": self.verified_writes,
             "verified_receipt_count": len(self.verified_receipt_ids),
             "write_authorized": self.write_authorized,
+            "write_requested": self.write_authorized,
             "memory_authorized": self.memory_authorized,
             "memory_read_revision": self.memory_read_revision,
             "run_id": self.run_id,

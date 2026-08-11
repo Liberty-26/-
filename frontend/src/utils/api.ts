@@ -173,7 +173,7 @@ export async function saveSettings(settings: {
   scan_key?: string; scan_base?: string; scan_scene?: string;
   backup_dir?: string;
 }) {
-  return request<void>('POST', '/settings', settings);
+  return request<{ work_dir: string; backup_dir: string }>('POST', '/settings', settings);
 }
 
 /** 扫描王官方场景列表 */

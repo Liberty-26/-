@@ -33,6 +33,13 @@ class AgentRunStateTest(unittest.TestCase):
         ok, _, _ = state.authorize("spreadsheet_write_batch", WRITE_ARGS)
         self.assertFalse(ok)
 
+    def test_short_followup_inherits_recent_write_intent(self):
+        state = AgentRunState(
+            "四张，就在桌面",
+            recent_user_messages=["我把文件存放位置切换了，你重新做一份吧"],
+        )
+        self.assertTrue(state.write_authorized)
+
     def test_memory_requires_explicit_request(self):
         state = AgentRunState("我喜欢按日期排序")
         ok, reason, _ = state.authorize("memory_replace", {

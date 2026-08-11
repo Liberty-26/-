@@ -96,10 +96,12 @@ export default function SettingsPage() {
   const handlePickBackupDir = async () => {
     const res = await pickDirectory();
     if (res.success && res.data?.path) {
-      setBackupDir(res.data.path);
-      await saveSettings({ backup_dir: res.data.path });
-      refreshBackups();
-      showToast('备份位置已更新', 'success');
+      const saved = await saveSettings({ backup_dir: res.data.path });
+      if (saved.success && saved.data) {
+        setBackupDir(saved.data.backup_dir || res.data.path);
+        refreshBackups();
+        showToast('备份位置已更新', 'success');
+      } else showToast(saved.error || '备份位置保存失败', 'error');
     } else {
       showToast(res.error || '选择失败', 'error');
     }
@@ -250,9 +252,11 @@ export default function SettingsPage() {
   const handlePickDir = async () => {
     const res = await pickDirectory();
     if (res.success && res.data?.path) {
-      setWorkDir(res.data.path);
-      await saveSettings({ work_dir: res.data.path });
-      showToast('文件存放位置已更新', 'success');
+      const saved = await saveSettings({ work_dir: res.data.path });
+      if (saved.success && saved.data) {
+        setWorkDir(saved.data.work_dir || res.data.path);
+        showToast('文件存放位置已更新', 'success');
+      } else showToast(saved.error || '文件存放位置保存失败', 'error');
     } else showToast(res.error || '选择失败', 'error');
   };
 

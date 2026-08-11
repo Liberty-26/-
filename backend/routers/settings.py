@@ -56,7 +56,13 @@ async def get_settings():
 @router.post("")
 async def save_settings(req: dict):
     config.save_config(**req)
-    return {"success": True}
+    return {
+        "success": True,
+        "data": {
+            "work_dir": config.WORK_DIR,
+            "backup_dir": config.BACKUP_DIR,
+        },
+    }
 
 
 @router.post("/fetch-models")
