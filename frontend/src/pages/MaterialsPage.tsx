@@ -31,6 +31,7 @@ export default function MaterialsPage() {
   const [openErr, setOpenErr] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [tip, setTip] = useState<ErrTip | null>(null);
+  const [graphOpen, setGraphOpen] = useState(false);
 
   const fetchList = useCallback(async (kw: string) => {
     const res = await getMaterials(kw || undefined);
@@ -58,7 +59,7 @@ export default function MaterialsPage() {
     setSyncing(true);
     await Promise.all([fetchCands(), fetchAliasSugg(), fetchAgg()]);
     setSyncing(false);
-    showToast('错误名记忆已更新到最新数据', 'success');
+    showToast('修正记录已更新到最新数据', 'success');
   }, [fetchCands, fetchAliasSugg, fetchAgg, showToast]);
 
   useEffect(() => { fetchList(''); fetchCands(); fetchAliasSugg(); fetchAgg(); }, [fetchList, fetchCands, fetchAliasSugg, fetchAgg]);
@@ -141,8 +142,74 @@ export default function MaterialsPage() {
     setTip({ x: e.clientX, y: e.clientY, ...p });
   };
 
-  // 线的粗细 = 该错误名次数占全部修正的比例（动态映射，占比越高线越粗）
-  const lineWidth = (pct: number) => Math.max(2, Math.min(10, Math.round(1 + Math.sqrt(Math.max(pct, 0)) * 1.7)));
+  // L12 Type Colonnade（lieflat-charts 原版骨架）：左列错误名 → 右列标准名，
+  // 发丝曲线 + 右列圆点（大小 ∝ 次数）；曲线粗细 ∝ 次数占比，悬停左列名称/曲线查看次数
+  const renderColonnade = (pairs: { before: string; after: string; count: number; pct: number }[]) => {
+    const N = pairs.length;
+    const itemY = (i: number) => 20 + i * (280 / Math.max(N, 1));
+    const hubs: { name: string; count: number }[] = [];
+    const hubIndex = new Map<string, number>();
+    [...new Set(pairs.map((p) => p.after))].forEach((name) => {
+      const count = pairs.filter((p) => p.after === name).reduce((s, p) => s + p.count, 0);
+      hubIndex.set(name, hubs.length);
+      hubs.push({ name, count });
+    });
+    const hubY = (j: number) => 34 + j * (292 / Math.max(hubs.length, 1));
+    return (
+      <div className="g-card">
+        <h2>每一次人工修改，都汇向一个标准名</h2>
+        <div className="sub">1 条曲线 = 1 次人工修正 · 右列圆点 = 修正后的标准名 · 圆点大小 ∝ 次数</div>
+        <svg viewBox="0 0 400 360" preserveAspectRatio="xMidYMid meet" style={{ width: '100%', display: 'block' }}>
+          {pairs.map((p, i) => {
+            const yi = itemY(i);
+            const yj = hubY(hubIndex.get(p.after)!);
+            const sw = Math.max(0.6, Math.min(4, 0.6 + (p.pct / 100) * 3.4));
+            return (
+              <g key={`${p.before}→${p.after}`}>
+                <text
+                  x={112} y={yi + 2} fontSize={6.5} fill="#8F8E88" textAnchor="end"
+                  className="g-fade" style={{ animationDelay: `${i * 0.02}s` }}
+                  onMouseMove={(e) => showTip(e, p)}
+                  onMouseLeave={() => setTip(null)}
+                >{p.before}</text>
+                <rect
+                  x={117} y={yi - 1.2} width={4} height={2.4} fill="#B0AFA9"
+                  className="g-fade" style={{ animationDelay: `${i * 0.02}s` }}
+                  onMouseMove={(e) => showTip(e, p)}
+                  onMouseLeave={() => setTip(null)}
+                />
+                <path
+                  d={`M123 ${yi} C 200 ${yi} 220 ${yj} 288 ${yj}`}
+                  fill="none" stroke="#A8A7A0" strokeWidth={sw} opacity={0.6} pathLength={1}
+                  className="g-draw" style={{ animationDelay: `${0.2 + i * 0.02}s`, animationDuration: '0.6s' }}
+                  onMouseMove={(e) => showTip(e, p)}
+                  onMouseLeave={() => setTip(null)}
+                />
+              </g>
+            );
+          })}
+          {hubs.map((h, j) => {
+            const y = hubY(j);
+            const r = 2.8 + h.count * 0.95;
+            return (
+              <g key={h.name}>
+                <circle
+                  cx={293} cy={y} r={r}
+                  fill={h.count >= 2 ? '#1C1C1A' : h.count === 1 ? '#6A6963' : '#B0AFA9'}
+                  className="g-pop" style={{ animationDelay: `${0.6 + j * 0.06}s` }}
+                />
+                <text
+                  x={302 + r + 4} y={y + 2.6} fontSize={7} fontWeight={700} fill="#4A4944"
+                  className="g-fade" style={{ animationDelay: `${0.65 + j * 0.06}s` }}
+                >{h.name} · {h.count}</text>
+              </g>
+            );
+          })}
+        </svg>
+        <div className="src">TYPE COLONNADE · 数据回流：识别结果 → 人工修正（correction_log）</div>
+      </div>
+    );
+  };
 
   return (
     <div className="plain">
@@ -180,63 +247,48 @@ export default function MaterialsPage() {
             </div>
           </div>
 
-          {/* 错误名记忆：训练数据可视化 + 后端真实数据同步 */}
+          {/* 修正记录（训练数据）：Colonnade 对照图 + 待确认建议 */}
           <div className={`inbox fold ${openErr ? 'open' : ''}`}>
             <button className="fold-head" onClick={() => setOpenErr((v) => !v)}>
-              <span className="fold-title">错误名记忆 <span className="badge">{aliasSugg.length}</span></span>
+              <span className="fold-title">修正记录 <span className="badge">{agg.total}</span></span>
               <span className={`fold-caret ${openErr ? 'open' : ''}`}><ChevronDown size={15} /></span>
             </button>
             <div className="fold-body">
               <div className="fold-inner">
                 <div className="err-head">
-                  <span className="hint">人工修正的数据回流 · 自动统计</span>
+                  <span className="hint">线越粗 = 次数占比越高 · 悬停查看次数</span>
                   <button className="sync-btn" onClick={syncAll} disabled={syncing}>
                     <RefreshCw size={13} className={syncing ? 'spin' : ''} />
                     {syncing ? '更新中…' : '更新数据'}
                   </button>
                 </div>
 
-                {agg.total > 0 && (
-                  <div className="err-fields">
-                    <div className="ef-title">哪个表头错得多</div>
-                    {agg.fields.map((f) => (
-                      <div key={f.field} className="ef-row" title={`${f.label}：${f.count} 次（${f.pct}%）`}>
-                        <span className="ef-label">{f.label}</span>
-                        <span className="ef-bar"><i style={{ width: `${Math.max(f.pct, 2)}%` }} /></span>
-                        <span className="ef-count">{f.count}<small> 次</small></span>
-                      </div>
-                    ))}
-                    <div className="ef-total">累计 {agg.total} 次人工修正</div>
-                  </div>
+                {agg.pairs.length === 0 && (
+                  <div className="fold-empty">还没有训练数据：在审核区修改识别结果后会自动积累</div>
                 )}
 
                 {agg.pairs.length > 0 && (
-                  <div className="err-map">
-                    <div className="ef-title">错误名 → 修正结果 · 线越粗错得越多</div>
-                    {agg.pairs.slice(0, 12).map((p) => (
-                      <div key={`${p.before}→${p.after}`} className="err-row">
-                        <span
-                          className="err-from"
-                          onMouseMove={(e) => showTip(e, p)}
-                          onMouseLeave={() => setTip(null)}
-                        >{p.before}</span>
-                        <span className="err-line-wrap">
-                          <span
-                            className="err-line"
-                            style={{ height: lineWidth(p.pct) }}
-                            onMouseMove={(e) => showTip(e, p)}
-                            onMouseLeave={() => setTip(null)}
-                          />
-                        </span>
-                        <span className="err-to">{p.after}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <>
+                    <div className="ef-title">修正次数前五</div>
+                    <div className="top5">
+                      {agg.pairs.slice(0, 5).map((p) => (
+                        <div key={`${p.before}→${p.after}`} className="top5-row">
+                          <span className="t5-from">{p.before}</span>
+                          <span className="t5-arrow">→</span>
+                          <span className="t5-to">{p.after}</span>
+                          <span className="t5-count">{p.count} 次</span>
+                        </div>
+                      ))}
+                    </div>
+                    <button className="graph-btn" onClick={() => setGraphOpen(true)}>
+                      查看修正图谱
+                    </button>
+                  </>
                 )}
 
                 {aliasSugg.length > 0 && (
                   <div className="err-sugg">
-                    <div className="ef-title">待确认的错误名建议</div>
+                    <div className="ef-title">待确认建议</div>
                     {aliasSugg.map((s) => (
                       <div key={s.id} className="cand">
                         <div><span className="from">{s.before_val}</span> → <span className="to">{s.after_val}</span></div>
@@ -314,6 +366,17 @@ export default function MaterialsPage() {
               <button className="btn ghost" onClick={() => setDialogOpen(false)}>取消</button>
               <button className="btn" onClick={handleSave}>保存</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {graphOpen && (
+        <div className="modal-mask show" onClick={() => setGraphOpen(false)}>
+          <div className="modal graph-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="graph-close" onClick={() => setGraphOpen(false)} aria-label="关闭">✕</button>
+            {agg.pairs.length > 0
+              ? renderColonnade(agg.pairs)
+              : <div className="g-card"><div className="fold-empty">还没有训练数据</div></div>}
           </div>
         </div>
       )}
