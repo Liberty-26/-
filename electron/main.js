@@ -1,7 +1,7 @@
 // SteelDigitize Pro — Electron 主进程
 // 生产模式：拉起内置后端（resources/backend）→ 打开 http://127.0.0.1:8000
 // 开发模式：直接加载 vite dev server（外部启动 uvicorn + vite）
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const { spawn } = require('child_process');
 const path = require('path');
@@ -100,6 +100,18 @@ ipcMain.handle('install-update', async () => {
 });
 
 ipcMain.handle('get-app-version', async () => app.getVersion());
+
+// 桌面端使用 Electron 原生目录对话框；不依赖后端 Tkinter，避免打包后无法弹窗。
+ipcMain.handle('pick-directory', async () => {
+  const result = await dialog.showOpenDialog({
+    title: '选择文件存放目录',
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  return {
+    ok: !result.canceled && Boolean(result.filePaths && result.filePaths[0]),
+    path: result.canceled ? '' : (result.filePaths?.[0] || ''),
+  };
+});
 
 function backendExePath() {
   const name = process.platform === 'win32' ? 'SteelDigitizeBackend.exe' : 'SteelDigitizeBackend';

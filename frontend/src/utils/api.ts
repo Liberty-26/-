@@ -194,6 +194,11 @@ export async function getBackups() {
 /** 打开系统原生目录选择器（工作目录 / 备份目录共用） */
 export async function pickDirectory(): Promise<ApiResponse<{ path: string }>> {
   try {
+    const steel = (window as any).steel;
+    if (steel && steel.pickDirectory) {
+      const result = await steel.pickDirectory();
+      return { success: Boolean(result?.ok && result.path), data: { path: result?.path || '' } };
+    }
     const resp = await fetch('/api/settings/pick-dir');
     const json = await resp.json();
     if (!resp.ok) return { success: false, error: json.detail || `HTTP ${resp.status}` };

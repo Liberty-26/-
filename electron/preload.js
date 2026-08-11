@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('steel', {
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
   getVersion: () => ipcRenderer.invoke('get-app-version'),
+  pickDirectory: () => ipcRenderer.invoke('pick-directory'),
   onUpdateEvent: (cb) => {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('update-event', handler);

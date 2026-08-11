@@ -27,7 +27,7 @@ export interface LiveToolCall {
 }
 
 export interface LiveState {
-  phase: 'thinking' | 'tool' | 'streaming';
+  phase: 'thinking' | 'tool' | 'streaming' | 'finishing';
   stageLabel: string;
   toolCalls: LiveToolCall[];
   reply: string;
@@ -239,6 +239,33 @@ export function useAgentChat() {
     };
 
     let finalReply = '';
+    let displayedReply = '';
+    let revealQueue = '';
+    let revealTimer: number | null = null;
+    let revealWaiters: (() => void)[] = [];
+    // 模型返回速度通常远快于人眼阅读速度：按小批次释放，保留过程感但不拖慢网络请求。
+    const flushReveal = () => {
+      const chars = Array.from(revealQueue);
+      if (chars.length > 0) {
+        displayedReply += chars.splice(0, 2).join('');
+        revealQueue = chars.join('');
+        applyLive({ phase: 'streaming', reply: displayedReply });
+        revealTimer = window.setTimeout(flushReveal, 42);
+        return;
+      }
+      revealTimer = null;
+      const waiters = revealWaiters;
+      revealWaiters = [];
+      waiters.forEach((resolve) => resolve());
+    };
+    const enqueueReveal = (content: string) => {
+      revealQueue += content;
+      if (revealTimer === null) revealTimer = window.setTimeout(flushReveal, 42);
+    };
+    const drainReveal = () => new Promise<void>((resolve) => {
+      if (!revealQueue && revealTimer === null) resolve();
+      else revealWaiters.push(resolve);
+    });
     // 运行痕迹收集：状态序列 + 工具调用 + 总耗时（完成后随消息落库，可收起展开）
     const startTs = Date.now();
     const traceSteps: string[] = [];
@@ -257,8 +284,11 @@ export function useAgentChat() {
     };
     // 中止后的统一收尾：无论用户停止还是超时，都保证输入框恢复
     const handleAborted = async (): Promise<string | null> => {
+      if (revealTimer !== null) window.clearTimeout(revealTimer);
+      revealTimer = null;
+      revealQueue = '';
       if (finalReply.trim()) {
-        await finishAssistantMsg(sid, finalReply, {
+        await finishAssistantMsg(sid, displayedReply || finalReply, {
           steps: traceSteps,
           tools: traceTools,
           elapsed: Math.max(1, Math.round((Date.now() - startTs) / 1000)),
@@ -334,11 +364,13 @@ export function useAgentChat() {
           case 'delta':
             finalReply += evt.content;
             pushStep('生成中');
-            applyLive({ phase: 'streaming', reply: finalReply });
+            enqueueReveal(evt.content);
             break;
           case 'done':
-            // 最少让流程卡展示 ~0.9s：短消息秒回时也不会一闪而过
-            await new Promise((r) => setTimeout(r, 900));
+            await drainReveal();
+            applyLive({ phase: 'finishing', stageLabel: '整理结果', reply: displayedReply || finalReply });
+            // 给“执行轨迹 → 结果”一个短暂、可感知的交接，不让结果突然跳出。
+            await new Promise((r) => setTimeout(r, 360));
             const trace: RunTrace = {
               steps: traceSteps,
               tools: traceTools,

@@ -667,7 +667,7 @@ export default function WorkbenchPage() {
             )}
             {messages.map(renderMsg)}
             {live && (
-              <div className="assistant-turn">
+              <div className={`assistant-turn ${live.phase}`}>
                 <div className="live-status" key={live.phase}>
                   <span className="live-spinner" />
                   <span>{live.stageLabel || (live.phase === 'thinking' ? '思考中' : live.phase === 'tool' ? '执行中' : '生成中')}</span>
