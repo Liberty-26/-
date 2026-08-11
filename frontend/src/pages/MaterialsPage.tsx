@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, type MouseEvent } from 'react';
 import {
   getMaterials, createMaterial, updateMaterial, deleteMaterial, getMaterialCandidates,
-  getAliasSuggestions, acceptAliasSuggestion, ignoreAliasSuggestion, getTrainingAggregate,
+  getAliasSuggestions, acceptAliasSuggestion, ignoreAliasSuggestion, ignoreMaterialCandidate, getTrainingAggregate,
 } from '../utils/api';
 import { useToast } from '../hooks/useToast';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -112,9 +112,14 @@ export default function MaterialsPage() {
     }
   };
 
-  const ignore = (name: string) => {
-    setCands((prev) => prev.filter((x) => x.name !== name));
-    showToast('已忽略该候选', 'info');
+  const ignore = async (name: string) => {
+    const res = await ignoreMaterialCandidate(name);
+    if (res.success) {
+      setCands((prev) => prev.filter((x) => x.name !== name));
+      showToast('已忽略该候选', 'info');
+    } else {
+      showToast(res.error || '忽略失败', 'error');
+    }
   };
 
   const adoptAlias = async (s: AliasSuggestion) => {
@@ -286,6 +291,19 @@ export default function MaterialsPage() {
                   </>
                 )}
 
+                {agg.quality && agg.quality.length > 0 && (
+                  <div className="quality-grid" aria-label="识别质量统计">
+                    <div className="ef-title">人工修改率（越低越好）</div>
+                    {agg.quality.map((q) => (
+                      <div className="quality-row" key={q.field}>
+                        <span>{q.label}</span>
+                        <span className="quality-count">{q.corrected} / {q.observed}</span>
+                        <span className="quality-rate">{q.rate}%</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {aliasSugg.length > 0 && (
                   <div className="err-sugg">
                     <div className="ef-title">待确认建议</div>
@@ -312,7 +330,7 @@ export default function MaterialsPage() {
           {tip && (
             <div className="err-tip" style={{ left: tip.x + 14, top: tip.y + 14 }}>
               <div><b>{tip.before}</b> → {tip.after}</div>
-              <div className="tip-meta">共 {tip.count} 次 · 占全部修正 {tip.pct}%</div>
+      <div className="tip-meta">共 {tip.count} 次 · 占品名修正 {tip.pct}%</div>
             </div>
           )}
         </div>

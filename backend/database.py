@@ -159,6 +159,27 @@ def init_db():
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_alias_sugg_pair ON alias_suggestions(before_val, after_val)"
     )
 
+    # 品名候选忽略记录：忽略必须跨刷新、跨会话持久化
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS material_candidate_ignores (
+            name TEXT PRIMARY KEY,
+            created_at TEXT DEFAULT (datetime('now','localtime'))
+        )
+    """)
+
+    # 识别质量分母：每张单据、每个字段只保留一份最终审核统计，避免保存草稿重复累计
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS recognition_quality (
+            receipt_id INTEGER NOT NULL,
+            field TEXT NOT NULL,
+            observed_count INTEGER NOT NULL DEFAULT 0,
+            corrected_count INTEGER NOT NULL DEFAULT 0,
+            updated_at TEXT DEFAULT (datetime('now','localtime')),
+            PRIMARY KEY (receipt_id, field),
+            FOREIGN KEY (receipt_id) REFERENCES receipts(id) ON DELETE CASCADE
+        )
+    """)
+
     # 技能表
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS skills (

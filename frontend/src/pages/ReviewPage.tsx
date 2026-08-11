@@ -5,7 +5,7 @@ import { useNav } from '../contexts/NavContext';
 import { useQueue } from '../contexts/QueueContext';
 import { useToast } from '../hooks/useToast';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { Inbox, RotateCcw, Plus, Minus, BookOpen } from 'lucide-react';
+import { Inbox, RotateCcw, BookOpen } from 'lucide-react';
 import {
   getReceiptDetail, updateReceipt, verifyReceipt, deleteReceipt,
   calibrateItemsSSE, recognizeImage, addCorrections, getMaterials,
@@ -64,7 +64,10 @@ export default function ReviewPage() {
   const [items, setItems] = useState<ReceiptItem[]>([]);
   const [recTotal, setRecTotal] = useState<number | null>(null);
   const [headerRows, setHeaderRows] = useState<number[]>([]);
+  const [headerKeys, setHeaderKeys] = useState<Set<string>>(new Set());
   const [originalItems, setOriginalItems] = useState<ReceiptItem[]>([]);
+  // 最近一次保存的快照：避免重复保存草稿时重复写入同一条修正记录
+  const [trackedItems, setTrackedItems] = useState<ReceiptItem[]>([]);
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -144,20 +147,32 @@ export default function ReviewPage() {
       setZoom(1);
       setPan({ x: 0, y: 0 });
       setDragStart(null);
-      const saved: ReceiptItem[] = (d.items || []).map((it) => ({
+      const saved: ReceiptItem[] = (d.items || []).map((it, i) => ({
+        id: it.id,
+        review_key: it.id != null ? `item-${it.id}` : `legacy-${i}`,
         name: it.name || '', spec: it.spec || '', unit: it.unit || '',
         qty: it.qty || 0, price: it.price || 0,
         ...(it.rec_amount != null ? { rec_amount: it.rec_amount } : {}),
       }));
-      setOriginalItems(saved);
       setItems(saved);
       setHeaderRows([]);
+      setHeaderKeys(new Set());
+      setOriginalItems(saved);
+      setTrackedItems(saved);
       setTableReset((s) => s + 1);
       // 纯代码校准：品名对齐/形近字/名称规格拆分/单位补全（无 LLM，不烧额度）
       const cal = await calibrateItemsSSE(saved, d.receipt_no || '', d.date || '');
       if (cal.success && cal.data) {
-        setItems(cal.data.items);
+        const calibrated = cal.data.items.map((it, i) => ({
+          ...it,
+          review_key: saved[i]?.review_key || `calibrated-${i}`,
+        }));
+        // 校准后的值是人工审核起点，不应被误记成用户修正
+        setItems(calibrated);
+        setOriginalItems(calibrated);
+        setTrackedItems(calibrated);
         setHeaderRows(cal.data.header_rows || []);
+        setHeaderKeys(new Set((cal.data.header_rows || []).map((i) => calibrated[i]?.review_key).filter(Boolean) as string[]));
       }
     } else {
       showToast(res.error || '加载详情失败', 'error');
@@ -176,16 +191,30 @@ export default function ReviewPage() {
       return false;
     }
     setSaving(true);
+    const fields = ['name', 'spec', 'unit', 'qty', 'price'] as const;
     const changes: { receipt_no: string; field: string; before_val: string; after_val: string }[] = [];
+    const previous = new Map(trackedItems.map((it, i) => [it.review_key || `legacy-${i}`, it]));
     items.forEach((it, i) => {
-      const orig = originalItems[i];
-      if (!orig) return;
-      // 训练数据只收集品名错误与修改（规格/单位/数量/单价不再入训练集）
-      (['name'] as const).forEach((f) => {
+      const key = it.review_key || `legacy-${i}`;
+      const orig = previous.get(key);
+      if (!orig || headerKeys.has(key)) return;
+      fields.forEach((f) => {
         const b = String(orig[f] ?? '');
         const a = String(it[f] ?? '');
         if (b !== a) changes.push({ receipt_no: no, field: f, before_val: b, after_val: a });
       });
+    });
+    // 质量统计使用“校准后的识别结果”为分母，新增人工行不计入识别质量
+    const baseline = new Map(originalItems.map((it, i) => [it.review_key || `legacy-${i}`, it]));
+    const observations = fields.map((field) => {
+      const observed = Array.from(baseline.entries()).filter(([key]) => !headerKeys.has(key)).length;
+      const corrected = items.reduce((count, it, i) => {
+        const key = it.review_key || `legacy-${i}`;
+        const base = baseline.get(key);
+        if (!base || headerKeys.has(key)) return count;
+        return String(base[field] ?? '') !== String(it[field] ?? '') ? count + 1 : count;
+      }, 0);
+      return { receipt_id: currentId, field, observed_count: observed, corrected_count: corrected };
     });
     const res = await updateReceipt(currentId, {
       receipt_no: no, date, rec_total: recTotal ?? undefined,
@@ -199,7 +228,12 @@ export default function ReviewPage() {
       setSaving(false);
       return false;
     }
-    if (changes.length > 0) addCorrections(changes).catch(() => {});
+    const tracked = items.map((it) => ({ ...it }));
+    setTrackedItems(tracked);
+    const correctionRes = await addCorrections(changes, observations);
+    if (!correctionRes.success) {
+      showToast('单据已保存，但修正统计更新失败', 'warning');
+    }
     if (verify) {
       const vr = await verifyReceipt(currentId);
       if (!vr.success) {
@@ -213,7 +247,7 @@ export default function ReviewPage() {
     }
     setSaving(false);
     return true;
-  }, [currentId, date, no, items, originalItems, recTotal, showToast]);
+  }, [currentId, date, no, items, originalItems, trackedItems, headerKeys, recTotal, showToast]);
 
   const handleVerify = useCallback(async () => {
     if (!currentId) return;
@@ -267,13 +301,25 @@ export default function ReviewPage() {
       if (res.success && res.data) {
         setNo(res.data.receipt_no || no);
         setDate(res.data.date || date);
-        setItems(res.data.items || []);
+        setRecTotal(res.data.rec_total ?? null);
+        const rerecognized = (res.data.items || []).map((it, i) => ({
+          ...it,
+          review_key: `rerecognized-${Date.now()}-${i}`,
+        }));
+        setItems(rerecognized);
+        setOriginalItems(rerecognized);
+        setTrackedItems(rerecognized);
         setHeaderRows([]);
+        setHeaderKeys(new Set());
         setTableReset((s) => s + 1);
-        const cal = await calibrateItemsSSE(res.data.items || [], res.data.receipt_no || no, res.data.date || date);
+        const cal = await calibrateItemsSSE(rerecognized, res.data.receipt_no || no, res.data.date || date);
         if (cal.success && cal.data) {
-          setItems(cal.data.items);
+          const calibrated = cal.data.items.map((it, i) => ({ ...it, review_key: rerecognized[i]?.review_key || `rerecognized-${i}` }));
+          setItems(calibrated);
+          setOriginalItems(calibrated);
+          setTrackedItems(calibrated);
           setHeaderRows(cal.data.header_rows || []);
+          setHeaderKeys(new Set((cal.data.header_rows || []).map((i) => calibrated[i]?.review_key).filter(Boolean) as string[]));
         }
         showToast('重新识别完成', 'success');
       } else {
@@ -295,7 +341,7 @@ export default function ReviewPage() {
 
   // 动态状态：品名对齐 / 未入库 / 金额 / 异常（每次编辑即时更新）
   const liveItems = items.map((it) => ({ ...it, issues: refreshIssues(it) }));
-  const nonHeader = liveItems.filter((_, i) => !headerRows.includes(i));
+  const nonHeader = liveItems.filter((it, i) => !headerKeys.has(it.review_key || '') && !headerRows.includes(i));
   const aligned = nonHeader.filter((it) => it.name && materialSet.has(it.name)).length;
   const notInLib = nonHeader.filter((it) => it.name && !materialSet.has(it.name)).length;
   const computedTotal = nonHeader.reduce((s, it) => s + (it.qty || 0) * (it.price || 0), 0);
@@ -309,7 +355,20 @@ export default function ReviewPage() {
   const amountBad = recTotal != null && !amountOk;
   const summary = {
     issues: liveItems.filter((it) => (it.issues || []).length > 0).length,
+    fieldIssues: liveItems.reduce((n, it) => n + (it.issues || []).filter((x) => !x.startsWith('整行')).length, 0),
   };
+  const issueLabels: Record<string, string> = { name: '品名', spec: '规格', unit: '单位', qty: '数量', price: '单价', 整行: '整行' };
+  const issueBreakdown = liveItems.reduce<Record<string, number>>((acc, it) => {
+    (it.issues || []).forEach((issue) => {
+      const rawKey = issue.split(':')[0] || '其他';
+      const key = issueLabels[rawKey] || rawKey;
+      acc[key] = (acc[key] || 0) + 1;
+    });
+    return acc;
+  }, {});
+  const issueTitle = Object.entries(issueBreakdown)
+    .map(([key, count]) => `${key} ${count}`)
+    .join(' · ');
 
   return (
     <div className="review">
@@ -445,10 +504,10 @@ export default function ReviewPage() {
                 <button
                   className="pill gray"
                   style={{ color: 'var(--err)', background: 'var(--err-soft)', cursor: 'pointer' }}
-                  title="点击定位到第一条异常行"
+                  title={`点击定位到第一条异常行${issueTitle ? `：${issueTitle}` : ''}`}
                   onClick={() => setIssueFocusTick((t) => t + 1)}
                 >
-                  异常 {summary.issues}（点击定位）
+                  异常 {summary.issues} 行 / {summary.fieldIssues} 项（点击定位）
                 </button>
               )}
             </div>
@@ -458,21 +517,28 @@ export default function ReviewPage() {
                 <div className="orig-head">
                   上传原图（不裁剪）
                   <div className="orig-zoom">
-                    <button onClick={() => setZoom((z) => Math.min(2.5, z + 0.25))} title="放大"><Plus size={14} /></button>
-                    <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} title="缩小"><Minus size={14} /></button>
-                    <button onClick={() => setZoom(1)}>1:1</button>
+                    <button onClick={() => setZoom((z) => Math.min(2.5, z + 0.25))} title="放大">＋</button>
+                    <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} title="缩小">−</button>
+                    <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} title="恢复原位">1:1</button>
+                    <button onClick={() => setPan({ x: 0, y: 0 })} title="只恢复位置">归位</button>
                   </div>
                 </div>
                 <div
                   ref={origRef}
                   className="orig-img"
-                  style={{ cursor: 'grab' }}
-                  onMouseDown={(e) => setDragStart({ x: e.clientX, y: e.clientY, px: pan.x, py: pan.y })}
-                  onMouseMove={(e) => {
+                  style={{ cursor: dragStart ? 'grabbing' : 'grab', touchAction: 'none' }}
+                  onPointerDown={(e) => {
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                    setDragStart({ x: e.clientX, y: e.clientY, px: pan.x, py: pan.y });
+                  }}
+                  onPointerMove={(e) => {
                     if (dragStart) setPan({ x: dragStart.px + e.clientX - dragStart.x, y: dragStart.py + e.clientY - dragStart.y });
                   }}
-                  onMouseUp={() => setDragStart(null)}
-                  onMouseLeave={() => setDragStart(null)}
+                  onPointerUp={(e) => {
+                    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+                    setDragStart(null);
+                  }}
+                  onPointerCancel={() => setDragStart(null)}
                 >
                   {imageUrl ? (
                     <img
@@ -499,7 +565,7 @@ export default function ReviewPage() {
                 {loading ? (
                   <div className="empty" style={{ margin: '40px auto' }}>加载中…</div>
                 ) : (
-                  <ReviewTable items={liveItems} onChange={setItems} headerRows={headerRows} resetSignal={tableReset} recTotal={recTotal} materialSet={materialSet} focusIssueTick={issueFocusTick} />
+                  <ReviewTable items={liveItems} onChange={setItems} headerRows={headerRows} headerKeys={headerKeys} resetSignal={tableReset} recTotal={recTotal} materialSet={materialSet} focusIssueTick={issueFocusTick} />
                 )}
                 <div className="res-foot">
                   <span>共 {items.length} 行</span>

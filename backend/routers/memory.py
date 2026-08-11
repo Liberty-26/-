@@ -29,6 +29,16 @@ def _ensure_tables():
                 created_at TEXT DEFAULT (datetime('now','localtime'))
             )"""
         )
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS recognition_quality (
+                receipt_id INTEGER NOT NULL,
+                field TEXT NOT NULL,
+                observed_count INTEGER NOT NULL DEFAULT 0,
+                corrected_count INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT DEFAULT (datetime('now','localtime')),
+                PRIMARY KEY (receipt_id, field)
+            )"""
+        )
         conn.commit()
     finally:
         conn.close()
@@ -119,11 +129,18 @@ async def list_corrections(limit: int = 200):
 
 @router.post("/corrections", status_code=201)
 async def add_corrections(req: dict):
-    """批量写入校正记录：changes = [{receipt_no, field, before_val, after_val}]"""
+    """批量写入校正记录，并更新每张单据的字段质量分母。
+
+    changes = [{receipt_no, field, before_val, after_val}]
+    observations = [{receipt_id, field, observed_count, corrected_count}]
+    """
     _ensure_tables()
     changes = req.get("changes") or []
-    if not isinstance(changes, list) or not changes:
-        raise HTTPException(status_code=400, detail="changes 不能为空")
+    observations = req.get("observations") or []
+    if not isinstance(changes, list) or not isinstance(observations, list):
+        raise HTTPException(status_code=400, detail="changes / observations 格式错误")
+    if not changes and not observations:
+        raise HTTPException(status_code=400, detail="changes 或 observations 不能同时为空")
     conn = get_conn()
     try:
         for c in changes:
@@ -136,6 +153,23 @@ async def add_corrections(req: dict):
                     str(c.get("before_val", "")),
                     str(c.get("after_val", "")),
                 ],
+            )
+        for o in observations:
+            receipt_id = int(o.get("receipt_id") or 0)
+            field = str(o.get("field") or "").strip()
+            if receipt_id <= 0 or not field:
+                continue
+            observed = max(0, int(o.get("observed_count") or 0))
+            corrected = max(0, int(o.get("corrected_count") or 0))
+            conn.execute(
+                """INSERT INTO recognition_quality
+                   (receipt_id, field, observed_count, corrected_count, updated_at)
+                   VALUES (?, ?, ?, ?, datetime('now','localtime'))
+                   ON CONFLICT(receipt_id, field) DO UPDATE SET
+                     observed_count=excluded.observed_count,
+                     corrected_count=excluded.corrected_count,
+                     updated_at=excluded.updated_at""",
+                [receipt_id, field, observed, min(corrected, observed)],
             )
         conn.commit()
         return {"success": True}
@@ -164,16 +198,37 @@ async def corrections_aggregate():
                  AND before_val != after_val
                GROUP BY before_val, after_val ORDER BY cnt DESC"""
         ).fetchall()
+        name_total = conn.execute(
+            "SELECT COUNT(*) FROM correction_log WHERE field = 'name' AND (TRIM(before_val) != '' OR TRIM(after_val) != '')"
+        ).fetchone()[0]
         pair_list = [
             {
                 "before": r["before_val"],
                 "after": r["after_val"],
                 "count": r["cnt"],
-                "pct": round(r["cnt"] / total * 100, 1) if total else 0,
+                "pct": round(r["cnt"] / name_total * 100, 1) if name_total else 0,
             }
             for r in pairs
         ]
-        return {"success": True, "data": {"total": total, "fields": fields, "pairs": pair_list}}
+        quality_rows = conn.execute(
+            """SELECT field, SUM(observed_count) AS observed,
+                      SUM(corrected_count) AS corrected
+               FROM recognition_quality
+               GROUP BY field"""
+        ).fetchall()
+        labels = {'name': '品名', 'spec': '规格', 'unit': '单位', 'qty': '数量', 'price': '单价'}
+        quality = [
+            {
+                "field": r["field"],
+                "label": labels.get(r["field"], r["field"]),
+                "observed": int(r["observed"] or 0),
+                "corrected": int(r["corrected"] or 0),
+                "rate": round((r["corrected"] or 0) / r["observed"] * 100, 1) if r["observed"] else 0,
+            }
+            for r in quality_rows
+        ]
+        quality.sort(key=lambda x: -x["rate"])
+        return {"success": True, "data": {"total": total, "fields": fields, "pairs": pair_list, "quality": quality}}
     finally:
         conn.close()
 

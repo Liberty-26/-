@@ -49,7 +49,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 // ---- 识别 ----
 
 export async function recognizeImage(imageBase64: string, receiptNo?: string, date?: string) {
-  return request<{ receipt_no: string; date: string; date_suspicious?: boolean; image_path: string; items: import('../types').ReceiptItem[] }>(
+  return request<{ receipt_no: string; date: string; date_suspicious?: boolean; rec_total?: number | null; image_path: string; items: import('../types').ReceiptItem[] }>(
     'POST', '/recognize', { image_base64: imageBase64, receipt_no: receiptNo, date }
   );
 }
@@ -83,6 +83,11 @@ export async function deleteMaterial(id: number) {
 /** 品名收录候选：识别中出现的未收录品名 */
 export async function getMaterialCandidates() {
   return request<{ items: MaterialCandidate[] }>('GET', '/materials/candidates');
+}
+
+/** 持久化忽略一个品名候选，刷新后不再重复出现 */
+export async function ignoreMaterialCandidate(name: string) {
+  return request<void>('POST', `/materials/candidates/${encodeURIComponent(name)}/ignore`);
 }
 
 /** 别名建议（数据回流）：人工修正 → 待确认别名 */
@@ -371,8 +376,11 @@ export async function getTrainingAggregate() {
   return request<TrainingAggregate>('GET', '/memory/corrections/aggregate');
 }
 
-export async function addCorrections(changes: { receipt_no: string; field: string; before_val: string; after_val: string }[]) {
-  return request<void>('POST', '/memory/corrections', { changes });
+export async function addCorrections(
+  changes: { receipt_no: string; field: string; before_val: string; after_val: string }[],
+  observations: { receipt_id: number; field: string; observed_count: number; corrected_count: number }[] = [],
+) {
+  return request<void>('POST', '/memory/corrections', { changes, observations });
 }
 
 export async function deleteCorrection(id: number) {

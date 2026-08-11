@@ -69,6 +69,11 @@ async def material_candidates(limit: int = Query(10, ge=1, le=50)):
             [limit],
         ).fetchall()
         mats = conn.execute("SELECT name, aliases FROM materials").fetchall()
+        ignored = {
+            r["name"] for r in conn.execute(
+                "SELECT name FROM material_candidate_ignores"
+            ).fetchall()
+        }
         known = set()
         for m in mats:
             known.add(m["name"].strip())
@@ -81,7 +86,7 @@ async def material_candidates(limit: int = Query(10, ge=1, le=50)):
         # 人工修正产生的新品名（数据回流，优先展示）
         for r in corr_rows:
             name = r["name"].strip()
-            if not name or name in known or name in seen:
+            if not name or name in known or name in seen or name in ignored:
                 continue
             seen.add(name)
             items.append({
@@ -93,7 +98,7 @@ async def material_candidates(limit: int = Query(10, ge=1, le=50)):
         # 识别明细中出现的新品名
         for r in rows:
             name = r["name"].strip()
-            if not name or name in known or name in seen:
+            if not name or name in known or name in seen or name in ignored:
                 continue
             seen.add(name)
             items.append({
@@ -105,6 +110,24 @@ async def material_candidates(limit: int = Query(10, ge=1, le=50)):
         return {"success": True, "data": {"items": items}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+    finally:
+        conn.close()
+
+
+@router.post("/candidates/{name:path}/ignore")
+async def ignore_material_candidate(name: str):
+    """持久化忽略一个未收录品名，避免刷新后反复出现。"""
+    value = name.strip()
+    if not value:
+        raise HTTPException(status_code=400, detail="品名不能为空")
+    conn = get_conn()
+    try:
+        conn.execute(
+            "INSERT OR IGNORE INTO material_candidate_ignores (name) VALUES (?)",
+            [value],
+        )
+        conn.commit()
+        return {"success": True}
     finally:
         conn.close()
 

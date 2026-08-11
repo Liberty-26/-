@@ -26,6 +26,23 @@ interface FlowItem {
 
 const STAGES = ['正在提取单号和日期', '识别中', '转译', '自审核中'];
 
+// 展示层采用“中文动作 + 技术工具名”：老板能看懂正在做什么，技术细节也完整保留。
+const TOOL_LABELS: Record<string, string> = {
+  db_lookup_receipt: '查询单据',
+  db_get_receipt_items: '读取明细',
+  spreadsheet_find_last_row: '定位写入位置',
+  spreadsheet_create_new: '创建对账单',
+  spreadsheet_write_batch: '写入对账单',
+  spreadsheet_verify: '核对写入结果',
+  memory_list: '读取长期记忆',
+  memory_add: '保存长期记忆',
+  memory_replace: '更新长期记忆',
+  memory_remove: '删除长期记忆',
+  session_search: '检索历史对话',
+};
+
+const formatToolName = (name: string) => (TOOL_LABELS[name] || '执行操作') + ' · ' + name;
+
 const timeNow = () =>
   new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
@@ -46,7 +63,7 @@ const formatElapsed = (s: number): string => {
 function RunTraceView({ trace }: { trace: RunTrace }) {
   const [open, setOpen] = useState(false);
   const summary = trace.tools.length > 0
-    ? trace.tools.map((t) => `${t.ok ? '✓' : '✗'} ${t.name} · ${t.summary}`).join('　')
+    ? trace.tools.map((t) => (t.ok ? '✓ ' : '✗ ') + formatToolName(t.name) + ' · ' + t.summary).join('　')
     : '思考 → 回复';
   return (
     <div className="run-trace">
@@ -61,7 +78,7 @@ function RunTraceView({ trace }: { trace: RunTrace }) {
           {trace.tools.map((t, i) => (
             <div key={i} className="trace-tool">
               <span className={`live-tool-dot ${t.ok ? 'ok' : 'fail'}`}>{t.ok ? '✓' : '✗'}</span>
-              <span className="live-tool-name">{t.name}</span>
+              <span className="live-tool-name" title={t.name}>{formatToolName(t.name)}</span>
               <span className="live-tool-sum">{t.summary}</span>
             </div>
           ))}
@@ -551,7 +568,7 @@ export default function WorkbenchPage() {
               <div className="assistant-turn">
                 <div className="live-status" key={live.phase}>
                   <span className="live-spinner" />
-                  <span>{live.phase === 'thinking' ? '思考中' : live.phase === 'tool' ? '执行中' : '生成中'}</span>
+                  <span>{live.stageLabel || (live.phase === 'thinking' ? '思考中' : live.phase === 'tool' ? '执行中' : '生成中')}</span>
                   <span className="live-elapsed">· {formatElapsed(elapsed)}</span>
                 </div>
                 {live.toolCalls.map((t, i) => (

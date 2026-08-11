@@ -14,6 +14,7 @@ interface Props {
   recTotal?: number | null; // 识别出的合计金额（与计算合计对比审核）
   materialSet?: Set<string>; // 品名库集合（名称+别名），用于动态"未入库"判断
   focusIssueTick?: number;   // 点击"异常"徽标后自增，滚动聚焦第一条异常行
+  headerKeys?: Set<string>;  // 稳定表头行标识，增删行后仍能保持正确
 }
 
 const COL_LABELS: Record<string, string> = {
@@ -30,7 +31,7 @@ const COLS: { key: string; label: string; align: string }[] = [
   { key: 'price', label: '单价', align: 'right' },
 ];
 
-export default function ReviewTable({ items, onChange, headerRows = [], resetSignal = 0, recTotal = null, materialSet, focusIssueTick = 0 }: Props) {
+export default function ReviewTable({ items, onChange, headerRows = [], resetSignal = 0, recTotal = null, materialSet, focusIssueTick = 0, headerKeys }: Props) {
   const { showToast } = useToast();
   const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -168,7 +169,10 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
     return parts.join('\n');
   };
 
-  const isHeaderRow = (i: number) => headerRows.includes(i);
+  const isHeaderRow = useCallback(
+    (i: number) => headerKeys?.has(items[i]?.review_key || '') || headerRows.includes(i),
+    [headerKeys, headerRows, items]
+  );
 
   // 点击"异常"徽标：滚动到第一条异常行并闪烁高亮
   useEffect(() => {
@@ -180,7 +184,7 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
     td?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     if (flashTimer.current) window.clearTimeout(flashTimer.current);
     flashTimer.current = window.setTimeout(() => setFlashRow(null), 1600);
-  }, [focusIssueTick, items]);
+  }, [focusIssueTick, items, isHeaderRow]);
 
   useEffect(() => {
     return () => { if (flashTimer.current) window.clearTimeout(flashTimer.current); };
@@ -199,12 +203,12 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
     [items, onChange]
   );
 
-  const startEdit = (row: number, col: string) => {
+  const startEdit = useCallback((row: number, col: string) => {
     const item = items[row];
     const val = item[col as keyof ReceiptItem];
     setEditValue(val != null ? String(val) : '');
     setEditingCell({ row, col });
-  };
+  }, [items]);
 
   const commitEdit = () => {
     if (!editingCell) return;
@@ -297,7 +301,7 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
     };
     document.addEventListener('mouseup', up);
     return () => document.removeEventListener('mouseup', up);
-  }, [selectedCells, items]);
+  }, [selectedCells, items, startEdit]);
 
   // Esc：取消多选（清空选中与选框）
   useEffect(() => {
@@ -376,7 +380,8 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
   };
 
   const addRow = () => {
-    onChange([...items, { name: '', spec: '', unit: '', qty: 0, price: 0 }]);
+    const key = globalThis.crypto?.randomUUID?.() || `new-${Date.now()}-${items.length}`;
+    onChange([...items, { review_key: key, name: '', spec: '', unit: '', qty: 0, price: 0 }]);
   };
 
   const removeRow = (idx: number) => {
@@ -438,6 +443,9 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
                   {COLS.map((c) => {
                     const isEditing = editingCell?.row === i && editingCell?.col === c.key;
                     const val = item[c.key as keyof ReceiptItem];
+                    const fieldIssue = (item.issues || []).some((x) => x.startsWith(c.key + ':'));
+                    const fieldCorrection = c.key === 'name' && (item.corrections || []).some((x) => x.startsWith('name:'));
+                    const flagText = cellTitle(item, c.key);
                     return (
                       <td
                         key={c.key}
@@ -461,6 +469,11 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
                           />
                         ) : (
                           <span className={c.key === 'qty' || c.key === 'price' ? 'num' : ''}>
+                            {(fieldIssue || fieldCorrection) && (
+                              <span className={`cell-flag ${fieldIssue ? 'error' : 'corrected'}`} title={flagText}>
+                                {fieldIssue ? '!' : '✓'}
+                              </span>
+                            )}
                             {c.key === 'name' && materialSet && item.name && !materialSet.has(item.name) && !header && (
                               <span className="pill amber" style={{ marginRight: 6, fontSize: 11 }} title="品名不在参考库中">未入库</span>
                             )}

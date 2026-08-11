@@ -3,6 +3,8 @@
 export interface ReceiptItem {
   row_num?: number;
   id?: number;
+  /** 审核会话内稳定的行标识；避免增删行后训练数据按数组下标错配 */
+  review_key?: string;
   name: string;
   spec: string;
   unit: string;
@@ -136,6 +138,7 @@ export interface TrainingAggregate {
   total: number;
   fields: { field: string; label: string; count: number; pct: number }[];
   pairs: { before: string; after: string; count: number; pct: number }[];
+  quality?: { field: string; label: string; observed: number; corrected: number; rate: number }[];
 }
 
 export type PageId = 'workbench' | 'review' | 'library' | 'materials' | 'settings';

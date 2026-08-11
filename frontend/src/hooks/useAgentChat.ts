@@ -50,6 +50,7 @@ export function useAgentChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sessionIdRef = useRef<string>('');
   const abortRef = useRef<AbortController | null>(null);
+  const userStoppedRef = useRef(false);
   // live 状态引用：SSE 事件回调里读取最新值（避免闭包过期）
   const liveRef = useRef<LiveState | null>(null);
   liveRef.current = live;
@@ -175,6 +176,7 @@ export function useAgentChat() {
 
   // 停止生成：中断当前流；已生成的部分由 sendMessage 的 abort 分支保留
   const stopGenerating = useCallback(() => {
+    userStoppedRef.current = true;
     abortRef.current?.abort();
   }, []);
 
@@ -210,6 +212,7 @@ export function useAgentChat() {
     setMessages((prev) => [...prev, userMsg]);
     await persistMsg('user', text, sid);
     setIsLoading(true);
+    userStoppedRef.current = false;
     setLive({ phase: 'thinking', stageLabel: '正在思考', toolCalls: [], reply: '' });
 
     // 全量历史由后端按 session_id 从数据库加载（全量保留 + 摘要 + 最近窗口）
@@ -259,10 +262,12 @@ export function useAgentChat() {
           elapsed: Math.max(1, Math.round((Date.now() - startTs) / 1000)),
         });
         if (timedOut) showToast('生成超时，已保留已生成的内容', 'warning');
+        else if (userStoppedRef.current) showToast('已停止生成，已保留已生成内容', 'info');
       } else {
         setIsLoading(false);
         setLive(null);
         if (timedOut) showToast('生成超时，请重试', 'warning');
+        else if (userStoppedRef.current) showToast('已停止生成', 'info');
       }
       return null;
     };
