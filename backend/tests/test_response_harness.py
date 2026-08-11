@@ -24,3 +24,12 @@ class ResponseHarnessTest(unittest.TestCase):
         reply = format_reply("已完成，文件已写入桌面。", audit)
         self.assertTrue(reply.startswith("【状态：未完成】"))
         self.assertIn("未检测到真实写入", reply)
+
+    def test_memory_claim_without_memory_write_is_blocked(self):
+        reply = format_reply("已将这个目录记入长期记忆。", {
+            "verified_writes": 0,
+            "verified_memory_writes": 0,
+            "blocked_calls": 0,
+            "execution_failures": [],
+        })
+        self.assertIn("长期记忆未发生写入", reply)

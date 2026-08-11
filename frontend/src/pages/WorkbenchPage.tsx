@@ -37,6 +37,8 @@ const TOOL_LABELS: Record<string, string> = {
   memory_list: '读取长期记忆',
   memory_replace: '更新长期记忆',
   session_search: '检索历史对话',
+  settings_read: '读取文件设置',
+  runtime_now: '读取当前时间',
 };
 
 const formatToolName = (name: string) => (TOOL_LABELS[name] || '执行操作') + ' · ' + name;
@@ -164,7 +166,7 @@ function AssistantContent({ content }: { content: string }) {
 export default function WorkbenchPage() {
   const { showToast } = useToast();
   const { setPage } = useNav();
-  const { queue, addPending } = useQueue();
+  const { addPending } = useQueue();
   const {
     messages, isLoading, live, sendMessage, messagesEndRef,
     sessions, currentSessionId, switchSession, newSession, deleteSessions, stopGenerating,
@@ -172,7 +174,6 @@ export default function WorkbenchPage() {
   const [flow, setFlow] = useState<'stream' | 'sessions'>('stream');
   const [flowItems, setFlowItems] = useState<FlowItem[]>([]);
   const [skillOpen, setSkillOpen] = useState(false);
-  const [taskCard, setTaskCard] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   // 会话批量管理：编辑 → 全选 → 删除（不给单个会话单独删除键）
   const [editSessions, setEditSessions] = useState(false);
@@ -216,6 +217,7 @@ export default function WorkbenchPage() {
   useEffect(() => {
     const started = !prevLiveRef.current && !!live;
     prevLiveRef.current = !!live;
+    if (started) setRevealLen(0);
     if (!live) {
       if (followRef.current) scrollToBottom();
       return;
@@ -235,11 +237,11 @@ export default function WorkbenchPage() {
   }, [currentSessionId, scrollToBottom]);
 
   useEffect(() => {
-    if (live?.phase !== 'streaming') {
+    if (!live) {
       setRevealLen(0);
       return;
     }
-    setRevealLen(0);
+    if (live.phase !== 'streaming') return;
     // 平滑逐行揭示：打字机式按字符匀速展开（≈270 字/秒），
     // 换行自然呈现，配合自动跟随滚动形成「逐行长出来」的连续感
     const timer = window.setInterval(() => {
@@ -538,8 +540,7 @@ export default function WorkbenchPage() {
 
   const handleRunSkill = useCallback(async (text: string, ids: number[]) => {
     setSkillOpen(false);
-    const reply = await sendMessage(text, ids);
-    setTaskCard(reply ?? null);
+    await sendMessage(text, ids);
   }, [sendMessage]);
 
   // 批量删除会话（带确认；默认会话同样可删）
@@ -594,24 +595,14 @@ export default function WorkbenchPage() {
           <div>
             <div className="wb-kicker">STEELDIGITIZE / WORKSPACE</div>
             <h1 className="wb-title">工作台</h1>
-            <p className="wb-sub">从识别到对账，所有需要你确认的事项都在这里。</p>
           </div>
           <div className="wb-status" aria-label="助手状态：在线">
             <span className="status-pulse"><i /></span>
             <div>
               <span className="status-label">助手在线</span>
-              <span className="status-detail">随时可以开始处理单据</span>
             </div>
           </div>
         </header>
-
-        <div className="ai-strip">
-          <span className="ai-strip-mark"><Sparkles size={14} strokeWidth={2} /></span>
-          <span className="ai-strip-copy"><b>AI 已准备好</b><span>提取单号、日期，自动对齐品名；金额由系统计算。</span></span>
-          <span className="ai-strip-state">
-            {queue.length > 0 ? <><b>{queue.length}</b> 张待核对</> : '当前无待核对单据'}
-          </span>
-        </div>
 
         <section className="skills-section" aria-labelledby="workflows-title">
           <div className="section-head">
@@ -685,17 +676,11 @@ export default function WorkbenchPage() {
                   </div>
                 ))}
                 {live.reply && (
-                  <div className="msg assistant live-reply">{live.reply.slice(0, revealLen)}<span className="caret" /></div>
+                  <details className="live-reasoning">
+                    <summary>生成过程 · 点击展开</summary>
+                    <div className="live-reply">{live.reply.slice(0, revealLen)}<span className="caret" /></div>
+                  </details>
                 )}
-              </div>
-            )}
-            {taskCard && (
-              <div className="task-card">
-                <div className="task-head"><span className="task-title">表格生成</span><span className="task-status">已完成</span></div>
-                <div className="task-body">
-                  <div className="task-row"><span className="lab">结果</span><span>{taskCard}</span></div>
-                  <div className="task-bar"><i /></div>
-                </div>
               </div>
             )}
             <div ref={messagesEndRef} />

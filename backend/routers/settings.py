@@ -17,6 +17,18 @@ from quark import call_quark_excel
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
 
+def _validate_directory(value: str, label: str) -> str:
+    """只保存真实存在的目录，避免 Agent/配置写入一个看似成功的假路径。"""
+    path = Path(value).expanduser()
+    try:
+        resolved = path.resolve(strict=True)
+    except FileNotFoundError:
+        raise HTTPException(status_code=400, detail=f"{label}不存在：{value}")
+    if not resolved.is_dir():
+        raise HTTPException(status_code=400, detail=f"{label}不是目录：{value}")
+    return str(resolved)
+
+
 def _make_test_png() -> str:
     """动态生成 20x20 白色 PNG，返回 base64 data URL"""
     w, h = 20, 20
@@ -55,7 +67,12 @@ async def get_settings():
 
 @router.post("")
 async def save_settings(req: dict):
-    config.save_config(**req)
+    payload = dict(req or {})
+    if "work_dir" in payload and str(payload["work_dir"]).strip():
+        payload["work_dir"] = _validate_directory(str(payload["work_dir"]).strip(), "表格工作目录")
+    if "backup_dir" in payload and str(payload["backup_dir"]).strip():
+        payload["backup_dir"] = _validate_directory(str(payload["backup_dir"]).strip(), "备份目录")
+    config.save_config(**payload)
     return {
         "success": True,
         "data": {

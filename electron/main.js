@@ -234,18 +234,19 @@ async function startBackend() {
   // 工作目录放在用户数据目录，数据与安装目录分离（Windows 上 Program Files 只读）
   const workDir = path.join(app.getPath('userData'), 'appdata');
   fs.mkdirSync(workDir, { recursive: true });
+  const backendEnv = { ...process.env };
+  // 不让宿主环境里的旧 WORK_DIR 覆盖设置页写入的 .env。
+  delete backendEnv.WORK_DIR;
+  backendEnv.STEEL_DATA_DIR = workDir;
+  backendEnv.CONFIG_DIR = workDir;
+  backendEnv.FRONTEND_DIR = path.join(process.resourcesPath, 'frontend', 'dist');
+  backendEnv.MATERIALS_SEED_CSV = path.join(process.resourcesPath, '品名种子清单.csv');
+  backendEnv.STEEL_VERSION = app.getVersion();
   backendProc = spawn(exe, [], {
     cwd: workDir,
     stdio: 'ignore',
     windowsHide: true,
-    env: {
-      ...process.env,
-      WORK_DIR: workDir,
-      CONFIG_DIR: workDir,
-      FRONTEND_DIR: path.join(process.resourcesPath, 'frontend', 'dist'),
-      MATERIALS_SEED_CSV: path.join(process.resourcesPath, '品名种子清单.csv'),
-      STEEL_VERSION: app.getVersion(),
-    },
+    env: backendEnv,
   });
   backendProc.on('exit', (code) => {
     console.error('[electron] 后端退出 code=', code);

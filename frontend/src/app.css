@@ -180,7 +180,7 @@ main{flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;}
 .quick-prompts button:hover{border-color:var(--primary); color:var(--primary); background:var(--primary-soft);}
 .quick-prompts button:active{transform:scale(.97);}
 .quick-prompts button:disabled{opacity:.5; cursor:not-allowed;}
-.msg{flex-shrink:0; max-width:78%; padding:10px 14px; border-radius:11px; font-size:13.5px; line-height:1.65; white-space:pre-wrap;}
+.msg{flex-shrink:0; max-width:78%; padding:10px 14px; border-radius:11px; font-size:13.5px; line-height:1.52; white-space:pre-wrap;}
 .msg.user{align-self:flex-end; background:var(--primary); color:#fff; border-bottom-right-radius:3px;}
 .msg.assistant{align-self:flex-start; background:transparent; color:var(--text); padding-left:0; border-bottom-left-radius:3px;}
 .tool-line{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-2);}
@@ -195,7 +195,7 @@ main{flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;}
 .task-bar{height:4px; background:var(--ok-soft); border-radius:999px; overflow:hidden; margin-top:4px;}
 .task-bar i{display:block; height:100%; width:100%; background:var(--ok);}
 /* ---------- 助手输出流（无框，Codex 式） ---------- */
-.assistant-turn{display:flex; flex-direction:column; gap:6px; align-self:flex-start; max-width:86%; transition:opacity .22s ease, transform .22s ease;}
+.assistant-turn{display:flex; flex-direction:column; gap:5px; align-self:flex-start; max-width:86%; transition:opacity .22s ease, transform .22s ease;}
 .assistant-turn.finishing{opacity:.72; transform:translateY(1px);}
 .assistant-turn.finishing .live-status{color:var(--primary);}
 .live-status{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-3); animation:fadeSlide .25s ease-out;}
@@ -209,15 +209,18 @@ main{flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;}
 .live-tool-dot.fail{background:var(--err-soft); color:var(--err);}
 .live-tool-name{font-family:"SF Mono", Consolas, monospace; font-size:11.5px; background:var(--border); border-radius:5px; padding:1px 6px;}
 .live-tool-sum{font-size:12px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.live-reply{max-width:100%; white-space:pre-wrap; word-break:break-word;}
-.assistant-richtext{display:flex; flex-direction:column; gap:8px; line-height:1.7; color:var(--text-1);}
+.live-reasoning{max-width:100%; color:var(--text-3); font-size:11px; line-height:1.45;}
+.live-reasoning summary{cursor:pointer; color:var(--text-3); user-select:none; padding:2px 0;}
+.live-reasoning summary:hover{color:var(--primary);}
+.live-reply{max-width:100%; margin-top:4px; padding:7px 9px; border-left:2px solid var(--border-strong); color:var(--text-3); font-size:11px; line-height:1.45; white-space:pre-wrap; word-break:break-word;}
+.assistant-richtext{display:flex; flex-direction:column; gap:4px; line-height:1.52; color:var(--text-1);}
 .assistant-richtext p{margin:0;}
-.assistant-space{height:2px;}
-.assistant-list{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:3px;}
+.assistant-space{height:1px;}
+.assistant-list{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:1px;}
 .assistant-table-wrap{width:100%; overflow-x:auto; border:1px solid var(--border); border-radius:10px; background:#fff;}
 .assistant-table{width:100%; border-collapse:collapse; font-size:12.5px; min-width:360px;}
 .assistant-table th{background:#f6f9fa; color:var(--text-2); font-weight:650; text-align:left; white-space:nowrap;}
-.assistant-table th,.assistant-table td{padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top;}
+.assistant-table th,.assistant-table td{padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:top;}
 .assistant-table tbody tr:last-child td{border-bottom:0;}
 .assistant-table tbody tr:hover{background:#fbfdfd;}
 .assistant-image{margin:2px 0 0; max-width:100%;}

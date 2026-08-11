@@ -15,6 +15,12 @@ STATUS_LABELS = {
     "answered": "已回答",
 }
 
+MEMORY_SUCCESS_CLAIM_RE = re.compile(
+    r"(?:已|已经|成功|帮你).{0,40}(?:记入|写入|更新|保存|记住).{0,20}(?:长期记忆|记忆|Memory)"
+    r"|(?:长期记忆|记忆|Memory).{0,20}(?:已|已经|成功).{0,20}(?:更新|保存|写入|修改)",
+    re.I | re.S,
+)
+
 
 def outcome_from_audit(audit: dict[str, Any]) -> str:
     if audit.get("execution_failures"):
@@ -41,6 +47,10 @@ def format_reply(reply: Any, audit: dict[str, Any]) -> str:
         text = re.sub(r"已(?:完成|生成|保存|写入|导出|创建)|已经(?:完成|生成|保存|写入|导出|创建)", "未完成", text)
         if "系统未检测到真实写入记录" not in text:
             text += "\n\n系统核验：未检测到真实写入和校验记录，文件不能视为已生成。"
+    if MEMORY_SUCCESS_CLAIM_RE.search(text) and audit.get("verified_memory_writes", 0) <= 0:
+        text = re.sub(r"(?:已|已经|成功)(?=.{0,40}(?:记入|写入|更新|保存|记住))", "未", text, count=1, flags=re.S)
+        if "长期记忆未发生写入" not in text:
+            text += "\n\n系统核验：本轮没有执行 memory_replace，长期记忆未发生写入。"
     status = outcome_from_audit(audit)
     label = STATUS_LABELS[status]
     if not text.startswith("【状态："):

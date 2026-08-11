@@ -50,6 +50,25 @@ class AgentExecutionTest(unittest.TestCase):
             self.assertEqual(result["item_count"], 2)
             self.assertEqual(result["total_amount"], 80)
 
+    def test_new_export_does_not_recreate_deleted_work_directory(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            deleted_dir = os.path.join(temp_dir, "deleted")
+            old_work_dir = config.WORK_DIR
+            config.WORK_DIR = deleted_dir
+            try:
+                result = execute_tool("spreadsheet_export_receipts", {
+                    "filepath": "对账单.xlsx",
+                    "sheet": "对账单",
+                    "mode": "new",
+                    "receipt_ids": [101],
+                })
+            finally:
+                config.WORK_DIR = old_work_dir
+
+            self.assertFalse(result["success"], result)
+            self.assertIn("工作目录不存在", result["error"])
+            self.assertFalse(os.path.exists(deleted_dir))
+
     def test_model_tool_surface_hides_low_level_write_primitives(self):
         names = {tool["function"]["name"] for tool in AGENT_TOOLS}
         self.assertIn("spreadsheet_export_receipts", names)

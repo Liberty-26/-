@@ -8,8 +8,14 @@ import uvicorn
 
 
 def main():
-    # 数据目录：优先使用 Electron 传入的 WORK_DIR，否则与可执行文件同目录
-    work_dir = os.environ.get("WORK_DIR", "").strip()
+    # 应用数据目录与用户可修改的表格工作目录分离。
+    # 旧版本使用 WORK_DIR 传应用数据目录，会在启动时覆盖 .env 里的用户选择。
+    work_dir = (os.environ.get("STEEL_DATA_DIR", "").strip()
+                or os.environ.get("WORK_DIR", "").strip())
+    # 桌面版的 WORK_DIR 只在旧版本里代表应用数据目录；新版本由
+    # STEEL_DATA_DIR 承载应用数据，必须移除旧环境变量后再加载 config。
+    if os.environ.get("STEEL_DATA_DIR", "").strip():
+        os.environ.pop("WORK_DIR", None)
     if not work_dir:
         work_dir = str(Path(__file__).resolve().parent)
     os.environ.setdefault("DATABASE_PATH", str(Path(work_dir) / "data.db"))

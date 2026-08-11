@@ -37,6 +37,8 @@ export default function SettingsPage() {
 
   // 文件与 Agent Memory
   const [workDir, setWorkDir] = useState('');
+  const [workDirDraft, setWorkDirDraft] = useState('');
+  const [savingWorkDir, setSavingWorkDir] = useState(false);
   const [memoryContent, setMemoryContent] = useState('');
   const [memoryChars, setMemoryChars] = useState(0);
   const [memoryLimit, setMemoryLimit] = useState(6000);
@@ -146,6 +148,7 @@ export default function SettingsPage() {
         setAKey(d.agent_api_key || '');
         setSKey(d.scan_api_key || '');
         setWorkDir(d.work_dir || '');
+        setWorkDirDraft(d.work_dir || '');
         setBackupDir(d.backup_dir || '');
         if (d.agent_api_base) setABase(d.agent_api_base);
         if (d.agent_model) setAModel(d.agent_model);
@@ -249,14 +252,25 @@ export default function SettingsPage() {
   };
 
   /* ---------- 文件与 Agent Memory ---------- */
+  const handleSaveWorkDir = async (value = workDirDraft) => {
+    const next = value.trim();
+    if (!next) { showToast('请先填写表格工作目录', 'warning'); return; }
+    setSavingWorkDir(true);
+    const saved = await saveSettings({ work_dir: next });
+    setSavingWorkDir(false);
+    if (saved.success && saved.data) {
+      const confirmed = saved.data.work_dir || next;
+      setWorkDir(confirmed);
+      setWorkDirDraft(confirmed);
+      showToast('表格工作目录已更新', 'success');
+    } else showToast(saved.error || '表格工作目录保存失败', 'error');
+  };
+
   const handlePickDir = async () => {
     const res = await pickDirectory();
     if (res.success && res.data?.path) {
-      const saved = await saveSettings({ work_dir: res.data.path });
-      if (saved.success && saved.data) {
-        setWorkDir(saved.data.work_dir || res.data.path);
-        showToast('文件存放位置已更新', 'success');
-      } else showToast(saved.error || '文件存放位置保存失败', 'error');
+      setWorkDirDraft(res.data.path);
+      await handleSaveWorkDir(res.data.path);
     } else showToast(res.error || '选择失败', 'error');
   };
 
@@ -377,10 +391,25 @@ export default function SettingsPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <h3 style={{ margin: 0 }}>表格工作目录</h3>
             <span style={{ flex: 1 }} />
-            <button className="btn sm ghost" onClick={handlePickDir}><FolderOpen size={14} />选择文件夹…</button>
+            <button className="btn sm ghost" onClick={handlePickDir} disabled={savingWorkDir}><FolderOpen size={14} />选择文件夹…</button>
           </div>
           <div className="desc">生成表格时只读取和写入这个目录中的真实 Excel 文件</div>
-          <div className="set-row"><span className="k">位置</span><span className="v mono">{workDir || '未设置（首次生成对账单时选择）'}</span></div>
+          <div className="set-row">
+            <span className="k">位置</span>
+            <input
+              className="mono"
+              style={{ flex: 1, minWidth: 180 }}
+              value={workDirDraft}
+              placeholder="选择或输入真实存在的目录"
+              onChange={(e) => setWorkDirDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') void handleSaveWorkDir(); }}
+              aria-label="表格工作目录"
+            />
+            <button className="btn sm" onClick={() => void handleSaveWorkDir()} disabled={savingWorkDir || !workDirDraft.trim()}>
+              {savingWorkDir ? '保存中…' : '保存'}
+            </button>
+          </div>
+          {!workDir && <div className="desc">未设置：首次生成表格前必须先选择或输入一个真实存在的目录</div>}
           <div className="set-row"><span className="k">写入规则</span><span className="v">只追加不覆盖 · 金额由代码计算 · 写入后自动核验</span></div>
         </div>
       ),

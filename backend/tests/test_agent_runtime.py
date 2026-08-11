@@ -18,37 +18,52 @@ class AgentRunStateTest(unittest.TestCase):
         self.assertTrue(ok, reason)
         self.assertEqual(args["limit"], 50)
 
-    def test_write_requires_explicit_intent_or_confirmed_selection(self):
+    def test_directory_question_is_not_hard_coded_to_a_tool(self):
+        state = AgentRunState("我修改的存放表格的位置")
+        ok, reason, _ = state.authorize("memory_list", {})
+        self.assertTrue(ok, reason)
+
+    def test_datetime_question_is_not_hard_coded_to_a_tool(self):
+        state = AgentRunState("今天几号")
+        ok, reason, _ = state.authorize("db_lookup_receipt", {})
+        self.assertTrue(ok, reason)
+
+    def test_short_followup_is_not_hard_coded_to_previous_topic(self):
+        state = AgentRunState(
+            "现在呢",
+        )
+        ok, reason, _ = state.authorize("db_lookup_receipt", {})
+        self.assertTrue(ok, reason)
+
+    def test_live_query_tools_are_available_to_model(self):
+        state = AgentRunState("请确认当前设置")
+        for tool_name in ("settings_read", "runtime_now"):
+            ok, reason, _ = state.authorize(tool_name, {})
+            self.assertTrue(ok, f"{tool_name}: {reason}")
+
+    def test_model_selected_write_tool_is_not_blocked_by_message_regex(self):
         state = AgentRunState("查一下最近的单据")
         ok, reason, _ = state.authorize("spreadsheet_write_batch", WRITE_ARGS)
-        self.assertFalse(ok)
-        self.assertIn("明确写入授权", reason)
+        self.assertTrue(ok, reason)
 
         selected = AgentRunState("查一下最近的单据", selected_ids=[12])
         ok, reason, _ = selected.authorize("spreadsheet_write_batch", WRITE_ARGS)
         self.assertTrue(ok, reason)
 
-    def test_negative_write_instruction_does_not_authorize(self):
+    def test_negative_write_instruction_does_not_override_model_decision(self):
         state = AgentRunState("先别写入，给我看看内容")
         ok, _, _ = state.authorize("spreadsheet_write_batch", WRITE_ARGS)
-        self.assertFalse(ok)
+        self.assertTrue(ok)
 
-    def test_short_followup_inherits_recent_write_intent(self):
-        state = AgentRunState(
-            "四张，就在桌面",
-            recent_user_messages=["我把文件存放位置切换了，你重新做一份吧"],
-        )
-        self.assertTrue(state.write_authorized)
-
-    def test_memory_requires_explicit_request(self):
+    def test_memory_requires_live_revision_but_not_message_regex(self):
         state = AgentRunState("我喜欢按日期排序")
         ok, reason, _ = state.authorize("memory_replace", {
             "content": "偏好按日期排序", "expected_revision": 0,
         })
         self.assertFalse(ok)
-        self.assertIn("长期记忆", reason)
+        self.assertIn("先读取", reason)
 
-        explicit = AgentRunState("请记住：以后默认按日期排序")
+        explicit = AgentRunState("普通聊天")
         ok, reason, _ = explicit.authorize("memory_replace", {
             "content": "默认按日期排序", "expected_revision": 0,
         })

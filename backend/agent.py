@@ -5,6 +5,7 @@ DeepSeek function calling + openpyxl MCP 工具执行
 import json
 import os
 import traceback
+from datetime import datetime
 from openai import OpenAI
 import config
 from database import (
@@ -51,7 +52,8 @@ SYSTEM_PROMPT = """你是“数字化工作台”的工作助手，帮助钢材�
   与最近对话窗口共同构成当前上下文；摘要与实际记录冲突时以实际记录为准。
 · 用户说写入但系统未配置对账单路径时，提醒用户去设置页配置。
 · 新建文件使用已配置工作目录；追加文件只能使用用户上传或明确指定的文件，不猜测目标文件。
-· 用户询问或改变文件存放位置时，先调用 settings_read 获取当前真实工作目录；不能依据历史对话猜测。
+· 涉及当前文件存放位置时，根据用户当前问题和会话上下文判断是否需要调用 settings_read；需要事实时必须以工具真实返回为准，不能凭记忆猜测。
+· 涉及当前日期、时间或时区时，根据上下文判断是否需要调用 runtime_now；需要事实时必须以工具真实返回为准。
 · 使用 spreadsheet_export_receipts 的 new 模式时，系统负责创建表格和表头。
 · 只能依据工具真实返回结果说“已写入”“已验证”“已保存”；失败或未验证时如实说明。
 
@@ -235,6 +237,14 @@ TOOLS = [
             "parameters": {"type": "object", "properties": {}}
         }
     }
+    ,{
+        "type": "function",
+        "function": {
+            "name": "runtime_now",
+            "description": "读取本机当前日期、时间和时区。涉及今天几号、当前日期或现在几点时必须调用，不能凭模型记忆回答。",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    }
 ]
 
 # 给模型的工具面只保留业务级能力。底层 Excel 原语仍在后端保留，
@@ -290,6 +300,18 @@ def _settings_read_payload() -> dict:
     }
 
 
+def _runtime_now_payload() -> dict:
+    now = datetime.now().astimezone()
+    return {
+        "success": True,
+        "iso": now.isoformat(timespec="seconds"),
+        "date": now.strftime("%Y-%m-%d"),
+        "time": now.strftime("%H:%M:%S"),
+        "weekday": now.strftime("%A"),
+        "timezone": str(now.tzinfo),
+    }
+
+
 def _record_tool_audit(run_state: AgentRunState, name: str, args: dict,
                        result: dict, allowed: bool) -> None:
     try:
@@ -324,7 +346,9 @@ def execute_tool(name: str, args: dict, current_session_id: str = "") -> dict:
                 fname = os.path.basename(fp) if fp else "对账单.xlsx"
                 if not work_dir:
                     return {"success": False, "error": "未配置工作目录，无法安全创建对账单；请先到设置页配置文件存放目录"}
-                os.makedirs(work_dir, exist_ok=True)
+                # 工作目录由用户显式选择，不能因为模型要写文件就自动重建被删除的目录。
+                if not os.path.isdir(work_dir):
+                    return {"success": False, "error": f"工作目录不存在：{work_dir}。请先在设置页选择一个真实存在的目录"}
                 args["filepath"] = os.path.join(work_dir, fname)
             else:
                 # 已有文件只能来自用户上传区或已配置工作目录；模型不能随意访问本机其它 Excel。
@@ -341,10 +365,7 @@ def execute_tool(name: str, args: dict, current_session_id: str = "") -> dict:
                 if not allowed:
                     return {"success": False, "error": "为保护本机文件，只能追加用户上传的 Excel 或工作目录内的文件"}
                 args["filepath"] = resolved
-            # openpyxl 不会自动创建目录，写入前确保父目录存在
-            parent = os.path.dirname(args["filepath"])
-            if parent:
-                os.makedirs(parent, exist_ok=True)
+            # 不自动创建父目录：目录状态必须由设置页和工具结果共同证明。
         if name == "db_lookup_receipt":
             return {
                 "receipts": query_receipt(
@@ -419,6 +440,8 @@ def execute_tool(name: str, args: dict, current_session_id: str = "") -> dict:
             }
         elif name == "settings_read":
             return _settings_read_payload()
+        elif name == "runtime_now":
+            return _runtime_now_payload()
         else:
             return {"success": False, "error": f"未知工具: {name}", "tool": name}
     except Exception as e:
@@ -596,6 +619,8 @@ def _tool_result_summary(name: str, result: dict) -> str:
         return f"当前文件目录：{result.get('work_dir') or '未配置'}"
     if name == "session_search":
         return f"检索到 {result.get('count', 0)} 条相关记录"
+    if name == "runtime_now":
+        return f"当前时间 {result.get('date', '')} {result.get('time', '')}（{result.get('timezone', '')}）"
     return "执行完成"
 
 
@@ -611,9 +636,7 @@ def _finalize_export(run_state: AgentRunState) -> None:
 
 
 def _tool_choice_for_run(run_state: AgentRunState, iteration: int):
-    """写入型请求首轮必须进入工具链，不能让模型用一句话跳过执行。"""
-    if iteration == 1 and run_state.write_authorized and not run_state.tool_calls:
-        return "required"
+    """工具选择交给模型；Harness 只在工具被选择后校验参数和真实执行结果。"""
     return "auto"
 
 
@@ -653,7 +676,6 @@ def agent_loop_stream(user_message: str, history: list, selected_ids: list = Non
     run_state = AgentRunState(
         user_message=user_message,
         selected_ids=selected_ids or [],
-        recent_user_messages=[m.get("content", "") for m in clean_history[-6:] if m.get("role") == "user"],
     )
 
     iteration = 0
@@ -785,7 +807,6 @@ def agent_loop(user_message: str, history: list, selected_ids: list = None,
     run_state = AgentRunState(
         user_message=user_message,
         selected_ids=selected_ids or [],
-        recent_user_messages=[m.get("content", "") for m in clean_history[-6:] if m.get("role") == "user"],
     )
 
     iteration = 0
