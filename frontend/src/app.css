@@ -370,6 +370,12 @@ table.res-table{width:100%; border-collapse:collapse; font-size:13px;}
 .res-table tr.flag-err td{background:var(--err-soft);}
 .res-table tr.flag-new td{background:var(--warn-soft);}
 .res-table tr.row-header td{background:#f5f6f7; color:var(--text-3); font-style:italic;}
+.res-table tr.issue-flash td{animation:issueFlash 1.4s var(--ease);}
+@keyframes issueFlash{
+  0%{background:var(--warn-soft);}
+  60%{background:var(--warn-soft);}
+  100%{background:transparent;}
+}
 .res-table td:last-child{padding:4px 2px;}
 .cell-flag{font-size:11px; white-space:nowrap;}
 .flag-err .cell-flag{color:var(--err); font-weight:600;}

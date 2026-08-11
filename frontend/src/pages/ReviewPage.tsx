@@ -13,6 +13,46 @@ import {
 import { fetchUploadAsDataUrl } from '../utils/image';
 import type { ReceiptSummary, ReceiptItem } from '../types';
 
+// 与后端 calibrate 规则一致的单位白名单（用于编辑后动态重算异常）
+const UNIT_WHITELIST = new Set([
+  '只', '米', '片', '箱', '桶', '卷', '盒', '支', '组', '套', '包', '瓶',
+  '根', '捆', '把', '斤', '平方', '台', '袋', '吨', '块', '条', '张', '对',
+  '双', '付',
+]);
+const HEADER_KW = ['品种', '单位', '数量', '单价', '金额', '合计'];
+const MAX_QTY = 100000;
+const MAX_PRICE = 10000;
+
+// 编辑后即时重算可判定异常：数字范围 / 单位 / 空行 / 表头字样
+// 无法本地判定的异常（如"名称规格混写"）原样保留
+function refreshIssues(it: ReceiptItem): string[] {
+  const orig = it.issues || [];
+  const name = (it.name || '').trim();
+  const spec = (it.spec || '').trim();
+  const unit = (it.unit || '').trim();
+  const qtyOk = (it.qty || 0) > 0 && (it.qty || 0) <= MAX_QTY;
+  const priceOk = (it.price || 0) > 0 && (it.price || 0) <= MAX_PRICE;
+  const unitInvalid = !!unit && !UNIT_WHITELIST.has(unit);
+  const unitMissing = !unit && !!name;
+  const headerLike = !!name && HEADER_KW.some((k) => name.includes(k));
+  const nameEmpty = !name && !spec;
+  const next: string[] = [];
+  orig.forEach((iss) => {
+    if (iss.startsWith('qty:') || iss.startsWith('price:')) return; // 数字类按当前值重判
+    if (iss.startsWith('unit:')) return; // 单位类按当前值重判
+    if (iss === '整行: 品名为空') return;
+    if (iss === '整行: 疑似表头行') return;
+    next.push(iss); // 其他异常保留
+  });
+  if (!qtyOk) next.push('qty: 数量超出范围');
+  if (!priceOk) next.push('price: 单价超出范围');
+  if (unitInvalid) next.push('unit: 单位不在常见单位集合');
+  if (unitMissing) next.push('unit: 缺失单位');
+  if (headerLike) next.push('整行: 疑似表头行');
+  if (nameEmpty) next.push('整行: 品名为空');
+  return next;
+}
+
 export default function ReviewPage() {
   const { showToast } = useToast();
   const { page, setPage } = useNav();
@@ -37,6 +77,8 @@ export default function ReviewPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // 点击"异常"徽标：通知表格滚动聚焦到第一条异常行
+  const [issueFocusTick, setIssueFocusTick] = useState(0);
   // 品名库集合：用于动态计算"品名对齐/未入库"（修改品名后即时更新）
   const [materialSet, setMaterialSet] = useState<Set<string>>(new Set());
   const origRef = useRef<HTMLDivElement>(null);
@@ -251,15 +293,22 @@ export default function ReviewPage() {
     else groups.push({ month: m, list: [q] });
   });
 
-  // 动态状态：品名对齐 / 未入库 / 金额识别状态（每次编辑即时更新）
-  const nonHeader = items.filter((_, i) => !headerRows.includes(i));
+  // 动态状态：品名对齐 / 未入库 / 金额 / 异常（每次编辑即时更新）
+  const liveItems = items.map((it) => ({ ...it, issues: refreshIssues(it) }));
+  const nonHeader = liveItems.filter((_, i) => !headerRows.includes(i));
   const aligned = nonHeader.filter((it) => it.name && materialSet.has(it.name)).length;
   const notInLib = nonHeader.filter((it) => it.name && !materialSet.has(it.name)).length;
   const computedTotal = nonHeader.reduce((s, it) => s + (it.qty || 0) * (it.price || 0), 0);
-  const amountOk = recTotal != null && Math.abs(recTotal - computedTotal) < 0.01;
+  // 金额动态判定：合计一致 → 正确；合计不一致但每行识别金额全部核对一致 → 也正确（说明 OCR 合计读错）
+  const totalMatch = recTotal != null && Math.abs(recTotal - computedTotal) < 0.01;
+  const recRows = nonHeader.filter((it) => it.rec_amount != null);
+  const rowsAllMatch = nonHeader.length > 0
+    && recRows.length === nonHeader.length
+    && recRows.every((it) => Math.abs((it.rec_amount || 0) - (it.qty || 0) * (it.price || 0)) < 0.01);
+  const amountOk = recTotal != null && (totalMatch || rowsAllMatch);
   const amountBad = recTotal != null && !amountOk;
   const summary = {
-    issues: items.filter((it) => (it.issues || []).length > 0).length,
+    issues: liveItems.filter((it) => (it.issues || []).length > 0).length,
   };
 
   return (
@@ -392,7 +441,16 @@ export default function ReviewPage() {
               <span className={`pill ${notInLib > 0 ? 'amber' : 'gray'}`}>未入库 {notInLib}</span>
               {amountOk && <span className="pill green">金额识别正确</span>}
               {amountBad && <span className="pill gray" style={{ color: 'var(--err)', background: 'var(--err-soft)' }}>请审核金额</span>}
-              {summary.issues > 0 && <span className="pill gray" style={{ color: 'var(--err)', background: 'var(--err-soft)' }}>异常 {summary.issues}</span>}
+              {summary.issues > 0 && (
+                <button
+                  className="pill gray"
+                  style={{ color: 'var(--err)', background: 'var(--err-soft)', cursor: 'pointer' }}
+                  title="点击定位到第一条异常行"
+                  onClick={() => setIssueFocusTick((t) => t + 1)}
+                >
+                  异常 {summary.issues}（点击定位）
+                </button>
+              )}
             </div>
 
             <div className="split">
@@ -441,7 +499,7 @@ export default function ReviewPage() {
                 {loading ? (
                   <div className="empty" style={{ margin: '40px auto' }}>加载中…</div>
                 ) : (
-                  <ReviewTable items={items} onChange={setItems} headerRows={headerRows} resetSignal={tableReset} recTotal={recTotal} materialSet={materialSet} />
+                  <ReviewTable items={liveItems} onChange={setItems} headerRows={headerRows} resetSignal={tableReset} recTotal={recTotal} materialSet={materialSet} focusIssueTick={issueFocusTick} />
                 )}
                 <div className="res-foot">
                   <span>共 {items.length} 行</span>

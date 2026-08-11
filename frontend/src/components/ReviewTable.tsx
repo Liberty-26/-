@@ -13,6 +13,7 @@ interface Props {
   resetSignal?: number;
   recTotal?: number | null; // 识别出的合计金额（与计算合计对比审核）
   materialSet?: Set<string>; // 品名库集合（名称+别名），用于动态"未入库"判断
+  focusIssueTick?: number;   // 点击"异常"徽标后自增，滚动聚焦第一条异常行
 }
 
 const COL_LABELS: Record<string, string> = {
@@ -29,7 +30,7 @@ const COLS: { key: string; label: string; align: string }[] = [
   { key: 'price', label: '单价', align: 'right' },
 ];
 
-export default function ReviewTable({ items, onChange, headerRows = [], resetSignal = 0, recTotal = null, materialSet }: Props) {
+export default function ReviewTable({ items, onChange, headerRows = [], resetSignal = 0, recTotal = null, materialSet, focusIssueTick = 0 }: Props) {
   const { showToast } = useToast();
   const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -44,6 +45,8 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
   // 框选可视矩形（跟随鼠标展开）
   const [selRect, setSelRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const [flashRow, setFlashRow] = useState<number | null>(null);
+  const flashTimer = useRef<number | null>(null);
   // 提交后的选中区域：相邻格子合并为一个选框（与拖拽选框同色）
   const [committedRects, setCommittedRects] = useState<{ left: number; top: number; width: number; height: number }[]>([]);
 
@@ -159,6 +162,22 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
   };
 
   const isHeaderRow = (i: number) => headerRows.includes(i);
+
+  // 点击"异常"徽标：滚动到第一条异常行并闪烁高亮
+  useEffect(() => {
+    if (!focusIssueTick) return;
+    const idx = items.findIndex((it, i) => !isHeaderRow(i) && (it.issues || []).length > 0);
+    if (idx < 0) return;
+    setFlashRow(idx);
+    const td = wrapRef.current?.querySelector(`td[data-row="${idx}"]`);
+    td?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (flashTimer.current) window.clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => setFlashRow(null), 1600);
+  }, [focusIssueTick, items]);
+
+  useEffect(() => {
+    return () => { if (flashTimer.current) window.clearTimeout(flashTimer.current); };
+  }, []);
 
   const updateItem = useCallback(
     (idx: number, field: string, val: string | number) => {
@@ -412,7 +431,7 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
                   ? 'flag-err'
                   : '';
               return (
-                <tr key={i} className={rowFlag}>
+                <tr key={i} className={`${rowFlag} ${flashRow === i ? 'issue-flash' : ''}`}>
                   <td className="num" style={{ textAlign: 'center', color: 'var(--text-3)' }}>{i + 1}</td>
                   {COLS.map((c) => {
                     const isEditing = editingCell?.row === i && editingCell?.col === c.key;
