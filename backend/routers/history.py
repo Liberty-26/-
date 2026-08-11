@@ -22,9 +22,11 @@ async def save_history(req: SaveReceiptRequest):
         total_amount = sum(item.qty * item.price for item in req.items)
 
         cursor = conn.execute(
-            """INSERT INTO receipts (receipt_no, date, total_amount, image_path, status)
-               VALUES (?, ?, ?, ?, 'pending')""",
-            (req.receipt_no, req.date, round(total_amount, 2), req.image_path or "")
+            """INSERT INTO receipts (receipt_no, date, total_amount, rec_total, image_path, status)
+               VALUES (?, ?, ?, ?, ?, 'pending')""",
+            (req.receipt_no, req.date, round(total_amount, 2),
+             round(req.rec_total, 2) if req.rec_total is not None else None,
+             req.image_path or "")
         )
         receipt_id = cursor.lastrowid
 
@@ -32,9 +34,11 @@ async def save_history(req: SaveReceiptRequest):
         for i, item in enumerate(req.items):
             amount = round(item.qty * item.price, 2)
             conn.execute(
-                """INSERT INTO receipt_items (receipt_id, row_num, name, spec, unit, qty, price, amount)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                (receipt_id, i + 1, item.name, item.spec, item.unit, item.qty, item.price, amount)
+                """INSERT INTO receipt_items (receipt_id, row_num, name, spec, unit, qty, price, amount, rec_amount)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (receipt_id, i + 1, item.name, item.spec, item.unit,
+                 item.qty, item.price, amount,
+                 round(item.rec_amount, 2) if item.rec_amount is not None else None)
             )
 
         conn.commit()
@@ -47,6 +51,7 @@ async def save_history(req: SaveReceiptRequest):
                 "receipt_no": req.receipt_no,
                 "date": req.date,
                 "total_amount": round(total_amount, 2),
+                "rec_total": round(req.rec_total, 2) if req.rec_total is not None else None,
                 "status": "pending",
                 "operator": "本地用户",
                 "image_path": req.image_path or "",
@@ -59,6 +64,7 @@ async def save_history(req: SaveReceiptRequest):
                         "qty": item.qty,
                         "price": item.price,
                         "amount": round(item.qty * item.price, 2),
+                        "rec_amount": round(item.rec_amount, 2) if item.rec_amount is not None else None,
                     }
                     for i, item in enumerate(req.items)
                 ]
@@ -220,6 +226,7 @@ async def get_history_detail(receipt_id: int):
                 "receipt_no": receipt["receipt_no"],
                 "date": receipt["date"],
                 "total_amount": receipt["total_amount"],
+                "rec_total": receipt.get("rec_total"),
                 "status": receipt["status"],
                 "operator": receipt["operator"],
                 "image_path": receipt["image_path"],
@@ -253,10 +260,12 @@ async def update_history(receipt_id: int, req: UpdateReceiptRequest):
 
         conn.execute(
             """UPDATE receipts
-               SET receipt_no = ?, date = ?, total_amount = ?,
+               SET receipt_no = ?, date = ?, total_amount = ?, rec_total = ?,
                    updated_at = datetime('now','localtime')
                WHERE id = ?""",
-            (req.receipt_no, req.date, round(total_amount, 2), receipt_id)
+            (req.receipt_no, req.date, round(total_amount, 2),
+             round(req.rec_total, 2) if req.rec_total is not None else None,
+             receipt_id)
         )
 
         # 删除旧 items，重新插入
@@ -264,9 +273,11 @@ async def update_history(receipt_id: int, req: UpdateReceiptRequest):
         for i, item in enumerate(req.items):
             amount = round(item.qty * item.price, 2)
             conn.execute(
-                """INSERT INTO receipt_items (receipt_id, row_num, name, spec, unit, qty, price, amount)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                (receipt_id, i + 1, item.name, item.spec, item.unit, item.qty, item.price, amount)
+                """INSERT INTO receipt_items (receipt_id, row_num, name, spec, unit, qty, price, amount, rec_amount)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (receipt_id, i + 1, item.name, item.spec, item.unit,
+                 item.qty, item.price, amount,
+                 round(item.rec_amount, 2) if item.rec_amount is not None else None)
             )
 
         conn.commit()

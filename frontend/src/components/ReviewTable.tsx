@@ -4,13 +4,14 @@ import { useState, useCallback, useMemo, useEffect, useRef, type KeyboardEvent }
 import type { ReceiptItem } from '../types';
 import { useToast } from '../hooks/useToast';
 import ConfirmDialog from './ConfirmDialog';
-import { Plus, AlertTriangle } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface Props {
   items: ReceiptItem[];
   onChange: (items: ReceiptItem[]) => void;
   headerRows?: number[];
   resetSignal?: number;
+  recTotal?: number | null; // 识别出的合计金额（与计算合计对比审核）
 }
 
 const COL_LABELS: Record<string, string> = {
@@ -27,7 +28,7 @@ const COLS: { key: string; label: string; align: string }[] = [
   { key: 'price', label: '单价', align: 'right' },
 ];
 
-export default function ReviewTable({ items, onChange, headerRows = [], resetSignal = 0 }: Props) {
+export default function ReviewTable({ items, onChange, headerRows = [], resetSignal = 0, recTotal = null }: Props) {
   const { showToast } = useToast();
   const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -54,6 +55,10 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
     () => items.reduce((sum, it) => sum + (it.qty || 0) * (it.price || 0), 0),
     [items]
   );
+  // 金额对比审核：识别合计 == 计算合计 → 三表头绿色；否则逐行找差异标红
+  const totalMatch = recTotal != null && Math.abs(recTotal - totalAmount) < 0.01;
+  const amtBad = (item: ReceiptItem) =>
+    !totalMatch && item.rec_amount != null && Math.abs(item.rec_amount - (item.qty || 0) * (item.price || 0)) > 0.01;
 
   const cellBg = (item: ReceiptItem, key: string): string => {
     const issues = item.issues || [];
@@ -308,12 +313,21 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
             <tr>
               <th style={{ width: 44 }}>序号</th>
               {COLS.map((c) => (
-                <th key={c.key} style={{ textAlign: c.align === 'right' ? 'right' : c.align === 'center' ? 'center' : 'left' }}>
+                <th
+                  key={c.key}
+                  className={totalMatch && (c.key === 'qty' || c.key === 'price') ? 'amt-ok' : ''}
+                  style={{ textAlign: c.align === 'right' ? 'right' : c.align === 'center' ? 'center' : 'left' }}
+                >
                   {c.label}
                 </th>
               ))}
-              <th style={{ textAlign: 'right' }}>金额</th>
-              <th style={{ width: 90 }}></th>
+              <th
+                className={totalMatch ? 'amt-ok' : ''}
+                style={{ textAlign: 'right' }}
+                title={recTotal != null ? (totalMatch ? `识别合计 ¥${recTotal.toFixed(2)} = 计算合计，已核对` : `识别合计 ¥${recTotal.toFixed(2)} ≠ 计算合计 ¥${totalAmount.toFixed(2)}，红色行需复核`) : undefined}
+              >
+                金额
+              </th>
               <th style={{ width: 34 }}></th>
             </tr>
           </thead>
@@ -337,7 +351,7 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
                         key={c.key}
                         data-row={i}
                         data-col={c.key}
-                        className={`${cellBg(item, c.key)} ${isSelected ? 'cell-selected' : ''}`}
+                        className={`${cellBg(item, c.key)} ${(c.key === 'qty' || c.key === 'price') && amtBad(item) ? 'amt-err' : ''} ${isSelected ? 'cell-selected' : ''}`}
                         style={{ textAlign: c.align === 'right' ? 'right' : c.align === 'center' ? 'center' : 'left' }}
                         title={cellTitle(item, c.key) || undefined}
                         onClick={() => handleCellClick(i, c.key)}
@@ -365,17 +379,8 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
                       </td>
                     );
                   })}
-                  <td className="num" style={{ textAlign: 'right', fontWeight: 700 }}>
+                  <td className={`num ${amtBad(item) ? 'amt-err' : ''}`} style={{ textAlign: 'right', fontWeight: 700 }}>
                     {((item.qty || 0) * (item.price || 0)).toFixed(2)}
-                  </td>
-                  <td>
-                    {!header && (() => {
-                      const errs = (item.issues || []).length;
-                      const news = item.not_in_library ? 1 : 0;
-                      if (errs) return <span className="cell-flag" style={{ color: 'var(--err)' }}><AlertTriangle size={12} style={{ verticalAlign: '-1px' }} /> {errs} 项异常</span>;
-                      if (news) return <span className="cell-flag" style={{ color: 'var(--warn)' }}>◈ 未入库</span>;
-                      return <span className="cell-flag" style={{ color: 'var(--text-3)' }}>—</span>;
-                    })()}
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     <button

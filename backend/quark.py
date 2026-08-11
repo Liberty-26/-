@@ -167,12 +167,32 @@ def parse_receipt(xlsx_bytes: bytes) -> dict:
     idx_unit = col.get("单位")
     idx_qty = col.get("数量")
     idx_price = col.get("单价")
+    idx_amount = col.get("金额")
 
     items = []
+    total_candidate = None   # 小计兜底
+    rec_total = None         # 合计/总计（最终总金额）
     for r in rows[hdr_idx + 1:]:
         first = (r[0] or "") if r else ""
-        if any(k in first for k in ("合计", "小计", "大写")):
-            break
+        if any(k in first for k in ("合计", "小计", "总计", "大写")):
+            # 从金额列（或行内最后一个数字）提取合计金额
+            raw_amt = ""
+            if idx_amount is not None and idx_amount < len(r):
+                raw_amt = _strip(r[idx_amount])
+            if not raw_amt:
+                for cell in reversed(r[1:]):
+                    if _strip(cell):
+                        raw_amt = _strip(cell)
+                        break
+            val = _to_float(raw_amt) if raw_amt else None
+            if val is not None and val > 0:
+                if "合计" in first or "总计" in first:
+                    rec_total = val
+                    break
+                total_candidate = val  # 小计：先兜底，继续找合计
+            if "合计" in first or "总计" in first:
+                break
+            continue
         if idx_name is None or idx_name >= len(r):
             continue
         name = r[idx_name] if idx_name < len(r) else ""
@@ -181,7 +201,15 @@ def parse_receipt(xlsx_bytes: bytes) -> dict:
         unit = _strip(r[idx_unit]) if idx_unit is not None and idx_unit < len(r) else ""
         qty = _to_float(r[idx_qty]) if idx_qty is not None and idx_qty < len(r) else 0.0
         price = _to_float(r[idx_price]) if idx_price is not None and idx_price < len(r) else 0.0
-        items.append({"name": name, "spec": "", "unit": unit, "qty": qty, "price": price})
+        raw_amt = _strip(r[idx_amount]) if idx_amount is not None and idx_amount < len(r) else ""
+        rec_amount = _to_float(raw_amt) if raw_amt else None
+        item = {"name": name, "spec": "", "unit": unit, "qty": qty, "price": price}
+        if rec_amount is not None:
+            item["rec_amount"] = rec_amount
+        items.append(item)
 
+    if rec_total is None:
+        rec_total = total_candidate
     return {"success": True, "receipt_no": receipt_no, "date": date_str,
-            "date_suspicious": suspicious, "items": items, "raw_response": head_text}
+            "date_suspicious": suspicious, "items": items,
+            "rec_total": rec_total, "raw_response": head_text}

@@ -59,6 +59,14 @@ def init_db():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_receipts_no ON receipts(receipt_no)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_receipt ON receipt_items(receipt_id)")
 
+    # 兼容旧库：识别金额对比审核（receipts.rec_total / receipt_items.rec_amount）
+    r_cols = [r[1] for r in cursor.execute("PRAGMA table_info(receipts)").fetchall()]
+    if "rec_total" not in r_cols:
+        cursor.execute("ALTER TABLE receipts ADD COLUMN rec_total REAL")
+    ri_cols = [r[1] for r in cursor.execute("PRAGMA table_info(receipt_items)").fetchall()]
+    if "rec_amount" not in ri_cols:
+        cursor.execute("ALTER TABLE receipt_items ADD COLUMN rec_amount REAL")
+
     # 对话会话表 + 对话消息表（session 化：多条会话各自独立，互不串扰）
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_sessions (

@@ -149,6 +149,7 @@ async def _recognize_one(image_data_url: str, receipt_no: str = "", date: str = 
             "date_suspicious": bool(result.get("date_suspicious")) if result.get("date") else False,
             "image_path": image_path,
             "items": items,
+            "rec_total": result.get("rec_total"),
             "raw_response": result.get("raw_response", ""),
         }
     except Exception as e:

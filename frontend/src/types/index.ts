@@ -9,6 +9,7 @@ export interface ReceiptItem {
   qty: number;
   price: number;
   amount?: number; // 自动计算 qty × price
+  rec_amount?: number; // 识别出的每行金额（仅对比审核用，不参与计算）
   // AI 校准附加字段（仅存在于校准响应和前端内存，不入库）
   issues?: string[];      // 异常标记，如 "qty: 数量超出范围"
   corrections?: string[]; // 修正记录，如 "name: 镀锋管→镀锌管"
@@ -29,6 +30,7 @@ export interface Receipt {
   date: string; // ISO YYYY-MM-DD
   items: ReceiptItem[];
   total_amount?: number;
+  rec_total?: number; // 识别出的合计金额（仅对比审核用）
   status?: 'pending' | 'verified' | 'exported';
   image_path?: string;
   operator?: string;

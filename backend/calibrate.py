@@ -21,17 +21,17 @@ UNIT_WHITELIST = [
 MAX_QTY = 100000
 MAX_PRICE = 10000
 
-# 规格特征（含数字/乘号/直径符号）
-SPEC_MARK = re.compile(r'[0-9×xX*#]|DN\d')
+# 规格特征（含数字/乘号/除号/直径符号）
+SPEC_MARK = re.compile(r'[0-9×xX*÷#]|DN\d')
 
-# 纯规格特征：去掉所有数字/乘号/#/DN/Φ/单位符号后什么都不剩
-PURE_SPEC_RE = re.compile(r'[0-9×xX*#DNdnΦφ.+\-/\s()（）]')
+# 纯规格特征：去掉所有数字/乘除号/#/DN/Φ/单位符号后什么都不剩
+PURE_SPEC_RE = re.compile(r'[0-9×xX*÷#DNdnΦφ.+\-/\s()（）]')
 
 # 规格行可带的量词/单位字（"6,5米×12支"→去掉数字符号后剩"米支"也算规格行）
 # 注意避开品名词：如"86拉伸盒"的"盒"虽在列表，但整体仍剩"拉伸"等字，不会被误判
 SPEC_LIKE_UNIT_CHARS = "米支根捆卷盒组套只个片桶包瓶袋块条张对双平方寸角孔号口"
 SPEC_LIKE_STRIP_RE = re.compile(
-    r'[0-9×xX*#DNdnΦφ.+\-/\s()（）,，、]|[' + SPEC_LIKE_UNIT_CHARS + r']'
+    r'[0-9×xX*÷#DNdnΦφ.+\-/\s()（）,，、]|[' + SPEC_LIKE_UNIT_CHARS + r']'
 )
 
 
@@ -541,6 +541,8 @@ def calibrate_items(items: list, receipt_no: str = "", date: str = "") -> dict:
             "unit": normalize_text(str(it.get("unit", ""))),
             "qty": _to_float(it.get("qty", 0)),
             "price": _to_float(it.get("price", 0)),
+            # 识别金额（原样保留，仅用于前后端对比审核，不参与计算）
+            "rec_amount": it.get("rec_amount"),
         }
         normalized.append(norm)
 
@@ -592,6 +594,7 @@ def calibrate_items_progress(items: list, receipt_no: str = "", date: str = ""):
             "unit": normalize_text(str(it.get("unit", ""))),
             "qty": _to_float(it.get("qty", 0)),
             "price": _to_float(it.get("price", 0)),
+            "rec_amount": it.get("rec_amount"),
         }
         normalized.append(norm)
     # 单位"略写"继承（模型前：输入中不含略写记号，杜绝模型臆测）

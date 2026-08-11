@@ -313,6 +313,7 @@ export default function WorkbenchPage() {
                   date: r.date || '',
                   items: r.items || [],
                   image_path: r.image_path || '',
+                  rec_total: r.rec_total ?? null,
                 });
                 if (saved.success) {
                   labelPatch.receiptId = saved.data?.id;
@@ -405,6 +406,7 @@ export default function WorkbenchPage() {
         date: r.date || '',
         items: r.items || [],
         image_path: r.image_path || it.imagePath,
+        rec_total: r.rec_total ?? null,
       });
       setFlowItems((prev) =>
         prev.map((x) =>

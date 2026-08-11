@@ -33,6 +33,7 @@ class CalibrateItem(BaseModel):
     unit: str = ""
     qty: float = 0
     price: float = 0
+    rec_amount: Optional[float] = None
 
 
 class CalibrateRequest(BaseModel):
@@ -48,6 +49,7 @@ class ReceiptItemIn(BaseModel):
     unit: str = ""
     qty: float = 0
     price: float = 0
+    rec_amount: Optional[float] = None  # 识别出的每行金额（仅对比用，不参与计算）
 
 
 class SaveReceiptRequest(BaseModel):
@@ -55,12 +57,14 @@ class SaveReceiptRequest(BaseModel):
     date: str = ""  # YYYY-MM-DD
     items: List[ReceiptItemIn] = []
     image_path: Optional[str] = None
+    rec_total: Optional[float] = None  # 识别出的合计金额（仅对比用）
 
 
 class UpdateReceiptRequest(BaseModel):
     receipt_no: str = ""
     date: str = ""
     items: List[ReceiptItemIn] = []
+    rec_total: Optional[float] = None
 
 
 class TestQwenRequest(BaseModel):
@@ -94,6 +98,7 @@ class ReceiptItemOut(BaseModel):
     qty: float = 0
     price: float = 0
     amount: float = 0
+    rec_amount: Optional[float] = None
 
 
 class ReceiptOut(BaseModel):
@@ -101,6 +106,7 @@ class ReceiptOut(BaseModel):
     receipt_no: str = ""
     date: str = ""
     total_amount: float = 0
+    rec_total: Optional[float] = None
     status: str = "pending"
     image_path: Optional[str] = None
     operator: str = "本地用户"

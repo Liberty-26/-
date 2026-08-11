@@ -22,6 +22,7 @@ export default function ReviewPage() {
   const [no, setNo] = useState('');
   const [date, setDate] = useState('');
   const [items, setItems] = useState<ReceiptItem[]>([]);
+  const [recTotal, setRecTotal] = useState<number | null>(null);
   const [headerRows, setHeaderRows] = useState<number[]>([]);
   const [originalItems, setOriginalItems] = useState<ReceiptItem[]>([]);
   const [imageUrl, setImageUrl] = useState('');
@@ -76,6 +77,7 @@ export default function ReviewPage() {
       const d = res.data;
       setNo(d.receipt_no || '');
       setDate(d.date || '');
+      setRecTotal(d.rec_total ?? null);
       setImageUrl(d.image_path ? '/uploads/' + d.image_path : '');
       try { sessionStorage.setItem('steel_review_id', String(id)); } catch { /* ignore */ }
       setZoom(1);
@@ -84,6 +86,7 @@ export default function ReviewPage() {
       const saved: ReceiptItem[] = (d.items || []).map((it) => ({
         name: it.name || '', spec: it.spec || '', unit: it.unit || '',
         qty: it.qty || 0, price: it.price || 0,
+        ...(it.rec_amount != null ? { rec_amount: it.rec_amount } : {}),
       }));
       setOriginalItems(saved);
       setItems(saved);
@@ -123,7 +126,11 @@ export default function ReviewPage() {
       });
     });
     const res = await updateReceipt(currentId, {
-      receipt_no: no, date, items: items.map((it) => ({ name: it.name, spec: it.spec, unit: it.unit, qty: it.qty, price: it.price })),
+      receipt_no: no, date, rec_total: recTotal ?? undefined,
+      items: items.map((it) => ({
+        name: it.name, spec: it.spec, unit: it.unit, qty: it.qty, price: it.price,
+        ...(it.rec_amount != null ? { rec_amount: it.rec_amount } : {}),
+      })),
     });
     if (!res.success) {
       showToast(res.error || '保存失败', 'error');
@@ -144,7 +151,7 @@ export default function ReviewPage() {
     }
     setSaving(false);
     return true;
-  }, [currentId, date, no, items, originalItems, showToast]);
+  }, [currentId, date, no, items, originalItems, recTotal, showToast]);
 
   const handleVerify = useCallback(async () => {
     if (!currentId) return;
@@ -413,7 +420,7 @@ export default function ReviewPage() {
                 {loading ? (
                   <div className="empty" style={{ margin: '40px auto' }}>加载中…</div>
                 ) : (
-                  <ReviewTable items={items} onChange={setItems} headerRows={headerRows} resetSignal={tableReset} />
+                  <ReviewTable items={items} onChange={setItems} headerRows={headerRows} resetSignal={tableReset} recTotal={recTotal} />
                 )}
                 <div className="res-foot">
                   <span>共 {items.length} 行</span>

@@ -54,7 +54,7 @@ export async function recognizeImage(imageBase64: string, receiptNo?: string, da
   );
 }
 
-export async function calibrateItems(items: { name: string; spec: string; unit: string; qty: number; price: number }[], receiptNo?: string, date?: string) {
+export async function calibrateItems(items: { name: string; spec: string; unit: string; qty: number; price: number; rec_amount?: number }[], receiptNo?: string, date?: string) {
   return request<{ items: import('../types').ReceiptItem[]; header_rows: number[] }>(
     'POST', '/recognize/calibrate', { items, receipt_no: receiptNo, date }
   );
@@ -106,6 +106,7 @@ export async function saveReceipt(receipt: Receipt) {
     date: receipt.date,
     items: receipt.items,
     image_path: receipt.image_path || '',
+    rec_total: receipt.rec_total ?? null,
   });
 }
 
@@ -135,6 +136,7 @@ export async function updateReceipt(id: number, receipt: Receipt) {
     receipt_no: receipt.receipt_no,
     date: receipt.date,
     items: receipt.items,
+    rec_total: receipt.rec_total ?? null,
   });
 }
 
@@ -383,7 +385,7 @@ export async function clearCorrections() {
 
 // ---- 校准（纯代码，SSE 流式） ----
 
-export async function calibrateItemsSSE(items: { name: string; spec: string; unit: string; qty: number; price: number }[], receiptNo?: string, date?: string) {
+export async function calibrateItemsSSE(items: { name: string; spec: string; unit: string; qty: number; price: number; rec_amount?: number }[], receiptNo?: string, date?: string) {
   try {
     const resp = await fetch('/api/recognize/calibrate', {
       method: 'POST',
