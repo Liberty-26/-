@@ -203,6 +203,16 @@ export async function pickDirectory(): Promise<ApiResponse<{ path: string }>> {
   }
 }
 
+/** 工作目录内真实存在的 Excel 文件和 sheet */
+export async function getSpreadsheetTargets() {
+  return request<{
+    configured: boolean;
+    directory_exists: boolean;
+    directory: string;
+    files: { name: string; path: string; size: number; updated_at: string; sheets: string[]; error: string }[];
+  }>('GET', '/settings/spreadsheets');
+}
+
 /** 测试扫描王连接并测速（真实调用一次，消耗额度） */
 export async function testScanConnection(apiKey: string, apiBase: string, scene: string) {
   return request<{ latency_ms: number; status: string; message: string }>('POST', '/settings/test-scan', {
@@ -354,8 +364,8 @@ export async function getFacts() {
   return request<{ facts: AssistantFact[] }>('GET', '/memory/facts');
 }
 
-export async function addFact(fact_key: string, fact_value: string) {
-  return request<{ id: number }>('POST', '/memory/facts', { fact_key, fact_value });
+export async function addFact(fact_key: string, fact_value: string, scope: 'memory' | 'user' = 'memory') {
+  return request<{ id: number }>('POST', '/memory/facts', { fact_key, fact_value, scope });
 }
 
 export async function deleteFact(id: number) {
@@ -363,8 +373,8 @@ export async function deleteFact(id: number) {
 }
 
 /** 编辑已有事实 */
-export async function updateFact(id: number, fact_key: string, fact_value: string) {
-  return request<void>('PUT', `/memory/facts/${id}`, { fact_key, fact_value });
+export async function updateFact(id: number, fact_key: string, fact_value: string, scope: 'memory' | 'user' = 'memory') {
+  return request<void>('PUT', `/memory/facts/${id}`, { fact_key, fact_value, scope });
 }
 
 export async function getCorrections(limit = 200) {

@@ -601,9 +601,9 @@ def upsert_fact(fact_key: str, fact_value: str, scope: str = "memory"):
         conn.close()
 
 
-def delete_fact(fact_key: str):
+def delete_fact(fact_id: int):
     conn = get_conn()
-    cur = conn.execute("DELETE FROM assistant_facts WHERE fact_key = ?", [fact_key.strip()])
+    cur = conn.execute("DELETE FROM assistant_facts WHERE id = ?", [int(fact_id)])
     conn.commit()
     conn.close()
     return cur.rowcount > 0

@@ -5,8 +5,11 @@ import time
 import base64
 import struct
 import zlib
+from pathlib import Path
+from datetime import datetime
 import httpx
 from fastapi import APIRouter, HTTPException
+from openpyxl import load_workbook
 import config
 from models import TestQwenRequest
 from quark import call_quark_excel
@@ -169,6 +172,52 @@ async def pick_dir():
         return {"success": True, "data": {"path": path or ""}}
     except Exception as e:
         return {"success": False, "error": f"无法打开目录选择器: {str(e)}"}
+
+
+def _spreadsheet_files() -> list[dict]:
+    """读取工作目录内真实存在的 Excel 文件及其 sheet，供表格技能选择器使用。"""
+    work_dir = (config.WORK_DIR or "").strip()
+    if not work_dir:
+        return []
+    root = Path(work_dir).expanduser()
+    if not root.is_dir():
+        return []
+
+    files: list[dict] = []
+    for path in sorted(root.iterdir(), key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True):
+        if not path.is_file() or path.name.startswith("~$") or path.suffix.lower() != ".xlsx":
+            continue
+        item = {
+            "name": path.name,
+            "path": str(path.resolve()),
+            "size": path.stat().st_size,
+            "updated_at": datetime.fromtimestamp(path.stat().st_mtime).isoformat(timespec="minutes"),
+            "sheets": [],
+            "error": "",
+        }
+        try:
+            wb = load_workbook(path, read_only=True, keep_vba=path.suffix.lower() == ".xlsm")
+            item["sheets"] = list(wb.sheetnames)
+            wb.close()
+        except Exception as exc:
+            item["error"] = f"无法读取工作簿：{str(exc)[:120]}"
+        files.append(item)
+    return files
+
+
+@router.get("/spreadsheets")
+async def list_spreadsheets():
+    """返回工作目录内真实的 Excel 文件和 sheet，不生成虚假选项。"""
+    work_dir = (config.WORK_DIR or "").strip()
+    return {
+        "success": True,
+        "data": {
+            "configured": bool(work_dir),
+            "directory_exists": bool(work_dir) and Path(work_dir).expanduser().is_dir(),
+            "directory": str(Path(work_dir).expanduser()) if work_dir else "",
+            "files": _spreadsheet_files(),
+        },
+    }
 
 
 @router.get("/scan-scenes")

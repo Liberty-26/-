@@ -131,6 +131,7 @@ export interface AssistantFact {
   id: number;
   fact_key: string;
   fact_value: string;
+  scope?: 'memory' | 'user';
   created_at?: string;
 }
 

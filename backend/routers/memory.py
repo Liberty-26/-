@@ -97,13 +97,16 @@ async def update_fact(fact_id: int, req: dict):
     _ensure_tables()
     fact_key = (req.get("fact_key") or "").strip()
     fact_value = (req.get("fact_value") or "").strip()
+    scope = (req.get("scope") or "memory").strip()
     if not fact_key:
         raise HTTPException(status_code=400, detail="事实键不能为空")
+    if scope not in ("memory", "user"):
+        raise HTTPException(status_code=400, detail="scope 只能是 memory 或 user")
     conn = get_conn()
     try:
         cur = conn.execute(
-            "UPDATE assistant_facts SET fact_key = ?, fact_value = ? WHERE id = ?",
-            [fact_key, fact_value, fact_id],
+            "UPDATE assistant_facts SET fact_key = ?, fact_value = ?, scope = ? WHERE id = ?",
+            [fact_key, fact_value, scope, fact_id],
         )
         conn.commit()
         if cur.rowcount == 0:

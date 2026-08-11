@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import json
 import re
+from pathlib import Path
 from typing import Any
 
 
@@ -98,7 +99,7 @@ class AgentRunState:
         if name in {"spreadsheet_find_last_row", "spreadsheet_create_new", "spreadsheet_write_batch", "spreadsheet_export_receipts", "spreadsheet_verify"}:
             filepath = str(clean.get("filepath", "")).strip()
             sheet = str(clean.get("sheet", "")).strip()
-            if not filepath.lower().endswith(".xlsx"):
+            if Path(filepath).suffix.lower() != ".xlsx":
                 return False, "只允许操作 .xlsx 文件", {}
             if not SAFE_SHEET_RE.fullmatch(sheet):
                 return False, "sheet 名称不能为空、最长 31 个字符，且不能包含 \\ / : * ? [ ]", {}

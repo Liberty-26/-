@@ -785,7 +785,7 @@ export default function WorkbenchPage() {
         </div>
       </aside>
 
-      <SkillModal open={skillOpen} onClose={() => setSkillOpen(false)} onRun={handleRunSkill} />
+      <SkillModal open={skillOpen} onClose={() => setSkillOpen(false)} onRun={handleRunSkill} onOpenSettings={() => { setSkillOpen(false); setPage('settings'); }} />
     </div>
   );
 }
