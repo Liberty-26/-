@@ -6,22 +6,18 @@ import json
 import os
 import re
 import traceback
-import uuid
 from openai import OpenAI
 import config
 from database import (
     query_receipt, get_items, get_receipts_for_export, mark_exported,
-    get_facts, upsert_fact, memory_usage,
-    replace_fact_by_substring, remove_fact_by_substring,
+    get_memory_content, save_memory_content,
     search_messages, get_session, update_session_summary, load_chat_messages,
 )
 from spreadsheet import find_last_row, write_batch, verify_batch, create_new, export_receipts
 from agent_runtime import AgentRunState, TOOL_RISK
 
 # ---- 长期记忆（Hermes 式：有界、可策展、冻结快照注入） ----
-MEMORY_LIMIT = 2200     # MEMORY 预算（字符）
-USER_LIMIT = 1375       # USER 预算（字符）
-MEMORY_SCOPES = {"memory": MEMORY_LIMIT, "user": USER_LIMIT}
+MEMORY_LIMIT = 6000     # Agent Memory 单一 Prompt 预算（字符）
 
 # 记忆条目安全扫描：拒绝凭据泄露/提示注入特征/隐形 Unicode
 _SENSITIVE_RE = re.compile(
@@ -66,13 +62,10 @@ SYSTEM_PROMPT = """你是 SteelDigitize Pro 的数字助理，帮助钢材贸易
 - **用户已勾选单据 = 已确认**：右侧面板勾选的单据，用户就是让你操作的，查出后直接写入，不要再问"是否确认"
 - 只追加不覆盖
 - 写入后验证
-- **长期记忆（Hermes 式）**：主动记住值得长期保留的信息——
-  仅当用户明确说“记住 / 保存到记忆 / 以后默认”时才可以写入。不得把推测、一次性任务、模型判断写成长期事实。
-  用户偏好/习惯/客户信息 → scope=user；环境事实/工作流/经验教训 → scope=memory。
-  用 memory_add 添加，memory_replace 更新，memory_remove 删除（子串定位，必须唯一）。
-  记忆有字数预算，接近上限（>80%）时应先合并/删除旧条目再添加；
-  预算耗尽时工具会返回错误和当前条目，你需要在本轮内整合后再重试。
-  不要保存临时信息（一次性路径、大段数据），也不要保存系统里能直接查到的内容。
+- **Agent Memory（长期记忆）**：这是一个完整的长期记忆 Prompt，不再拆分成多个记忆区。
+  仅当用户明确说“记住 / 保存到记忆 / 以后默认”时才可以写入。不得把推测、一次性任务、模型判断写成长期记忆。
+  需要修改时，先读取完整 Memory，再把整段精炼后的新 Prompt 通过 memory_replace 原子替换；不要追加碎片、不要保留重复内容。
+  记忆有字数上限；不要保存一次性路径、大段数据或系统中能直接查到的内容。
 - **会话检索**：本会话/历史会话的全量消息都存在数据库里，但不会全部放进上下文。
   需要回忆更早说过什么时，用 session_search 按关键词检索真实消息，不要凭空编造。
 - **本会话摘要**：系统提示中的「本会话历史摘要」是较早对话的压缩记录，
@@ -207,53 +200,21 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "memory_list",
-            "description": "查看当前长期记忆全部条目及字数用量（MEMORY/USER 两个区）。保存或整理前先调用，避免重复与超预算。",
+            "description": "读取完整的 Agent 长期记忆 Prompt 及字数用量。修改前必须先调用。",
             "parameters": {"type": "object", "properties": {}}
         }
     },
     {
         "type": "function",
         "function": {
-            "name": "memory_add",
-            "description": "添加一条长期记忆。scope=memory 放工作环境/流程/经验教训，scope=user 放用户偏好/习惯/客户信息。内容要紧凑、信息密度高。",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "scope": {"type": "string", "enum": ["memory", "user"], "description": "记忆区：memory=工作笔记，user=用户画像"},
-                    "content": {"type": "string", "description": "紧凑的记忆条目，中文描述"}
-                },
-                "required": ["scope", "content"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
             "name": "memory_replace",
-            "description": "更新一条已有记忆（用户更正、信息变化）。用 old_text 唯一子串定位，content 为新内容。",
+            "description": "用完整的新 Prompt 原子替换 Agent 长期记忆。必须保留仍然有效的内容，不能只提交一条碎片。",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "scope": {"type": "string", "enum": ["memory", "user"]},
-                    "old_text": {"type": "string", "description": "能唯一定位该条记忆的短子串"},
-                    "content": {"type": "string", "description": "替换后的新内容"}
+                    "content": {"type": "string", "description": "完整、精炼后的 Agent 长期记忆 Prompt"}
                 },
-                "required": ["scope", "old_text", "content"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "memory_remove",
-            "description": "删除一条已过时/被否定的记忆。用 old_text 唯一子串定位。",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "scope": {"type": "string", "enum": ["memory", "user"]},
-                    "old_text": {"type": "string", "description": "能唯一定位该条记忆的短子串"}
-                },
-                "required": ["scope", "old_text"]
+                "required": ["content"]
             }
         }
     },
@@ -316,100 +277,35 @@ def _security_scan(content: str) -> str:
 
 
 def _memory_list_payload() -> dict:
-    """当前记忆全部条目 + 各区字数用量（Hermes 式：让模型自己评估预算）"""
+    """当前 Agent Memory 全文与字数用量。"""
+    memory = get_memory_content()
+    content = str(memory.get("content", ""))
     return {
         "success": True,
-        "usage": {s: {"chars": memory_usage(s), "limit": MEMORY_SCOPES[s]} for s in MEMORY_SCOPES},
-        "entries": get_facts(),
+        "content": content,
+        "usage": {"chars": len(content), "limit": MEMORY_LIMIT},
+        "updated_at": memory.get("updated_at", ""),
     }
 
 
-def _memory_add(args: dict) -> dict:
-    scope = str(args.get("scope", "memory")).strip()
+def _memory_replace(args: dict) -> dict:
+    """原子替换完整 Memory，不再按条目、键值或分区操作。"""
     content = str(args.get("content", "")).strip()
-    if scope not in MEMORY_SCOPES:
-        return {"success": False, "error": "scope 只能是 memory 或 user"}
     if not content:
         return {"success": False, "error": "content 不能为空"}
     sec = _security_scan(content)
     if sec:
         return {"success": False, "error": sec}
-    # 重复检查（同 scope 完全相同的条目自动跳过）
-    for f in get_facts(scope):
-        if f["fact_value"] == content:
-            return {"success": True, "status": "duplicate", "note": "内容已存在，未重复添加"}
-    # 预算检查（Hermes 式：超限不静默丢弃，返回错误 + 当前条目让模型自己腾空间）
-    used = memory_usage(scope)
-    if used + len(content) + 2 > MEMORY_SCOPES[scope]:
-        return {
-            "success": False,
-            "error": (
-                f"记忆 {scope} 已达 {used}/{MEMORY_SCOPES[scope]} 字符，"
-                f"本条 {len(content)} 字符将超限。请先用 memory_remove 删除过时条目，"
-                f"或用 memory_replace 合并重叠条目，再重试 memory_add。"
-            ),
-            "usage": {s: {"chars": memory_usage(s), "limit": MEMORY_SCOPES[s]} for s in MEMORY_SCOPES},
-            "current_entries": get_facts(scope),
-        }
-    key = f"m_{uuid.uuid4().hex[:10]}"
-    res = upsert_fact(key, content, scope)
-    return {"success": res["ok"], "status": res.get("status"), "scope": scope}
-
-
-def _memory_replace(args: dict) -> dict:
-    scope = str(args.get("scope", "memory")).strip()
-    old_text = str(args.get("old_text", "")).strip()
-    content = str(args.get("content", "")).strip()
-    if scope not in MEMORY_SCOPES:
-        return {"success": False, "error": "scope 只能是 memory 或 user"}
-    if not old_text or not content:
-        return {"success": False, "error": "old_text 和 content 不能为空"}
-    sec = _security_scan(content)
-    if sec:
-        return {"success": False, "error": sec}
-    # 用唯一子串定位目标条目，并按替换后的实际占用校验预算
-    matches = [f for f in get_facts(scope) if old_text in f.get("fact_value", "")]
-    if len(matches) == 0:
-        return {"success": False, "error": f"未找到包含「{old_text}」的记忆条目"}
-    if len(matches) > 1:
-        return {"success": False, "error": f"「{old_text}」匹配到 {len(matches)} 条记忆，请用更具体的内容定位"}
-    projected = memory_usage(scope) - len(matches[0]["fact_value"]) + len(content)
-    if projected > MEMORY_SCOPES[scope]:
-        return {
-            "success": False,
-            "error": f"替换后记忆 {scope} 将超限（约 {projected}/{MEMORY_SCOPES[scope]} 字符），请缩短内容或先清理旧条目",
-            "usage": {s: {"chars": memory_usage(s), "limit": MEMORY_SCOPES[s]} for s in MEMORY_SCOPES},
-        }
-    return replace_fact_by_substring(scope, old_text, content)
-
-
-def _memory_remove(args: dict) -> dict:
-    scope = str(args.get("scope", "memory")).strip()
-    old_text = str(args.get("old_text", "")).strip()
-    if scope not in MEMORY_SCOPES:
-        return {"success": False, "error": "scope 只能是 memory 或 user"}
-    if not old_text:
-        return {"success": False, "error": "old_text 不能为空"}
-    return remove_fact_by_substring(scope, old_text)
+    if len(content) > MEMORY_LIMIT:
+        return {"success": False, "error": f"长期记忆不能超过 {MEMORY_LIMIT} 个字符"}
+    saved = save_memory_content(content)
+    return {"success": True, "status": "updated", "content": saved.get("content", ""), "usage": {"chars": len(content), "limit": MEMORY_LIMIT}}
 
 
 def _memory_block() -> str:
-    """冻结记忆快照：注入系统提示的长期记忆块（含各区用量百分比）"""
-    lines = []
-    for scope, label in (("memory", "MEMORY（工作笔记）"), ("user", "USER（用户画像）")):
-        entries = get_facts(scope)
-        used = memory_usage(scope)
-        limit = MEMORY_SCOPES[scope]
-        pct = int(used * 100 / limit)
-        lines.append("══════════════════════════════════════════════")
-        lines.append(f"长期记忆 {label} [{pct}% — {used}/{limit} 字符]")
-        lines.append("══════════════════════════════════════════════")
-        if entries:
-            lines.append("\n§\n".join(e["fact_value"] for e in entries))
-        else:
-            lines.append("（空）")
-        lines.append("")
-    return "\n".join(lines).strip()
+    """冻结 Memory 快照：每轮只注入一段长期记忆 Prompt。"""
+    content = str(get_memory_content().get("content", "")).strip()
+    return "## Agent Memory（长期记忆）\n" + (content or "（空）")
 
 
 def execute_tool(name: str, args: dict, current_session_id: str = "") -> dict:
@@ -497,12 +393,8 @@ def execute_tool(name: str, args: dict, current_session_id: str = "") -> dict:
             return verify_batch(**args)
         elif name == "memory_list":
             return _memory_list_payload()
-        elif name == "memory_add":
-            return _memory_add(args)
         elif name == "memory_replace":
             return _memory_replace(args)
-        elif name == "memory_remove":
-            return _memory_remove(args)
         elif name == "session_search":
             q = str(args.get("query", "")).strip()
             sid = str(args.get("session_id", "") or "").strip()
@@ -689,12 +581,8 @@ def _tool_result_summary(name: str, result: dict) -> str:
         return "核对无误"
     if name == "memory_list":
         return "已读取记忆条目"
-    if name == "memory_add":
-        return "已保存到长期记忆"
     if name == "memory_replace":
-        return "已更新长期记忆"
-    if name == "memory_remove":
-        return "已删除记忆条目"
+        return "已更新 Agent 长期记忆"
     if name == "session_search":
         return f"检索到 {result.get('count', 0)} 条相关记录"
     return "执行完成"

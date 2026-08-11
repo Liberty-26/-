@@ -133,6 +133,24 @@ def init_db():
            WHERE id NOT IN (SELECT MAX(id) FROM assistant_facts GROUP BY fact_key)"""
     )
     cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_facts_key ON assistant_facts(fact_key)")
+    # Agent 长期记忆：单一 Prompt 文档。assistant_facts 仅作为旧版本迁移来源保留。
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS assistant_memory (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            content TEXT NOT NULL DEFAULT '',
+            updated_at TEXT DEFAULT (datetime('now','localtime'))
+        )
+    """)
+    memory_row = cursor.execute("SELECT content FROM assistant_memory WHERE id = 1").fetchone()
+    if memory_row is None:
+        legacy_rows = cursor.execute(
+            "SELECT fact_value FROM assistant_facts WHERE TRIM(fact_value) != '' ORDER BY id"
+        ).fetchall()
+        legacy_content = "\n".join(str(row[0]).strip() for row in legacy_rows if str(row[0]).strip())
+        cursor.execute(
+            "INSERT INTO assistant_memory (id, content) VALUES (1, ?)",
+            [legacy_content],
+        )
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS correction_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -565,6 +583,34 @@ def get_facts(scope: str = ""):
         ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def get_memory_content() -> dict:
+    """读取唯一的 Agent 长期记忆 Prompt。"""
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT content, updated_at FROM assistant_memory WHERE id = 1"
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else {"content": "", "updated_at": ""}
+
+
+def save_memory_content(content: str) -> dict:
+    """原子替换 Agent 长期记忆 Prompt。"""
+    conn = get_conn()
+    try:
+        conn.execute(
+            """INSERT INTO assistant_memory (id, content, updated_at) VALUES (1, ?, datetime('now','localtime'))
+               ON CONFLICT(id) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at""",
+            [content.strip()],
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT content, updated_at FROM assistant_memory WHERE id = 1"
+        ).fetchone()
+        return dict(row)
+    finally:
+        conn.close()
 
 
 def upsert_fact(fact_key: str, fact_value: str, scope: str = "memory"):

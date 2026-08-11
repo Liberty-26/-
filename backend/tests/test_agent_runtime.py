@@ -35,12 +35,12 @@ class AgentRunStateTest(unittest.TestCase):
 
     def test_memory_requires_explicit_request(self):
         state = AgentRunState("我喜欢按日期排序")
-        ok, reason, _ = state.authorize("memory_add", {"scope": "user", "content": "偏好按日期排序"})
+        ok, reason, _ = state.authorize("memory_replace", {"content": "偏好按日期排序"})
         self.assertFalse(ok)
         self.assertIn("长期记忆", reason)
 
         explicit = AgentRunState("请记住：以后默认按日期排序")
-        ok, reason, _ = explicit.authorize("memory_add", {"scope": "user", "content": "默认按日期排序"})
+        ok, reason, _ = explicit.authorize("memory_replace", {"content": "默认按日期排序"})
         self.assertTrue(ok, reason)
 
     def test_duplicate_mutation_is_blocked(self):

@@ -3,12 +3,11 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useToast } from '../hooks/useToast';
 import {
   getSettings, saveSettings, getScanScenes, testScanConnection,
-  getFacts, addFact, deleteFact, updateFact, pickDirectory,
+  getMemory, saveMemory, pickDirectory,
   exportBackup, getBackups,
 } from '../utils/api';
-import type { AssistantFact } from '../types';
 import {
-  CheckCircle2, FolderOpen, Database, RefreshCw, ChevronDown, Pencil, Trash2,
+  CheckCircle2, FolderOpen, Database, RefreshCw, ChevronDown,
 } from 'lucide-react';
 
 const S = { aKey: 'steel_agent_key', aBase: 'steel_agent_base', aModel: 'steel_agent_model', sKey: 'steel_scan_key' };
@@ -36,16 +35,12 @@ export default function SettingsPage() {
   const [engineEditing, setEngineEditing] = useState(false);
   const [agentEditing, setAgentEditing] = useState(false);
 
-  // 助手记忆：文件存放位置 + 事实层
+  // 文件与 Agent Memory
   const [workDir, setWorkDir] = useState('');
-  const [facts, setFacts] = useState<AssistantFact[]>([]);
-  const [factKey, setFactKey] = useState('');
-  const [factVal, setFactVal] = useState('');
-  const [editingFactId, setEditingFactId] = useState<number | null>(null);
-  const [editFactKey, setEditFactKey] = useState('');
-  const [editFactVal, setEditFactVal] = useState('');
-  const [factScope, setFactScope] = useState<'memory' | 'user'>('memory');
-  const [editFactScope, setEditFactScope] = useState<'memory' | 'user'>('memory');
+  const [memoryContent, setMemoryContent] = useState('');
+  const [memoryChars, setMemoryChars] = useState(0);
+  const [memoryLimit, setMemoryLimit] = useState(6000);
+  const [memorySaving, setMemorySaving] = useState(false);
 
   // 关于：版本 / 备份 / 更新
   const [appVersion, setAppVersion] = useState('');
@@ -164,8 +159,14 @@ export default function SettingsPage() {
   }, []);
 
   const loadMemory = useCallback(() => {
-    getFacts().then((r) => { if (r.success && r.data) setFacts(r.data.facts); });
-  }, []);
+    getMemory().then((r) => {
+      if (r.success && r.data) {
+        setMemoryContent(r.data.content || '');
+        setMemoryChars(r.data.chars || 0);
+        setMemoryLimit(r.data.limit || 6000);
+      } else showToast(r.error || '读取 Agent 记忆失败', 'error');
+    });
+  }, [showToast]);
 
   useEffect(() => { if (panel === 'memory') loadMemory(); }, [panel, loadMemory]);
 
@@ -243,7 +244,7 @@ export default function SettingsPage() {
     } else showToast(res.error || '刷新失败', 'error');
   };
 
-  /* ---------- 助手记忆 ---------- */
+  /* ---------- 文件与 Agent Memory ---------- */
   const handlePickDir = async () => {
     const res = await pickDirectory();
     if (res.success && res.data?.path) {
@@ -253,43 +254,15 @@ export default function SettingsPage() {
     } else showToast(res.error || '选择失败', 'error');
   };
 
-  const handleAddFact = async () => {
-    if (!factKey.trim() || !factVal.trim()) { showToast('请填写记忆键与记忆值', 'warning'); return; }
-    const res = await addFact(factKey.trim(), factVal.trim(), factScope);
-    if (res.success) {
-      showToast('已记住', 'success');
-      setFactKey(''); setFactVal('');
-      loadMemory();
-    } else showToast(res.error || '保存失败', 'error');
-  };
-
-  const startFactEdit = (f: AssistantFact) => {
-    setEditingFactId(f.id);
-    setEditFactKey(f.fact_key);
-    setEditFactVal(f.fact_value);
-    setEditFactScope(f.scope || 'memory');
-  };
-
-  const cancelFactEdit = () => {
-    setEditingFactId(null);
-    setEditFactKey(''); setEditFactVal(''); setEditFactScope('memory');
-  };
-
-  const saveFactEdit = async () => {
-    if (editingFactId === null) return;
-    if (!editFactKey.trim()) { showToast('记忆键不能为空', 'warning'); return; }
-    const res = await updateFact(editingFactId, editFactKey.trim(), editFactVal.trim(), editFactScope);
-    if (res.success) {
-      showToast('记忆已更新', 'success');
-      cancelFactEdit();
-      loadMemory();
-    } else showToast(res.error || '保存失败', 'error');
-  };
-
-  const removeFact = async (id: number) => {
-    const res = await deleteFact(id);
-    if (res.success) { showToast('已删除', 'success'); loadMemory(); }
-    else showToast(res.error || '删除失败', 'error');
+  const handleSaveMemory = async () => {
+    setMemorySaving(true);
+    const res = await saveMemory(memoryContent);
+    setMemorySaving(false);
+    if (res.success && res.data) {
+      setMemoryContent(res.data.content || '');
+      setMemoryChars(res.data.chars || 0);
+      showToast('Agent 记忆已保存', 'success');
+    } else showToast(res.error || '保存 Agent 记忆失败', 'error');
   };
 
   const inputRow = (label: string, value: string, set: (v: string) => void, placeholder = '', type = 'text', readOnly = false) => (
@@ -390,61 +363,33 @@ export default function SettingsPage() {
         </>
       ),
     },
-    memory: {
-      title: 'Agent 记忆层',
+    files: {
+      title: '文件与表格',
       body: (
-        <>
-          <div className="set-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <h3 style={{ margin: 0 }}>文件存放位置</h3>
-              <span style={{ flex: 1 }} />
-              <button className="btn sm ghost" onClick={handlePickDir}><FolderOpen size={14} />选择文件夹…</button>
-            </div>
-            <div className="desc">工作助手写入表格的位置，修改后立即生效</div>
-            <div className="set-row">
-              <span className="k">位置</span>
-              <span className="v mono">{workDir || '未设置（首次生成对账单时选择）'}</span>
-            </div>
-            <div className="set-row">
-              <span className="k">写入文件</span>
-              <span className="v">生成时从此文件夹选择真实 Excel，或在此目录新建 · 只追加不覆盖 · 金额由代码计算</span>
-            </div>
+        <div className="set-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h3 style={{ margin: 0 }}>表格工作目录</h3>
+            <span style={{ flex: 1 }} />
+            <button className="btn sm ghost" onClick={handlePickDir}><FolderOpen size={14} />选择文件夹…</button>
           </div>
-          <div className="set-card">
-            <div className="memory-headline"><div><h3>Agent 记忆层</h3><div className="desc">这里就是助手跨会话使用的长期记忆，不是普通备注。</div></div><span className="memory-badge">本机持久化</span></div>
-            <div className="memory-explain"><b>记忆如何参与工作：</b>助手每次执行前会读取这里的事实；会话记录属于会话层，人工修正属于校正层，三者用途不同。</div>
-            {facts.length === 0 && <div className="hint" style={{ fontSize: 12, color: 'var(--text-3)' }}>还没有记忆，写一条试试</div>}
-            {facts.map((f) => (
-              editingFactId === f.id ? (
-                <div key={f.id} className="set-row memory-row">
-                  <select value={editFactScope} onChange={(e) => setEditFactScope(e.target.value as 'memory' | 'user')} aria-label="记忆类型">
-                    <option value="memory">工作事实</option><option value="user">用户偏好</option>
-                  </select>
-                  <input value={editFactKey} onChange={(e) => setEditFactKey(e.target.value)} style={{ flex: 1, minWidth: 100 }} placeholder="记忆键" />
-                  <input value={editFactVal} onChange={(e) => setEditFactVal(e.target.value)} style={{ flex: 1, minWidth: 120 }} placeholder="记忆值" />
-                  <button className="btn sm" onClick={saveFactEdit}>保存</button>
-                  <button className="act" onClick={cancelFactEdit}>取消</button>
-                </div>
-              ) : (
-                <div key={f.id} className="set-row memory-row">
-                  <span className="k">{f.fact_key}</span>
-                  <span className="v">{f.fact_value}</span>
-                  <span className={`memory-scope ${f.scope || 'memory'}`}>{f.scope === 'user' ? '用户偏好' : '工作事实'}</span>
-                  <button className="act" onClick={() => startFactEdit(f)}><Pencil size={13} style={{ verticalAlign: '-2px' }} />编辑</button>
-                  <button className="act del" onClick={() => removeFact(f.id)}><Trash2 size={13} style={{ verticalAlign: '-2px' }} />删除</button>
-                </div>
-              )
-            ))}
-            <div className="memory-add-row">
-              <select value={factScope} onChange={(e) => setFactScope(e.target.value as 'memory' | 'user')} aria-label="记忆类型">
-                <option value="memory">工作事实</option><option value="user">用户偏好</option>
-              </select>
-              <input placeholder="记忆键，如：默认sheet" value={factKey} onChange={(e) => setFactKey(e.target.value)} style={{ flex: 1 }} />
-              <input placeholder="记忆值，如：水电" value={factVal} onChange={(e) => setFactVal(e.target.value)} style={{ flex: 1 }} />
-              <button className="btn sm" onClick={handleAddFact}>写入记忆</button>
-            </div>
+          <div className="desc">生成表格时只读取和写入这个目录中的真实 Excel 文件</div>
+          <div className="set-row"><span className="k">位置</span><span className="v mono">{workDir || '未设置（首次生成对账单时选择）'}</span></div>
+          <div className="set-row"><span className="k">写入规则</span><span className="v">只追加不覆盖 · 金额由代码计算 · 写入后自动核验</span></div>
+        </div>
+      ),
+    },
+    memory: {
+      title: 'Agent 记忆',
+      body: (
+        <div className="set-card memory-editor-card">
+          <div className="memory-headline">
+            <div><h3>长期记忆 Memory</h3><div className="desc">这段内容会在每次任务开始前提供给 Agent。直接写规则、偏好和长期经验即可。</div></div>
+            <span className="memory-badge">本机持久化</span>
           </div>
-        </>
+          <div className="memory-explain">只保存长期有效的内容，不要写一次性任务、临时文件路径、密钥或大段业务数据。你可以把它当作给 Agent 的长期说明。</div>
+          <textarea className="memory-editor" value={memoryContent} onChange={(e) => { setMemoryContent(e.target.value); setMemoryChars(e.target.value.length); }} placeholder="例如：\n这是一个建材厂商的单据数字化工作台。\n生成表格时，金额必须由程序计算并自动核验。\n用户希望看到详细的查询、操作和验证过程。" spellCheck={false} />
+          <div className="memory-editor-foot"><span>{memoryChars.toLocaleString('zh-CN')} / {memoryLimit.toLocaleString('zh-CN')} 字符</span><button className="btn" onClick={handleSaveMemory} disabled={memorySaving}>{memorySaving ? '保存中…' : '保存 Agent 记忆'}</button></div>
+        </div>
       ),
     },
     about: {
@@ -455,7 +400,7 @@ export default function SettingsPage() {
             <h3>数字化工作台</h3>
             <div className="set-row"><span className="k">版本</span><span className="v">{appVersion ? `v${appVersion}` : '桌面版（网页版无版本号）'}</span></div>
             <div className="set-row"><span className="k">数据</span><span className="v">全部在本机 SQLite，不上传云端</span></div>
-            <div className="set-row"><span className="k">助手</span><span className="v">自研 harness · 技能文件化 · 三层记忆</span></div>
+            <div className="set-row"><span className="k">助手</span><span className="v">自研 harness · 技能文件化 · Agent Memory</span></div>
           </div>
 
           <div className="set-card">
@@ -542,7 +487,8 @@ export default function SettingsPage() {
           <div className="page-title">设置</div>
           <div className="page-sub">
             {panel === 'engine' && '识别引擎（扫描王）与工作助手（大模型）的真实 API 配置'}
-            {panel === 'memory' && 'Agent 记忆层与表格工作目录，全部存在本机'}
+            {panel === 'files' && '表格工作目录与写入规则，全部存在本机'}
+            {panel === 'memory' && '给 Agent 的长期说明，全部存在本机'}
             {panel === 'about' && '版本、数据备份与软件更新'}
           </div>
         </div>

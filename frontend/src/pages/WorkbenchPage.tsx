@@ -35,9 +35,7 @@ const TOOL_LABELS: Record<string, string> = {
   spreadsheet_write_batch: '写入对账单',
   spreadsheet_verify: '核对写入结果',
   memory_list: '读取长期记忆',
-  memory_add: '保存长期记忆',
   memory_replace: '更新长期记忆',
-  memory_remove: '删除长期记忆',
   session_search: '检索历史对话',
 };
 

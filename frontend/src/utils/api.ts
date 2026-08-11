@@ -1,7 +1,7 @@
 // SteelDigitize Pro — API 调用封装
 import type {
   ApiResponse, Receipt, PaginatedData, HistoryQuery, MonthStat,
-  MaterialCandidate, CorrectionRecord, AssistantFact, AliasSuggestion,
+  MaterialCandidate, CorrectionRecord, AliasSuggestion,
   TrainingAggregate,
 } from '../types';
 
@@ -358,23 +358,14 @@ export async function getMonitor() {
   return request<{ total_receipts: number; today_count: number; exported: number; pending: number; verified: number; total_tokens: number; today_tokens: number; uptime_seconds: number }>('GET', '/agent/monitor');
 }
 
-// ---- 记忆（事实层 + 校正层） ----
+// ---- Agent 长期记忆（单一 Prompt） ----
 
-export async function getFacts() {
-  return request<{ facts: AssistantFact[] }>('GET', '/memory/facts');
+export async function getMemory() {
+  return request<{ content: string; chars: number; limit: number; updated_at: string }>('GET', '/memory');
 }
 
-export async function addFact(fact_key: string, fact_value: string, scope: 'memory' | 'user' = 'memory') {
-  return request<{ id: number }>('POST', '/memory/facts', { fact_key, fact_value, scope });
-}
-
-export async function deleteFact(id: number) {
-  return request<void>('DELETE', `/memory/facts/${id}`);
-}
-
-/** 编辑已有事实 */
-export async function updateFact(id: number, fact_key: string, fact_value: string, scope: 'memory' | 'user' = 'memory') {
-  return request<void>('PUT', `/memory/facts/${id}`, { fact_key, fact_value, scope });
+export async function saveMemory(content: string) {
+  return request<{ content: string; chars: number; limit: number; updated_at: string }>('PUT', '/memory', { content });
 }
 
 export async function getCorrections(limit = 200) {

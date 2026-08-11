@@ -116,7 +116,7 @@ export interface AliasSuggestion {
   created_at: string;
 }
 
-/** 校正记录（记忆·校正层） */
+/** 识别纠错记录 */
 export interface CorrectionRecord {
   id: number;
   receipt_no: string;
@@ -124,15 +124,6 @@ export interface CorrectionRecord {
   before_val: string;
   after_val: string;
   created_at: string;
-}
-
-/** 助手事实（记忆·事实层） */
-export interface AssistantFact {
-  id: number;
-  fact_key: string;
-  fact_value: string;
-  scope?: 'memory' | 'user';
-  created_at?: string;
 }
 
 /** 训练数据聚合（数据回流）：字段错误统计 + 错误名→修正结果配对 */

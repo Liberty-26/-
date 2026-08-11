@@ -20,9 +20,7 @@ TOOL_RISK: dict[str, str] = {
     "spreadsheet_create_new": "write",
     "spreadsheet_write_batch": "write",
     "spreadsheet_export_receipts": "write",
-    "memory_add": "memory",
     "memory_replace": "memory",
-    "memory_remove": "memory",
 }
 
 WRITE_INTENT_RE = re.compile(
@@ -66,7 +64,7 @@ class AgentRunState:
 
     @property
     def memory_authorized(self) -> bool:
-        # 事实记忆宁可少记，也不能把模型推测写成用户偏好或工作规则。
+        # 长期记忆宁可少记，也不能把模型推测写成用户要求。
         return bool(MEMORY_INTENT_RE.search(self.user_message.strip()))
 
     def authorize(self, name: str, args: Any) -> tuple[bool, str, dict[str, Any]]:
@@ -131,7 +129,7 @@ class AgentRunState:
             if len(clean["receipt_ids"]) > 50:
                 return False, "单次最多导出 50 张单据", {}
 
-        if name in {"spreadsheet_create_new", "memory_add", "memory_replace", "memory_remove"} and not (
+        if name in {"spreadsheet_create_new", "memory_replace"} and not (
             self.write_authorized if name == "spreadsheet_create_new" else self.memory_authorized
         ):
             action = "新建表格" if name == "spreadsheet_create_new" else "写入长期记忆"

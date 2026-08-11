@@ -1,11 +1,17 @@
-"""
-记忆接口：事实层（assistant_facts）+ 校正层（correction_log）
-对应产品三层记忆设计：会话层在 chat_messages（已有）；本模块管理事实与校正。
-"""
+"""Agent 长期记忆与识别纠错记录接口。"""
+import re
 from fastapi import APIRouter, HTTPException
-from database import get_conn, upsert_fact, delete_fact, get_facts, memory_usage
+from database import get_conn
 
 router = APIRouter(prefix="/api/memory", tags=["memory"])
+
+MEMORY_LIMIT = 6000
+_SENSITIVE_RE = re.compile(
+    r"(ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|"
+    r"-----BEGIN [A-Z ]*PRIVATE KEY-----|password\s*[=:]\s*\S+@|"
+    r"SCAN_WEBSERVICE_KEY|VISION_API_KEY|AGENT_API_KEY)", re.I
+)
+_INVISIBLE_RE = re.compile(r"[\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]")
 
 
 def _ensure_tables():
@@ -17,6 +23,13 @@ def _ensure_tables():
                 fact_key TEXT NOT NULL,
                 fact_value TEXT NOT NULL DEFAULT '',
                 created_at TEXT DEFAULT (datetime('now','localtime'))
+            )"""
+        )
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS assistant_memory (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                content TEXT NOT NULL DEFAULT '',
+                updated_at TEXT DEFAULT (datetime('now','localtime'))
             )"""
         )
         conn.execute(
@@ -44,74 +57,48 @@ def _ensure_tables():
         conn.close()
 
 
-@router.get("/facts")
-async def list_facts(scope: str = ""):
+@router.get("")
+async def get_memory():
+    """读取唯一的 Agent 长期记忆 Prompt。"""
     _ensure_tables()
-    # 迁移：删除旧版种子默认事实（用户明确不要保留「默认写入目标/写入确认」）
+    conn = get_conn()
+    try:
+        row = conn.execute("SELECT content, updated_at FROM assistant_memory WHERE id = 1").fetchone()
+        content = str(row["content"] if row else "")
+        return {
+            "success": True,
+            "data": {
+                "content": content,
+                "chars": len(content),
+                "limit": MEMORY_LIMIT,
+                "updated_at": str(row["updated_at"] if row else ""),
+            },
+        }
+    finally:
+        conn.close()
+
+
+@router.put("")
+async def save_memory(req: dict):
+    """原子替换完整的 Agent 长期记忆 Prompt。"""
+    _ensure_tables()
+    content = str(req.get("content") or "").strip()
+    if len(content) > MEMORY_LIMIT:
+        raise HTTPException(status_code=400, detail=f"长期记忆不能超过 {MEMORY_LIMIT} 个字符")
+    if _SENSITIVE_RE.search(content):
+        raise HTTPException(status_code=400, detail="内容包含疑似密钥或凭据，不能保存到长期记忆")
+    if _INVISIBLE_RE.search(content):
+        raise HTTPException(status_code=400, detail="内容包含不可见字符，请清理后再保存")
     conn = get_conn()
     try:
         conn.execute(
-            "DELETE FROM assistant_facts WHERE fact_key IN ('默认写入目标', '写入确认')"
+            """INSERT INTO assistant_memory (id, content, updated_at) VALUES (1, ?, datetime('now','localtime'))
+               ON CONFLICT(id) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at""",
+            [content],
         )
         conn.commit()
-    finally:
-        conn.close()
-    facts = get_facts(scope.strip())
-    usage = {
-        "memory": memory_usage("memory"),
-        "user": memory_usage("user"),
-        "limits": {"memory": 2200, "user": 1375},
-    }
-    return {"success": True, "data": {"facts": facts, "usage": usage}}
-
-
-@router.post("/facts", status_code=201)
-async def add_fact(req: dict):
-    _ensure_tables()
-    fact_key = (req.get("fact_key") or "").strip()
-    fact_value = (req.get("fact_value") or "").strip()
-    scope = (req.get("scope") or "memory").strip()
-    if not fact_key:
-        raise HTTPException(status_code=400, detail="fact_key 不能为空")
-    if scope not in ("memory", "user"):
-        raise HTTPException(status_code=400, detail="scope 只能是 memory 或 user")
-    res = upsert_fact(fact_key, fact_value, scope)
-    return {"success": res["ok"], "data": {"fact_key": fact_key, "fact_value": fact_value, "scope": scope, "status": res.get("status")}}
-
-
-@router.delete("/facts/{fact_id}")
-async def remove_fact(fact_id: int):
-    _ensure_tables()
-    conn = get_conn()
-    try:
-        conn.execute("DELETE FROM assistant_facts WHERE id = ?", [fact_id])
-        conn.commit()
-        return {"success": True}
-    finally:
-        conn.close()
-
-
-@router.put("/facts/{fact_id}")
-async def update_fact(fact_id: int, req: dict):
-    """编辑已有事实：key / value 均可修改"""
-    _ensure_tables()
-    fact_key = (req.get("fact_key") or "").strip()
-    fact_value = (req.get("fact_value") or "").strip()
-    scope = (req.get("scope") or "memory").strip()
-    if not fact_key:
-        raise HTTPException(status_code=400, detail="事实键不能为空")
-    if scope not in ("memory", "user"):
-        raise HTTPException(status_code=400, detail="scope 只能是 memory 或 user")
-    conn = get_conn()
-    try:
-        cur = conn.execute(
-            "UPDATE assistant_facts SET fact_key = ?, fact_value = ?, scope = ? WHERE id = ?",
-            [fact_key, fact_value, scope, fact_id],
-        )
-        conn.commit()
-        if cur.rowcount == 0:
-            raise HTTPException(status_code=404, detail="记录不存在")
-        return {"success": True}
+        row = conn.execute("SELECT content, updated_at FROM assistant_memory WHERE id = 1").fetchone()
+        return {"success": True, "data": {"content": row["content"], "chars": len(row["content"]), "limit": MEMORY_LIMIT, "updated_at": row["updated_at"]}}
     finally:
         conn.close()
 
