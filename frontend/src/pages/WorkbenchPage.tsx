@@ -5,7 +5,7 @@ import { useToast } from '../hooks/useToast';
 import { useNav } from '../contexts/NavContext';
 import { useQueue } from '../contexts/QueueContext';
 import SkillModal from '../components/SkillModal';
-import { Table2, CalendarRange, Boxes, Upload, ArrowUp, Square } from 'lucide-react';
+import { Table2, CalendarRange, Boxes, Upload, ArrowUp, ArrowUpRight, Sparkles, Square } from 'lucide-react';
 import {
   saveReceipt,
 } from '../utils/api';
@@ -512,6 +512,10 @@ export default function WorkbenchPage() {
     </div>
   );
 
+  const sendQuickPrompt = (prompt: string) => {
+    if (!isLoading) void sendMessage(prompt, []);
+  };
+
   const statusPill: Record<FlowItem['status'], { cls: string; label: string }> = {
     待识别: { cls: 'gray', label: '待识别' },
     排队中: { cls: 'gray', label: '排队中' },
@@ -524,54 +528,80 @@ export default function WorkbenchPage() {
   return (
     <div className="wb">
       <div className="wb-center">
-        <div className="wb-title">工作台</div>
+        <header className="wb-header">
+          <div>
+            <div className="wb-kicker">STEELDIGITIZE / WORKSPACE</div>
+            <h1 className="wb-title">工作台</h1>
+            <p className="wb-sub">从识别到对账，所有需要你确认的事项都在这里。</p>
+          </div>
+          <div className="wb-status" aria-label="助手状态：在线">
+            <span className="status-pulse"><i /></span>
+            <div>
+              <span className="status-label">助手在线</span>
+              <span className="status-detail">随时可以开始处理单据</span>
+            </div>
+          </div>
+        </header>
 
         <div className="ai-strip">
-          <span className="lab">AI 工作台</span>
-          <span>识别完成自动提取单号 / 日期 · 品名对齐 · 金额由代码计算</span>
-          <span className="ac">{queue.length > 0 ? `· ${queue.length} 张待你核对` : '· 当前无待核对单据'}</span>
+          <span className="ai-strip-mark"><Sparkles size={14} strokeWidth={2} /></span>
+          <span className="ai-strip-copy"><b>AI 已准备好</b><span>提取单号、日期，自动对齐品名；金额由系统计算。</span></span>
+          <span className="ai-strip-state">
+            {queue.length > 0 ? <><b>{queue.length}</b> 张待核对</> : '当前无待核对单据'}
+          </span>
         </div>
 
-        <div className="skills">
-          <button className="skill-card" onClick={() => setSkillOpen(true)}>
-            <div className="skill-ico"><Table2 size={19} strokeWidth={2} /></div>
+        <section className="skills-section" aria-labelledby="workflows-title">
+          <div className="section-head">
             <div>
-              <div className="skill-name">表格生成</div>
-              <div className="skill-desc">把选中的单据写入对账单 Excel</div>
+              <div className="section-kicker">WORKFLOWS</div>
+              <h2 id="workflows-title">快捷能力</h2>
             </div>
-          </button>
-          <div className="skill-card disabled">
-            <div className="skill-ico"><CalendarRange size={19} strokeWidth={2} /></div>
-            <div>
-              <div className="skill-name">月度汇总</div>
-              <div className="skill-desc">按月汇总入库单据</div>
-              <span className="tag-dev">开发中</span>
+            <span>从一个明确动作开始</span>
+          </div>
+          <div className="skill-row">
+            <button className="skill-card skill-card-primary" onClick={() => setSkillOpen(true)}>
+              <div className="skill-ico"><Table2 size={20} strokeWidth={2} /></div>
+              <div className="skill-copy">
+                <span className="skill-eyebrow">已可使用</span>
+                <div className="skill-name">表格生成</div>
+                <div className="skill-desc">把选中的单据写入对账单 Excel</div>
+              </div>
+              <span className="skill-arrow"><ArrowUpRight size={17} strokeWidth={2} /></span>
+            </button>
+            <div className="skill-roadmap" aria-label="能力路线">
+              <div className="roadmap-label">正在扩展</div>
+              <div className="roadmap-item">
+                <span className="roadmap-icon"><CalendarRange size={16} strokeWidth={1.9} /></span>
+                <span>月度汇总</span>
+                <em>计划中</em>
+              </div>
+              <div className="roadmap-item">
+                <span className="roadmap-icon"><Boxes size={16} strokeWidth={1.9} /></span>
+                <span>品名建议</span>
+                <em>计划中</em>
+              </div>
             </div>
           </div>
-          <div className="skill-card disabled">
-            <div className="skill-ico"><Boxes size={19} strokeWidth={2} /></div>
-            <div>
-              <div className="skill-name">品名建议</div>
-              <div className="skill-desc">新品名收录与别名建议</div>
-              <span className="tag-dev">开发中</span>
-            </div>
-          </div>
-        </div>
+        </section>
 
         <div className="chat">
           <div className="chat-head">
-            与助手对话
+            <span className="chat-agent-mark"><Sparkles size={15} strokeWidth={2} /></span>
+            <span className="chat-agent-copy"><b>工作助手</b><span>{currentSessionId ? '当前会话持续保留上下文' : '首次提问会自动新建会话'}</span></span>
             <span className="live"><span className="dot" />助手在线</span>
           </div>
           <div className="chat-body" ref={chatBodyRef} onScroll={handleChatScroll}>
-            {messages.length === 0 && sessions.length === 0 && (
+            {messages.length === 0 && (
               <div className="chat-empty">
-                <div className="ce-title">请新建会话</div>
-                <div className="ce-sub">说点什么吧——我会自动为你开一个新对话，也可以先点右侧「新对话」。</div>
+                <div className="chat-empty-mark"><Sparkles size={20} strokeWidth={1.8} /></div>
+                <div className="ce-title">从一个动作开始</div>
+                <div className="ce-sub">直接说出你要处理的事；我会展示查询、写入和核对的全过程。</div>
+                <div className="quick-prompts">
+                  <button disabled={isLoading} onClick={() => sendQuickPrompt('帮我看看最近待审核的单据')}>查看待审核单据</button>
+                  <button disabled={isLoading} onClick={() => sendQuickPrompt('我想把已审核的单据写入对账单')}>生成对账单</button>
+                </div>
               </div>
-            )}
-            {messages.length === 0 && sessions.length > 0 && (
-              <div className="msg assistant">你好，我是你的本地工作助手。可以让我把单据写入对账单，也可以点上方「表格生成」技能，选好单据直接执行。</div>
             )}
             {messages.map(renderMsg)}
             {live && (
@@ -658,8 +688,9 @@ export default function WorkbenchPage() {
                 onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
                 onDrop={(e) => { e.preventDefault(); if (!uploading) handleSelectFiles(e.dataTransfer.files); }}
               >
-                <span className="up-ico"><Upload size={18} strokeWidth={2} /></span>
-                <span className="up-tip">{uploading ? '识别处理中…' : '上传单据（可多选）'}</span>
+                <span className="up-ico"><Upload size={19} strokeWidth={2} /></span>
+                <span className="up-kicker">RECEIPT INBOX</span>
+                <span className="up-tip">{uploading ? '识别处理中…' : '上传单据'}</span>
                 <div className="up-sub">点击或拖拽上传，识别在后台排队，完成后进审核区</div>
               </button>
               {flowItems.some((it) => it.status === '待识别') && (
@@ -672,8 +703,9 @@ export default function WorkbenchPage() {
                 </button>
               )}
               {flowItems.length === 0 && (
-                <div style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: 13, padding: '18px 0' }}>
-                  今天还没有上传，拍两张试试
+                <div className="flow-empty">
+                  <span>今天还没有上传</span>
+                  <small>拍照或选择多张单据后，在这里查看处理进度。</small>
                 </div>
               )}
               {flowItems.map((it) => {

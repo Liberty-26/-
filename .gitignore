@@ -12,6 +12,7 @@ backend/backups/
 # 依赖与构建产物
 node_modules/
 dist/
+.agents/
 __pycache__/
 *.pyc
 .venv/
