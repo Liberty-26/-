@@ -35,13 +35,14 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
   const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
   const [editValue, setEditValue] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-  const [multiSelect, setMultiSelect] = useState(false);
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
   const [anchorCol, setAnchorCol] = useState<string | null>(null);
   const [batchValue, setBatchValue] = useState('');
-  const [selectAnchor, setSelectAnchor] = useState<{ row: number; col: string } | null>(null);
-  const [selectCurrent, setSelectCurrent] = useState<{ row: number; col: string } | null>(null);
-  const selMovedRef = useRef(false);
+  // 原生交互：单击 = 编辑，拖拽 = 框选（无需"多选"开关）
+  const dragStartRef = useRef<{ row: number; col: string; x: number; y: number } | null>(null);
+  const selectingRef = useRef(false);
+  const selAnchorRef = useRef<{ row: number; col: string } | null>(null);
+  const selCurrentRef = useRef<{ row: number; col: string } | null>(null);
   // 框选可视矩形（跟随鼠标展开）
   const [selRect, setSelRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -51,15 +52,15 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
   const [committedRects, setCommittedRects] = useState<{ left: number; top: number; width: number; height: number }[]>([]);
 
   useEffect(() => {
-    setMultiSelect(false);
     setSelectedCells(new Set());
     setAnchorCol(null);
     setBatchValue('');
-    setSelectAnchor(null);
-    setSelectCurrent(null);
     setSelRect(null);
     setCommittedRects([]);
-    selMovedRef.current = false;
+    dragStartRef.current = null;
+    selectingRef.current = false;
+    selAnchorRef.current = null;
+    selCurrentRef.current = null;
   }, [resetSignal]);
 
   const totalAmount = useMemo(
@@ -110,16 +111,19 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
     if (!wrap || selectedCells.size === 0) { setCommittedRects([]); return; }
     const rects: { left: number; top: number; width: number; height: number }[] = [];
     const wr = wrap.getBoundingClientRect();
+    // 视口坐标 → 内容坐标：绝对定位在滚动容器内按内容坐标渲染，须加回滚动偏移
+    const st = wrap.scrollTop;
+    const sl = wrap.scrollLeft;
     computeSelGroups(selectedCells).forEach((g) => {
       const elA = wrap.querySelector(`td[data-row="${g.r1}"][data-col="${COLS[g.c1].key}"]`);
       const elB = wrap.querySelector(`td[data-row="${g.r2}"][data-col="${COLS[g.c2].key}"]`);
       if (!elA || !elB) return;
       const ar = elA.getBoundingClientRect();
       const br = elB.getBoundingClientRect();
-      const left = Math.min(ar.left, br.left) - wr.left;
-      const top = Math.min(ar.top, br.top) - wr.top;
-      const right = Math.max(ar.right, br.right) - wr.left;
-      const bottom = Math.max(ar.bottom, br.bottom) - wr.top;
+      const left = Math.min(ar.left, br.left) - wr.left + sl;
+      const top = Math.min(ar.top, br.top) - wr.top + st;
+      const right = Math.max(ar.right, br.right) - wr.left + sl;
+      const bottom = Math.max(ar.bottom, br.bottom) - wr.top + st;
       rects.push({ left, top, width: right - left, height: bottom - top });
     });
     setCommittedRects(rects);
@@ -135,10 +139,13 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
     const ar = elA.getBoundingClientRect();
     const cr = elC.getBoundingClientRect();
     const wr = wrap.getBoundingClientRect();
-    const left = Math.min(ar.left, cr.left) - wr.left;
-    const top = Math.min(ar.top, cr.top) - wr.top;
-    const right = Math.max(ar.right, cr.right) - wr.left;
-    const bottom = Math.max(ar.bottom, cr.bottom) - wr.top;
+    // 视口坐标 → 内容坐标：绝对定位在滚动容器内按内容坐标渲染，须加回滚动偏移
+    const st = wrap.scrollTop;
+    const sl = wrap.scrollLeft;
+    const left = Math.min(ar.left, cr.left) - wr.left + sl;
+    const top = Math.min(ar.top, cr.top) - wr.top + st;
+    const right = Math.max(ar.right, cr.right) - wr.left + sl;
+    const bottom = Math.max(ar.bottom, cr.bottom) - wr.top + st;
     return { left, top, width: right - left, height: bottom - top };
   };
 
@@ -223,84 +230,93 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
     }
   };
 
-  const handleCellClick = (i: number, colKey: string) => {
-    if (multiSelect) return; // 多选模式由 mousedown/mouseup 处理（单击/框选）
-    if (!editingCell || editingCell.row !== i || editingCell.col !== colKey) {
-      startEdit(i, colKey);
-    }
+  // 原生交互：mousedown 记录起点，超过阈值进入框选；mouseup 判定 拖拽=选中 / 单击=编辑
+  const handleCellDown = (e: React.MouseEvent, row: number, col: string) => {
+    if (e.button !== 0 || editingCell) return; // 编辑中不干扰
+    dragStartRef.current = { row, col, x: e.clientX, y: e.clientY };
+    selectingRef.current = false;
+    selAnchorRef.current = null;
+    selCurrentRef.current = null;
   };
 
-  // 多选：单击 toggle（保留原"同列"约束）
-  const toggleCell = (row: number, col: string) => {
-    const cellKey = `${row}:${col}`;
-    if (selectedCells.size === 0) {
-      setAnchorCol(col);
-      setSelectedCells(new Set([cellKey]));
-      return;
-    }
-    if (anchorCol !== col) {
-      showToast('只能选择同一列的格子', 'warning');
-      return;
-    }
-    const next = new Set(selectedCells);
-    if (next.has(cellKey)) next.delete(cellKey);
-    else next.add(cellKey);
-    setSelectedCells(next);
-  };
-
-  // 多选：开始框选（记录起点）
-  const handleSelDown = (e: React.MouseEvent, row: number, col: string) => {
-    if (!multiSelect) return;
-    e.preventDefault();
-    selMovedRef.current = false;
-    setSelectAnchor({ row, col });
-    setSelectCurrent({ row, col });
-    setSelRect(computeSelRect({ row, col }, { row, col }));
-  };
-
-  // 多选：拖拽经过的格子作为框选终点
-  const handleSelMove = (e: React.MouseEvent) => {
-    if (!selectAnchor) return;
+  const handleCellMove = (e: React.MouseEvent) => {
+    const start = dragStartRef.current;
+    if (!start) return;
     const td = (e.target as HTMLElement).closest('td');
     if (!td) return;
     const r = Number(td.getAttribute('data-row'));
     const c = td.getAttribute('data-col');
     if (c == null || Number.isNaN(r)) return;
-    if (r !== selectCurrent?.row || c !== selectCurrent?.col) {
-      selMovedRef.current = true;
-      setSelectCurrent({ row: r, col: c });
-      if (selectAnchor) setSelRect(computeSelRect(selectAnchor, { row: r, col: c }));
+    if (!selectingRef.current) {
+      if (Math.hypot(e.clientX - start.x, e.clientY - start.y) < 4) return; // 未达拖拽阈值
+      e.preventDefault(); // 阻止原生文字选中
+      selectingRef.current = true;
+      selAnchorRef.current = { row: start.row, col: start.col };
+      selCurrentRef.current = { row: r, col: c };
+      setSelRect(computeSelRect({ row: start.row, col: start.col }, { row: r, col: c }));
+      return;
+    }
+    if (r !== selCurrentRef.current?.row || c !== selCurrentRef.current?.col) {
+      selCurrentRef.current = { row: r, col: c };
+      if (selAnchorRef.current) setSelRect(computeSelRect(selAnchorRef.current, { row: r, col: c }));
     }
   };
 
-  // 多选：mouseup 判定 单击 toggle / 拖拽框选
+  // mouseup：拖拽 → 提交选中范围；单击 → 清空旧选中并进入编辑
   useEffect(() => {
-    if (!multiSelect) return;
     const up = () => {
-      if (!selectAnchor) return;
-      const cur = selectCurrent || selectAnchor;
-      if (!selMovedRef.current && cur.row === selectAnchor.row && cur.col === selectAnchor.col) {
-        toggleCell(selectAnchor.row, selectAnchor.col);
-      } else {
-        const colKeys = COLS.map((c) => c.key);
-        const r1 = Math.min(selectAnchor.row, cur.row);
-        const r2 = Math.max(selectAnchor.row, cur.row);
-        const ci1 = Math.min(colKeys.indexOf(selectAnchor.col), colKeys.indexOf(cur.col));
-        const ci2 = Math.max(colKeys.indexOf(selectAnchor.col), colKeys.indexOf(cur.col));
+      const start = dragStartRef.current;
+      dragStartRef.current = null;
+      if (!start) return;
+      if (selectingRef.current) {
+        const anchor = selAnchorRef.current || { row: start.row, col: start.col };
+        const cur = selCurrentRef.current || anchor;
+        const colKeys = COLS.map((x) => x.key);
+        const r1 = Math.min(anchor.row, cur.row);
+        const r2 = Math.max(anchor.row, cur.row);
+        const ci1 = Math.min(colKeys.indexOf(anchor.col), colKeys.indexOf(cur.col));
+        const ci2 = Math.max(colKeys.indexOf(anchor.col), colKeys.indexOf(cur.col));
         const inCols = colKeys.slice(ci1, ci2 + 1);
         const next = new Set<string>();
         for (let r = r1; r <= r2; r++) inCols.forEach((k) => next.add(`${r}:${k}`));
         setSelectedCells(next);
         setAnchorCol(inCols.length === 1 ? inCols[0] : null);
+      } else {
+        // 单击：已有选中则先清空，再编辑该格
+        if (selectedCells.size > 0) {
+          setSelectedCells(new Set());
+          setAnchorCol(null);
+          setBatchValue('');
+        }
+        startEdit(start.row, start.col);
       }
-      setSelectAnchor(null);
-      setSelectCurrent(null);
+      selectingRef.current = false;
+      selAnchorRef.current = null;
+      selCurrentRef.current = null;
       setSelRect(null);
-      selMovedRef.current = false;
     };
     document.addEventListener('mouseup', up);
     return () => document.removeEventListener('mouseup', up);
-  }, [multiSelect, selectAnchor, selectCurrent, selectedCells, anchorCol]);
+  }, [selectedCells, items]);
+
+  // Esc：取消多选（清空选中与选框）
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (selectedCells.size === 0) return;
+      setSelectedCells(new Set());
+      setAnchorCol(null);
+      setBatchValue('');
+      setSelRect(null);
+      setCommittedRects([]);
+      selectingRef.current = false;
+      selAnchorRef.current = null;
+      selCurrentRef.current = null;
+      dragStartRef.current = null;
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedCells]);
 
   const applyBatch = () => {
     if (selectedCells.size === 0) return;
@@ -375,22 +391,8 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
   return (
     <>
       <div className="rt-toolbar">
-        <button
-          className={`mini-btn ${multiSelect ? 'on' : ''}`}
-          onClick={() => {
-            if (editingCell) commitEdit();
-            setMultiSelect(!multiSelect);
-            setSelectedCells(new Set());
-            setAnchorCol(null);
-            setBatchValue('');
-            setSelectAnchor(null);
-            setSelectCurrent(null);
-            selMovedRef.current = false;
-          }}
-        >
-          多选
-        </button>
-        {multiSelect && selectedCells.size > 0 && (
+        <span style={{ fontSize: 12, color: 'var(--text-3)' }}>拖拽框选 · 单击编辑 · Esc 取消</span>
+        {selectedCells.size > 0 && (
           <div className="rt-batch">
             <span>
               已选 <b style={{ color: 'var(--primary)' }}>{selectedCells.size}</b> 格
@@ -408,7 +410,7 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
         )}
       </div>
 
-      <div className="res-table-wrap" ref={wrapRef} onMouseMove={multiSelect ? handleSelMove : undefined}>
+      <div className="res-table-wrap" ref={wrapRef} onMouseMove={handleCellMove}>
         <table className="res-table">
           <thead>
             <tr>
@@ -444,8 +446,7 @@ export default function ReviewTable({ items, onChange, headerRows = [], resetSig
                         className={cellBg(item, c.key)}
                         style={{ textAlign: c.align === 'right' ? 'right' : c.align === 'center' ? 'center' : 'left' }}
                         title={cellTitle(item, c.key) || undefined}
-                        onClick={() => handleCellClick(i, c.key)}
-                        onMouseDown={multiSelect ? (e) => handleSelDown(e, i, c.key) : undefined}
+                        onMouseDown={(e) => handleCellDown(e, i, c.key)}
                       >
                         {isEditing ? (
                           <input
