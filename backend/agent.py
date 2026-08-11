@@ -287,7 +287,7 @@ def _record_tool_audit(run_state: AgentRunState, name: str, args: dict,
 def _memory_block() -> str:
     """冻结 Memory 快照：每轮只注入一段长期记忆 Prompt。"""
     content = str(get_memory_content().get("content", "")).strip()
-    return "## Agent Memory（长期记忆）\n" + (content or "（空）")
+    return "Agent Memory（长期记忆）\n" + (content or "（空）")
 
 
 def execute_tool(name: str, args: dict, current_session_id: str = "") -> dict:
@@ -424,15 +424,15 @@ def _build_system_prompt(user_message: str = "") -> str:
     # 注入文件存放目录
     wd = config.WORK_DIR
     if wd:
-        prompt += f"\n\n## 文件存放目录\n新建文件（Excel 等）时存放在此目录: {wd}\n文件名使用用户指定的名称（如用户说\"新建666表格\"就创建 {wd}\\666.xlsx）。\n对用户上传的已有文件操作时，使用该文件的原路径，绝不移动文件位置。"
+        prompt += f"\n\n文件存放目录\n新建文件（Excel 等）时存放在此目录: {wd}\n文件名使用用户指定的名称（如用户说\"新建666表格\"就创建 {wd}\\666.xlsx）。\n对用户上传的已有文件操作时，使用该文件的原路径，绝不移动文件位置。"
     else:
-        prompt += "\n\n## 文件存放目录\n系统尚未配置文件存放目录。用户要求新建文件时，提醒用户去「API与模型」页配置。"
+        prompt += "\n\n文件存放目录\n系统尚未配置文件存放目录。用户要求新建文件时，提醒用户去「API与模型」页配置。"
     # 注入已启用的技能
     try:
         from database import get_enabled_skills
         skills = get_enabled_skills(user_message)
         if skills:
-            extra = "\n\n## 已启用的自定义技能规则\n"
+            extra = "\n\n已启用的自定义技能规则\n"
             for s in skills:
                 extra += f"- {s['name']}: {s['system_instruction']}\n"
             prompt += extra
@@ -516,7 +516,7 @@ def _prepare_context(client, user_message: str, history: list,
             pass
         session_summary = _ensure_session_summary(client, session_id, history)
         if session_summary:
-            system_prompt += "\n\n## 本会话历史摘要（较早对话的压缩记录）\n" + session_summary
+            system_prompt += "\n\n本会话历史摘要（较早对话的压缩记录）\n" + session_summary
 
     # 只接受 user/assistant 消息；剔除 system 等异常角色
     clean_history = trim_history(history or [])

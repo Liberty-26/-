@@ -1,6 +1,6 @@
 """
 POST /api/recognize — 夸克扫描王 OCR 识别接口
-POST /api/recognize/calibrate — AI 校准接口（SSE 流式进度）
+POST /api/recognize/calibrate — 规则校准接口（SSE 流式进度）
 """
 import time
 import asyncio
@@ -91,7 +91,7 @@ async def _recognize_one(image_data_url: str, receipt_no: str = "", date: str = 
     失败不抛异常，返回 {"success": False, "error": ...}，供单张/批量共用。
 
     progress: 可选回调 progress(stage)，stage 语义：
-      1 正在提取单号和日期 / 2 识别中 / 3 转译 / 4 自审核中
+      1 正在提取单号和日期 / 2 识别中 / 3 转译 / 4 规则校准中
     """
     try:
         raw = image_data_url.strip()
@@ -137,8 +137,8 @@ async def _recognize_one(image_data_url: str, receipt_no: str = "", date: str = 
             return {"success": False, "error": result.get("error", "识别失败"), "image_path": image_path}
 
         if progress:
-            progress(4)  # 自审核中（纯代码校准）
-        # 识别后紧跟的纯代码校准（保留原版设计，无模型、不烧额度）：
+            progress(4)  # 规则校准中
+        # 识别后紧跟的纯代码校准：
         # 结构化解构 → 名称/规格拆分 → 品名库对齐 → 单位对齐 → 代码兜底
         # 让入库数据即是"名称/规格分开"的干净结构，AI 审核阶段再做一轮复核
         items = calibrate_items(result.get("items", [])).get("items", [])
@@ -276,7 +276,7 @@ async def recognize_batch_status(task_id: str):
 
 @router.post("/recognize/calibrate")
 async def calibrate(req: CalibrateRequest):
-    """AI 校准（SSE 流式）：阶段进度 → 最终结果"""
+    """规则校准（SSE 流式）：阶段进度 → 最终结果"""
     if not req.items:
         raise HTTPException(status_code=400, detail="items 不能为空")
 

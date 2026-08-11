@@ -1,8 +1,6 @@
-"""
-SteelDigitize Pro — AI 校准模块 v2（结构化解构 + 语义校准双层架构）
-结构问题（品名行归属、幽灵行、空 name）→ 代码解构，确定性 100%
-语义问题（名称规格拆分、品名归一化、表头识别）→ 纯代码品名库对齐
-规则问题（数值范围、单位白名单）→ 代码兜底
+"""送货单结果的确定性校准模块。
+
+结构问题、品名归一化和数值规则均由代码处理，不调用模型。
 """
 from __future__ import annotations
 import json
@@ -59,55 +57,6 @@ def is_spec_like(name: str) -> bool:
 
 # 合计/表尾防护词
 HEADER_LIKE = ("合计", "小计", "大写", "收货", "经办", "备注", "金额")
-
-CALIBRATE_PROMPT_TEMPLATE = """你是送货单数据校准器。以下是从手写送货单识别出的数据，请校正：
-
-参考品名库（标准名:别名）：
-{materials}
-
-规则：
-1. 品名必须归一化为参考库中的标准名（含别名匹配）；库外品名保持原样并标记"未入库"
-2. 【名称规格拆分】name 或 spec 中混有名称和规格时拆分：
-   - 品名部分用参考品名库匹配（含别名，最长匹配优先）
-   - 剩余为规格；拆不出的保持原样并标记 issue "疑似名称规格混写"
-3. 含"品种/单位/数量/单价/金额/合计"等表头字样的行标记为表头行
-4. 数量、单价必须是有效数字；明显异常（0、负数、超范围）标记 issue
-5. unit 为空的输入行：标记 issue "unit: 缺失单位"，unit 保持为空，
-   禁止臆造单位、禁止输出无意义的 correction
-6. 【纯规格错位】如果某行的 name 只包含数字、乘号、#、DN、Φ 等
-   规格符号（如"4×400×400""DN100"），或为不含数字的简短规格描述
-   （如"一通""二通"），且品名库中不存在该 name：
-   → 将 name 内容移至 spec，品名设为上方最近非空品名（从输入数据的前一行取）
-   → 在 corrections 中标注 "spec: 品名列纯规格→已移至规格列"
-7. 【形近字修正】如果某行的 name 与品名库中某个标准名相似但不完全相同
-   （如"镀锋管"≈"镀锌管"、"密闭套营"≈"密闭套管"），且无其他近似的候选品名：
-   → 修正为标准品名，在 corrections 中标注 "name: 旧名→标准名（形近字修正）"
-   → 如果有多个近似候选（如"线槽"同时接近"线管"和"线卡"）→ 不修正，只标 issue
-   → 此规则仅适用于明显的单字错位/误识别，不得对完全不同的品名做猜测性修改
-8. 只输出 JSON，不要其他文字
-9. 只输出修正后的 items 结果。禁止输出品名库、禁止重复输入数据、
-   禁止任何解释文字，禁止多余内容
-
-输入数据：
-{items_json}
-
-输出格式（严格 JSON，不要 markdown）：
-{{
-  "items": [
-    {{
-      "name": "标准品名",
-      "spec": "规格",
-      "unit": "单位",
-      "qty": 数量,
-      "price": 单价,
-      "issues": ["qty: 数量超出范围"],
-      "corrections": ["name: 旧品名→新品名"],
-      "not_in_library": false
-    }}
-  ],
-  "header_rows": [0, 3]
-}}"""
-
 
 # ---- 文本归一化 ----
 
@@ -326,29 +275,6 @@ def _fill_down_names(items: list) -> list:
     return items
 
 
-# ---- DeepSeek 校准 ----
-
-def _parse_model_output(content: str) -> dict | None:
-    """多层降级解析 DeepSeek 返回 JSON"""
-    content = content.strip()
-    # 去掉 markdown 代码块
-    md = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', content)
-    if md:
-        content = md.group(1).strip()
-    try:
-        return json.loads(content)
-    except (json.JSONDecodeError, TypeError):
-        pass
-    # 提取最外层 {...}
-    obj = re.search(r'\{[\s\S]*\}', content)
-    if obj:
-        try:
-            return json.loads(obj.group(0))
-        except (json.JSONDecodeError, TypeError):
-            pass
-    return None
-
-
 def _normalize_item(item: dict) -> dict:
     """单条 item 归一化 + 字段类型修正"""
     return {
@@ -551,9 +477,9 @@ def calibrate_items(items: list, receipt_no: str = "", date: str = "") -> dict:
         }
         normalized.append(norm)
 
-    # 2. 结构化解构（新：识别后、模型前）
+    # 2. 结构化解构
     normalized = structural_decompose(normalized)
-    # 单位"略写"继承（模型前：输入中不含略写记号，杜绝模型臆测）
+    # 单位"略写"继承
     normalized = inherit_abbrev_units(normalized)
 
     # 3. 品名库对齐（纯代码，替代 DeepSeek）
@@ -602,7 +528,7 @@ def calibrate_items_progress(items: list, receipt_no: str = "", date: str = ""):
             "rec_amount": it.get("rec_amount"),
         }
         normalized.append(norm)
-    # 单位"略写"继承（模型前：输入中不含略写记号，杜绝模型臆测）
+    # 单位"略写"继承
     normalized = inherit_abbrev_units(normalized)
     yield {"step": 1, "label": "文本归一化", "done": True}
 

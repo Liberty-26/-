@@ -17,14 +17,14 @@ interface FlowItem {
   label: string;
   meta: string;
   status: '待识别' | '排队中' | '识别中' | '待审核' | '已入库' | '失败';
-  stage?: number; // 1 提取单号和日期 → 2 识别中 → 3 转译 → 4 自审核中（来自后端真实进度）
+  stage?: number; // 1 提取单号和日期 → 2 识别中 → 3 转译 → 4 规则校准中（来自后端真实进度）
   imagePath?: string;
   receiptId?: number;
   error?: string;
   time: string;
 }
 
-const STAGES = ['正在提取单号和日期', '识别中', '转译', '自审核中'];
+const STAGES = ['正在提取单号和日期', '识别中', '转译', '规则校准中'];
 
 // 展示层采用“中文动作 + 技术工具名”：老板能看懂正在做什么，技术细节也完整保留。
 const TOOL_LABELS: Record<string, string> = {
