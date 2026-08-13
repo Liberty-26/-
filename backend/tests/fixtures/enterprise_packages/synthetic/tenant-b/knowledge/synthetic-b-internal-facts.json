@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "synthetic": true,
+  "tenant_id": "synthetic-b",
+  "disclaimer": "Controlled synthetic internal information for tests only; not a real customer.",
+  "facts": [
+    {
+      "fact_id": "b-payment-cycle",
+      "source_id": "synthetic-b-policy-101",
+      "topic": "payment_cycle",
+      "statement": "Synthetic B uses a 21-day payment cycle denominated in SYN credits.",
+      "fields": {
+        "payment_cycle_days": 21,
+        "currency": "SYN credits"
+      }
+    },
+    {
+      "fact_id": "b-escalation-lane",
+      "source_id": "synthetic-b-policy-102",
+      "topic": "escalation_lane",
+      "statement": "Synthetic B classifies Vendor Desk cases above amber as rapid escalation with a 3-hour response target.",
+      "fields": {
+        "owner_role": "Vendor Desk",
+        "severity_threshold": "amber",
+        "category": "rapid_escalation",
+        "response_hours": 3
+      }
+    }
+  ]
+}

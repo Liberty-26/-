@@ -1,0 +1,62 @@
+schema_version: "1.0"
+package_id: steel-digitize-default
+tenant_id: steeldigitize-local
+version: "0.1.0"
+name: SteelDigitize Default Agent Package
+description: SteelDigitize local receipt-query, export, workspace, and memory capabilities.
+model:
+  provider: openai_compatible
+  model: deepseek-chat
+  base_url_env: AGENT_API_BASE
+  api_key_env: AGENT_API_KEY
+  model_name_env: AGENT_MODEL
+  timeout_seconds: 60
+  retry_count: 1
+  max_steps: 8
+skills:
+  - skills/receipt_query.md
+  - skills/receipt_export.md
+  - skills/workspace_context.md
+  - skills/memory_management.md
+tools:
+  - db_lookup_receipt
+  - db_get_receipt_items
+  - memory_list
+  - memory_replace
+  - session_search
+  - settings_read
+  - runtime_now
+  - spreadsheet_export_receipts
+  - spreadsheet_find_last_row
+  - spreadsheet_create_new
+  - spreadsheet_write_batch
+  - spreadsheet_verify
+knowledge: []
+policy:
+  version: "1.0"
+  allow_tools:
+    - db_lookup_receipt
+    - db_get_receipt_items
+    - memory_list
+    - memory_replace
+    - session_search
+    - settings_read
+    - runtime_now
+    - spreadsheet_export_receipts
+  deny_tools: []
+  require_approval_for:
+    - memory_replace
+    - spreadsheet_export_receipts
+  require_approval_for_writes: true
+recording:
+  input_mode: redacted
+  output_mode: redacted
+  redact_fields:
+    - api_key
+    - authorization
+    - password
+    - secret
+    - token
+graph_template: generic_agent_v1
+synthetic: false
+evaluation_mode: runtime

@@ -1,0 +1,32 @@
+schema_version: "1.0"
+package_id: synthetic-mock-tools
+tenant_id: synthetic-tools
+version: "1.0.0"
+name: Synthetic Mock Tool Package
+description: Fully synthetic Package for Tool, policy, and approval tests.
+model:
+  provider: fake
+  model: fake-model-v1
+  timeout_seconds: 30
+  retry_count: 1
+  max_steps: 8
+skills:
+  - skills/tool-task.md
+tools:
+  - synthetic_lookup
+  - synthetic_write
+knowledge: []
+policy:
+  version: "1.0"
+  allow_tools:
+    - synthetic_lookup
+    - synthetic_write
+  deny_tools: []
+  require_approval_for:
+    - synthetic_write
+  require_approval_for_writes: true
+recording:
+  input_mode: redacted
+  output_mode: redacted
+graph_template: generic_agent_v1
+synthetic: true

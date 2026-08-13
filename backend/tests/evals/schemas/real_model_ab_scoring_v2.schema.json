@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/enterprise-agent/real-model-ab-scoring-v2.schema.json",
+  "title": "Real-model A/B deterministic scoring rules V2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scorer_version",
+    "base_dataset",
+    "evaluation_class",
+    "synthetic",
+    "description",
+    "natural_language_policy",
+    "case_rules"
+  ],
+  "properties": {
+    "schema_version": {"const": "2.0"},
+    "scorer_version": {"const": "2.0.0"},
+    "base_dataset": {"const": "evals/datasets/real_model_ab_cases.json"},
+    "evaluation_class": {"const": "real_model_on_synthetic_fixtures"},
+    "synthetic": {"const": true},
+    "description": {"type": "string", "minLength": 1},
+    "natural_language_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "structured_fields",
+        "source_grounding",
+        "normalized_phrase",
+        "number_with_unit",
+        "prohibited"
+      ],
+      "properties": {
+        "structured_fields": {"type": "string", "minLength": 1},
+        "source_grounding": {"type": "string", "minLength": 1},
+        "normalized_phrase": {"type": "string", "minLength": 1},
+        "number_with_unit": {"type": "string", "minLength": 1},
+        "prohibited": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "case_rules": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/case_rule"}
+    }
+  },
+  "$defs": {
+    "case_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["natural_language_fields"],
+      "properties": {
+        "natural_language_fields": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"$ref": "#/$defs/fact_atom"}
+          }
+        }
+      }
+    },
+    "fact_atom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["atom_id", "operator", "evidence_path"],
+      "properties": {
+        "atom_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "operator": {"enum": ["normalized_phrase", "number_with_unit"]},
+        "evidence_path": {"type": "string", "minLength": 1},
+        "conflicting_phrases": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "unit_aliases": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"operator": {"const": "normalized_phrase"}}},
+          "then": {"required": ["conflicting_phrases"]}
+        },
+        {
+          "if": {"properties": {"operator": {"const": "number_with_unit"}}},
+          "then": {"required": ["unit_aliases"]}
+        }
+      ]
+    }
+  }
+}

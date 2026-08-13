@@ -1,0 +1,33 @@
+schema_version: "1.0"
+package_id: template-text-agent
+tenant_id: synthetic-template
+version: "1.0.0"
+name: Minimal Text Agent Template
+description: Minimal no-Tool Package proving model plus Skill plus user input.
+model:
+  provider: fake
+  model: fake-model-v1
+  timeout_seconds: 30
+  retry_count: 1
+  max_steps: 8
+skills:
+  - skills/structured_summary.md
+tools: []
+knowledge: []
+policy:
+  version: "1.0"
+  allow_tools: []
+  deny_tools: []
+  require_approval_for: []
+  require_approval_for_writes: true
+recording:
+  input_mode: redacted
+  output_mode: redacted
+  redact_fields:
+    - api_key
+    - authorization
+    - password
+    - secret
+    - token
+graph_template: generic_agent_v1
+synthetic: true

@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 import config
 from database import init_db, import_materials_seed
-from routers import recognize, history, agent_chat, settings, materials, memory
+from routers import recognize, history, agent_chat, settings, materials, memory, approvals
 
 # 确保 uploads 目录存在
 UPLOAD_DIR = Path(config.UPLOAD_DIR)
@@ -54,6 +54,7 @@ app.include_router(agent_chat.router)
 app.include_router(settings.router)
 app.include_router(materials.router)
 app.include_router(memory.router)
+app.include_router(approvals.router)
 
 
 @app.on_event("startup")

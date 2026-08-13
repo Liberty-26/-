@@ -1,0 +1,1414 @@
+{
+  "$defs": {
+    "ActorType": {
+      "enum": [
+        "user",
+        "model",
+        "harness",
+        "tool",
+        "approver",
+        "evaluator"
+      ],
+      "title": "ActorType",
+      "type": "string"
+    },
+    "AgentMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "title": "Content",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "role": {
+          "$ref": "#/$defs/MessageRole"
+        },
+        "tool_call_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Call Id"
+        },
+        "tool_requests": {
+          "items": {
+            "$ref": "#/$defs/ModelToolRequest"
+          },
+          "title": "Tool Requests",
+          "type": "array"
+        }
+      },
+      "required": [
+        "role",
+        "content"
+      ],
+      "title": "AgentMessage",
+      "type": "object"
+    },
+    "ApprovalDecision": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "title": "ApprovalDecision",
+      "type": "string"
+    },
+    "ApprovalRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "approval_id": {
+          "title": "Approval Id",
+          "type": "string"
+        },
+        "approver_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Approver Id"
+        },
+        "decided_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decided At"
+        },
+        "decision": {
+          "$ref": "#/$defs/ApprovalDecision",
+          "default": "pending"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "requested_at": {
+          "format": "date-time",
+          "title": "Requested At",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "thread_id": {
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "tool_call": {
+          "$ref": "#/$defs/ToolCall"
+        }
+      },
+      "required": [
+        "thread_id",
+        "task_id",
+        "tool_call"
+      ],
+      "title": "ApprovalRecord",
+      "type": "object"
+    },
+    "Correlation": {
+      "additionalProperties": false,
+      "properties": {
+        "package_id": {
+          "title": "Package Id",
+          "type": "string"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "thread_id": {
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "trace_id": {
+          "title": "Trace Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "trace_id",
+        "task_id",
+        "thread_id",
+        "tenant_id",
+        "package_id"
+      ],
+      "title": "Correlation",
+      "type": "object"
+    },
+    "ErrorDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "details": {
+          "additionalProperties": true,
+          "title": "Details",
+          "type": "object"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "ErrorDetail",
+      "type": "object"
+    },
+    "EventType": {
+      "enum": [
+        "run_started",
+        "package_loaded",
+        "context_assembled",
+        "model_requested",
+        "model_responded",
+        "tool_requested",
+        "policy_decided",
+        "approval_requested",
+        "approval_decided",
+        "tool_started",
+        "tool_completed",
+        "validation_completed",
+        "run_paused",
+        "run_resumed",
+        "run_completed",
+        "run_failed"
+      ],
+      "title": "EventType",
+      "type": "string"
+    },
+    "LoadedResources": {
+      "additionalProperties": false,
+      "properties": {
+        "knowledge_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Knowledge Refs",
+          "type": "array"
+        },
+        "skill_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Skill Ids",
+          "type": "array"
+        },
+        "tool_names": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tool Names",
+          "type": "array"
+        }
+      },
+      "required": [
+        "skill_ids",
+        "tool_names"
+      ],
+      "title": "LoadedResources",
+      "type": "object"
+    },
+    "MessageRole": {
+      "enum": [
+        "system",
+        "user",
+        "assistant",
+        "tool"
+      ],
+      "title": "MessageRole",
+      "type": "string"
+    },
+    "ModelAction": {
+      "additionalProperties": false,
+      "properties": {
+        "action_type": {
+          "$ref": "#/$defs/ModelActionType"
+        },
+        "assistant_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assistant Text"
+        },
+        "final_output": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Final Output"
+        },
+        "tool_request": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelToolRequest"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "action_type"
+      ],
+      "title": "ModelAction",
+      "type": "object"
+    },
+    "ModelActionType": {
+      "enum": [
+        "final",
+        "tool_call"
+      ],
+      "title": "ModelActionType",
+      "type": "string"
+    },
+    "ModelExchange": {
+      "additionalProperties": false,
+      "description": "Auditable model request/response trace for one Loop step.",
+      "properties": {
+        "available_tools": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Available Tools",
+          "type": "array"
+        },
+        "completed_at": {
+          "format": "date-time",
+          "title": "Completed At",
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ErrorDetail"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "output_contract": {
+          "additionalProperties": true,
+          "title": "Output Contract",
+          "type": "object"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "request_messages": {
+          "items": {
+            "$ref": "#/$defs/AgentMessage"
+          },
+          "title": "Request Messages",
+          "type": "array"
+        },
+        "requested_at": {
+          "format": "date-time",
+          "title": "Requested At",
+          "type": "string"
+        },
+        "response": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelResponse"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "schema_version": {
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "step": {
+          "minimum": 1,
+          "title": "Step",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "step",
+        "requested_at",
+        "completed_at",
+        "request_messages",
+        "output_contract",
+        "provider",
+        "model"
+      ],
+      "title": "ModelExchange",
+      "type": "object"
+    },
+    "ModelResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/ModelAction"
+        },
+        "latency_ms": {
+          "minimum": 0,
+          "title": "Latency Ms",
+          "type": "number"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "provider_response_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Response Id"
+        },
+        "usage": {
+          "$ref": "#/$defs/ModelUsage"
+        }
+      },
+      "required": [
+        "action",
+        "model",
+        "provider",
+        "latency_ms"
+      ],
+      "title": "ModelResponse",
+      "type": "object"
+    },
+    "ModelSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "api_key_env": {
+          "default": "ENTERPRISE_AGENT_MODEL_API_KEY",
+          "title": "Api Key Env",
+          "type": "string"
+        },
+        "base_url_env": {
+          "default": "ENTERPRISE_AGENT_MODEL_BASE_URL",
+          "title": "Base Url Env",
+          "type": "string"
+        },
+        "max_steps": {
+          "default": 8,
+          "maximum": 64,
+          "minimum": 1,
+          "title": "Max Steps",
+          "type": "integer"
+        },
+        "model": {
+          "default": "fake-model-v1",
+          "title": "Model",
+          "type": "string"
+        },
+        "model_name_env": {
+          "default": "ENTERPRISE_AGENT_MODEL_NAME",
+          "title": "Model Name Env",
+          "type": "string"
+        },
+        "provider": {
+          "default": "fake",
+          "enum": [
+            "fake",
+            "openai_compatible"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "retry_count": {
+          "default": 1,
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Retry Count",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 30,
+          "exclusiveMinimum": 0,
+          "maximum": 300,
+          "title": "Timeout Seconds",
+          "type": "number"
+        }
+      },
+      "title": "ModelSettings",
+      "type": "object"
+    },
+    "ModelToolRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "arguments": {
+          "additionalProperties": true,
+          "title": "Arguments",
+          "type": "object"
+        },
+        "tool_call_id": {
+          "title": "Tool Call Id",
+          "type": "string"
+        },
+        "tool_name": {
+          "minLength": 1,
+          "title": "Tool Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool_name"
+      ],
+      "title": "ModelToolRequest",
+      "type": "object"
+    },
+    "ModelUsage": {
+      "additionalProperties": false,
+      "properties": {
+        "completion_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            }
+          ],
+          "default": "unknown",
+          "title": "Completion Tokens"
+        },
+        "cost_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            }
+          ],
+          "default": "unknown",
+          "title": "Cost Usd"
+        },
+        "prompt_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            }
+          ],
+          "default": "unknown",
+          "title": "Prompt Tokens"
+        },
+        "total_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            }
+          ],
+          "default": "unknown",
+          "title": "Total Tokens"
+        }
+      },
+      "title": "ModelUsage",
+      "type": "object"
+    },
+    "PackageManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "evaluation_mode": {
+          "default": "runtime",
+          "enum": [
+            "runtime",
+            "deterministic_framework_test",
+            "real_model_on_synthetic_fixtures"
+          ],
+          "title": "Evaluation Mode",
+          "type": "string"
+        },
+        "graph_template": {
+          "default": "generic_agent_v1",
+          "title": "Graph Template",
+          "type": "string"
+        },
+        "knowledge": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Knowledge",
+          "type": "array"
+        },
+        "model": {
+          "$ref": "#/$defs/ModelSettings"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "package_id": {
+          "minLength": 1,
+          "title": "Package Id",
+          "type": "string"
+        },
+        "policy": {
+          "$ref": "#/$defs/PackagePolicy"
+        },
+        "recording": {
+          "$ref": "#/$defs/RecordingSettings"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "skills": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Skills",
+          "type": "array"
+        },
+        "synthetic": {
+          "default": false,
+          "title": "Synthetic",
+          "type": "boolean"
+        },
+        "tenant_id": {
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "tools": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tools",
+          "type": "array"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "package_id",
+        "tenant_id",
+        "version",
+        "name",
+        "skills"
+      ],
+      "title": "PackageManifest",
+      "type": "object"
+    },
+    "PackagePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_tools": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allow Tools",
+          "type": "array"
+        },
+        "deny_tools": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Deny Tools",
+          "type": "array"
+        },
+        "require_approval_for": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Require Approval For",
+          "type": "array"
+        },
+        "require_approval_for_writes": {
+          "default": true,
+          "title": "Require Approval For Writes",
+          "type": "boolean"
+        },
+        "version": {
+          "default": "1.0",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "title": "PackagePolicy",
+      "type": "object"
+    },
+    "PermissionContext": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_attributes": {
+          "additionalProperties": true,
+          "title": "Actor Attributes",
+          "type": "object"
+        },
+        "scopes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Scopes",
+          "type": "array"
+        }
+      },
+      "title": "PermissionContext",
+      "type": "object"
+    },
+    "PolicyDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "approval_payload": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Approval Payload"
+        },
+        "evaluated_at": {
+          "format": "date-time",
+          "title": "Evaluated At",
+          "type": "string"
+        },
+        "missing_permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Permissions",
+          "type": "array"
+        },
+        "outcome": {
+          "$ref": "#/$defs/PolicyOutcome"
+        },
+        "policy_version": {
+          "minLength": 1,
+          "title": "Policy Version",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "required_permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Permissions",
+          "type": "array"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "tool_call_id": {
+          "minLength": 1,
+          "title": "Tool Call Id",
+          "type": "string"
+        },
+        "tool_name": {
+          "minLength": 1,
+          "title": "Tool Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool_call_id",
+        "tool_name",
+        "outcome",
+        "reason",
+        "policy_version"
+      ],
+      "title": "PolicyDecision",
+      "type": "object"
+    },
+    "PolicyOutcome": {
+      "enum": [
+        "allow",
+        "deny",
+        "require_approval"
+      ],
+      "title": "PolicyOutcome",
+      "type": "string"
+    },
+    "RecordingMode": {
+      "enum": [
+        "full",
+        "redacted",
+        "summary"
+      ],
+      "title": "RecordingMode",
+      "type": "string"
+    },
+    "RecordingSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "input_mode": {
+          "$ref": "#/$defs/RecordingMode",
+          "default": "redacted"
+        },
+        "output_mode": {
+          "$ref": "#/$defs/RecordingMode",
+          "default": "redacted"
+        },
+        "redact_fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Redact Fields",
+          "type": "array"
+        }
+      },
+      "title": "RecordingSettings",
+      "type": "object"
+    },
+    "RunEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "actor": {
+          "$ref": "#/$defs/ActorType"
+        },
+        "correlation": {
+          "$ref": "#/$defs/Correlation"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "event_type": {
+          "$ref": "#/$defs/EventType"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "title": "Payload",
+          "type": "object"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_type",
+        "actor",
+        "correlation"
+      ],
+      "title": "RunEvent",
+      "type": "object"
+    },
+    "RunMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "duration_ms": {
+          "minimum": 0,
+          "title": "Duration Ms",
+          "type": "number"
+        },
+        "ended_at": {
+          "format": "date-time",
+          "title": "Ended At",
+          "type": "string"
+        },
+        "model_calls": {
+          "minimum": 0,
+          "title": "Model Calls",
+          "type": "integer"
+        },
+        "model_usage": {
+          "items": {
+            "$ref": "#/$defs/ModelUsage"
+          },
+          "title": "Model Usage",
+          "type": "array"
+        },
+        "started_at": {
+          "format": "date-time",
+          "title": "Started At",
+          "type": "string"
+        },
+        "steps": {
+          "minimum": 0,
+          "title": "Steps",
+          "type": "integer"
+        },
+        "tool_calls": {
+          "minimum": 0,
+          "title": "Tool Calls",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "started_at",
+        "ended_at",
+        "duration_ms",
+        "steps",
+        "model_calls",
+        "tool_calls"
+      ],
+      "title": "RunMetrics",
+      "type": "object"
+    },
+    "TaskContext": {
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "input": {
+          "title": "Input"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        },
+        "package_id": {
+          "minLength": 1,
+          "title": "Package Id",
+          "type": "string"
+        },
+        "permission_context": {
+          "$ref": "#/$defs/PermissionContext"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "tenant_id": {
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "thread_id": {
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "trace_id": {
+          "title": "Trace Id",
+          "type": "string"
+        },
+        "user_id": {
+          "minLength": 1,
+          "title": "User Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "user_id",
+        "package_id",
+        "input"
+      ],
+      "title": "TaskContext",
+      "type": "object"
+    },
+    "TerminalStatus": {
+      "enum": [
+        "success",
+        "failed",
+        "denied",
+        "waiting_approval",
+        "max_steps_exceeded"
+      ],
+      "title": "TerminalStatus",
+      "type": "string"
+    },
+    "ToolCall": {
+      "additionalProperties": false,
+      "properties": {
+        "arguments": {
+          "additionalProperties": true,
+          "title": "Arguments",
+          "type": "object"
+        },
+        "idempotency_key": {
+          "minLength": 1,
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "package_id": {
+          "minLength": 1,
+          "title": "Package Id",
+          "type": "string"
+        },
+        "requested_at": {
+          "format": "date-time",
+          "title": "Requested At",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "tenant_id": {
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "thread_id": {
+          "minLength": 1,
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "tool_call_id": {
+          "title": "Tool Call Id",
+          "type": "string"
+        },
+        "tool_name": {
+          "minLength": 1,
+          "title": "Tool Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool_name",
+        "arguments",
+        "tenant_id",
+        "package_id",
+        "task_id",
+        "thread_id",
+        "idempotency_key"
+      ],
+      "title": "ToolCall",
+      "type": "object"
+    },
+    "ToolResult": {
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ErrorDetail"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "evidence_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Id"
+        },
+        "from_idempotency_cache": {
+          "default": false,
+          "title": "From Idempotency Cache",
+          "type": "boolean"
+        },
+        "idempotency_key": {
+          "minLength": 1,
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ToolResultStatus"
+        },
+        "success": {
+          "title": "Success",
+          "type": "boolean"
+        },
+        "timing": {
+          "$ref": "#/$defs/ToolTiming"
+        },
+        "tool_call_id": {
+          "minLength": 1,
+          "title": "Tool Call Id",
+          "type": "string"
+        },
+        "tool_name": {
+          "minLength": 1,
+          "title": "Tool Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool_call_id",
+        "tool_name",
+        "status",
+        "success",
+        "timing",
+        "idempotency_key"
+      ],
+      "title": "ToolResult",
+      "type": "object"
+    },
+    "ToolResultStatus": {
+      "enum": [
+        "succeeded",
+        "failed",
+        "denied",
+        "timed_out"
+      ],
+      "title": "ToolResultStatus",
+      "type": "string"
+    },
+    "ToolTiming": {
+      "additionalProperties": false,
+      "properties": {
+        "duration_ms": {
+          "minimum": 0,
+          "title": "Duration Ms",
+          "type": "number"
+        },
+        "ended_at": {
+          "format": "date-time",
+          "title": "Ended At",
+          "type": "string"
+        },
+        "started_at": {
+          "format": "date-time",
+          "title": "Started At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "started_at",
+        "ended_at",
+        "duration_ms"
+      ],
+      "title": "ToolTiming",
+      "type": "object"
+    },
+    "ValidationResult": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "next_step": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Step"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ValidationStatus"
+        },
+        "validated_at": {
+          "format": "date-time",
+          "title": "Validated At",
+          "type": "string"
+        },
+        "validation_id": {
+          "title": "Validation Id",
+          "type": "string"
+        },
+        "validator": {
+          "minLength": 1,
+          "title": "Validator",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "reason",
+        "validator"
+      ],
+      "title": "ValidationResult",
+      "type": "object"
+    },
+    "ValidationStatus": {
+      "enum": [
+        "pass",
+        "fail",
+        "retry",
+        "escalate"
+      ],
+      "title": "ValidationStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "approvals": {
+      "items": {
+        "$ref": "#/$defs/ApprovalRecord"
+      },
+      "title": "Approvals",
+      "type": "array"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ErrorDetail"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "events": {
+      "items": {
+        "$ref": "#/$defs/RunEvent"
+      },
+      "title": "Events",
+      "type": "array"
+    },
+    "final_output": {
+      "anyOf": [
+        {},
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Final Output"
+    },
+    "loaded_resources": {
+      "$ref": "#/$defs/LoadedResources"
+    },
+    "metrics": {
+      "$ref": "#/$defs/RunMetrics"
+    },
+    "model_exchanges": {
+      "items": {
+        "$ref": "#/$defs/ModelExchange"
+      },
+      "title": "Model Exchanges",
+      "type": "array"
+    },
+    "package": {
+      "$ref": "#/$defs/PackageManifest"
+    },
+    "policy_decisions": {
+      "items": {
+        "$ref": "#/$defs/PolicyDecision"
+      },
+      "title": "Policy Decisions",
+      "type": "array"
+    },
+    "recording": {
+      "$ref": "#/$defs/RecordingSettings"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "synthetic": {
+      "default": false,
+      "title": "Synthetic",
+      "type": "boolean"
+    },
+    "task_context": {
+      "$ref": "#/$defs/TaskContext"
+    },
+    "terminal_status": {
+      "$ref": "#/$defs/TerminalStatus"
+    },
+    "tool_calls": {
+      "items": {
+        "$ref": "#/$defs/ToolCall"
+      },
+      "title": "Tool Calls",
+      "type": "array"
+    },
+    "tool_results": {
+      "items": {
+        "$ref": "#/$defs/ToolResult"
+      },
+      "title": "Tool Results",
+      "type": "array"
+    },
+    "validations": {
+      "items": {
+        "$ref": "#/$defs/ValidationResult"
+      },
+      "title": "Validations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "task_context",
+    "package",
+    "loaded_resources",
+    "terminal_status",
+    "events",
+    "recording",
+    "metrics"
+  ],
+  "title": "RunRecord",
+  "type": "object"
+}

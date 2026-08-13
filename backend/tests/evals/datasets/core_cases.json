@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+  "synthetic": true,
+  "evaluation_class": "deterministic_framework_test",
+  "model_evaluation": false,
+  "description": "Deterministic Framework Tests (not model evaluation); no Agent/model capability or customer claim.",
+  "cases": [
+    {
+      "case_id": "core_minimal_text",
+      "mode": "deterministic",
+      "repeat": 1,
+      "expected": {
+        "record_count": 1,
+        "terminal_statuses": ["success"],
+        "tool_result_counts": {},
+        "required_events": ["validation_completed", "run_completed"]
+      }
+    },
+    {
+      "case_id": "core_read_tool_success",
+      "mode": "deterministic",
+      "repeat": 1,
+      "expected": {
+        "record_count": 1,
+        "terminal_statuses": ["success"],
+        "tool_result_counts": {"succeeded": 1},
+        "policy_outcome_counts": {"allow": 1},
+        "required_events": ["tool_requested", "tool_completed", "run_completed"]
+      }
+    },
+    {
+      "case_id": "core_invalid_tool_arguments",
+      "mode": "deterministic",
+      "repeat": 1,
+      "expected": {
+        "record_count": 1,
+        "terminal_statuses": ["failed"],
+        "tool_result_counts": {"failed": 1},
+        "tool_error_codes": ["TOOL_ARGUMENTS_INVALID"]
+      }
+    },
+    {
+      "case_id": "core_permission_denied",
+      "mode": "deterministic",
+      "repeat": 1,
+      "expected": {
+        "record_count": 1,
+        "terminal_statuses": ["denied"],
+        "tool_result_counts": {"denied": 1},
+        "policy_outcome_counts": {"deny": 1}
+      }
+    },
+    {
+      "case_id": "core_approval_restart_resume",
+      "mode": "deterministic",
+      "repeat": 1,
+      "expected": {
+        "record_count": 1,
+        "terminal_statuses": ["success"],
+        "tool_result_counts": {"succeeded": 1},
+        "policy_outcome_counts": {"require_approval": 1},
+        "approval_decision_counts": {"approved": 1},
+        "required_events": ["run_paused", "approval_decided", "run_resumed"]
+      }
+    },
+    {
+      "case_id": "core_tool_failure_is_fact",
+      "mode": "deterministic",
+      "repeat": 1,
+      "expected": {
+        "record_count": 1,
+        "terminal_statuses": ["failed"],
+        "tool_result_counts": {"failed": 1},
+        "tool_error_codes": ["TOOL_EXECUTION_FAILED"]
+      }
+    },
+    {
+      "case_id": "core_synthetic_tenant_isolation",
+      "mode": "deterministic",
+      "repeat": 1,
+      "expected": {
+        "record_count": 2,
+        "terminal_statuses": ["success", "success"],
+        "tool_result_counts": {"succeeded": 2},
+        "policy_outcome_counts": {"allow": 2},
+        "isolation_fixture": true,
+        "required_events": ["package_loaded", "context_assembled", "run_completed"]
+      }
+    }
+  ]
+}

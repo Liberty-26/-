@@ -13,12 +13,18 @@ from pydantic import BaseModel
 from typing import Optional, List
 from models import AgentChatRequest
 from agent import agent_loop, agent_loop_stream
+from steel_agent.bridge import run_new_agent
 from database import (
     list_sessions, create_session, delete_session,
     load_chat_messages, save_chat_message, clear_chat_messages,
 )
 
 router = APIRouter(prefix="/api/agent", tags=["agent"])
+
+
+def _use_new_agent() -> bool:
+    """Read per request so clearing the Flag and restarting safely restores the legacy loop."""
+    return os.getenv("STEEL_USE_NEW_AGENT", "") == "1"
 
 # ---- 上传文件 ----
 
@@ -75,16 +81,28 @@ async def agent_chat_stream(req: AgentChatRequest, mock: int = 0):
         raise HTTPException(status_code=400, detail="消息不能为空")
 
     use_mock = bool(mock and os.getenv("STEEL_MOCK_CHAT") == "1")
+    use_new_agent = _use_new_agent()
+    print(f"[agent] chat stream entry={'enterprise_core' if use_new_agent else 'legacy_loop'}")
 
     def event_stream():
-        for evt in agent_loop_stream(
-            req.message,
-            req.history,
-            selected_ids=req.selected_ids or [],
-            uploaded_file=req.uploaded_file or "",
-            session_id=req.session_id or "",
-            mock=use_mock,
-        ):
+        if use_new_agent:
+            events = run_new_agent(
+                req.message,
+                req.history,
+                selected_ids=req.selected_ids or [],
+                uploaded_file=req.uploaded_file or "",
+                session_id=req.session_id or "",
+            )
+        else:
+            events = agent_loop_stream(
+                req.message,
+                req.history,
+                selected_ids=req.selected_ids or [],
+                uploaded_file=req.uploaded_file or "",
+                session_id=req.session_id or "",
+                mock=use_mock,
+            )
+        for evt in events:
             yield f"data: {json.dumps(evt, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")

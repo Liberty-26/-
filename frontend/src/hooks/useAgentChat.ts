@@ -3,9 +3,11 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   agentChat as apiAgentChat, agentChatStream, loadMessages, saveMessage,
   getSessions, createSession, deleteSession,
+  approveAgentApproval, rejectAgentApproval, getPendingAgentApprovals,
 } from '../utils/api';
 import { useToast } from './useToast';
 import type { AgentMessage, RunTrace } from '../types';
+import type { PendingApproval } from '../components/ApprovalDialog';
 
 const SESSION_KEY = 'steel_session_id';
 
@@ -36,7 +38,7 @@ export interface LiveState {
 type StreamEvent =
   | { type: 'stage'; label: string }
   | { type: 'tool_call'; name: string; args: unknown; risk?: string }
-  | { type: 'tool_result'; name: string; ok: boolean; summary: string; blocked?: boolean }
+  | { type: 'tool_result'; name: string; ok: boolean; summary: string; blocked?: boolean; approval?: Omit<PendingApproval, 'tool_name'> }
   | { type: 'delta'; content: string }
   | { type: 'done'; reply: string; history: unknown[]; audit?: RunTrace['audit'] }
   | { type: 'error'; message: string };
@@ -49,6 +51,8 @@ export function useAgentChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadedFromDb, setLoadedFromDb] = useState(false);
   const [live, setLive] = useState<LiveState | null>(null);
+  const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
+  const [approvalBusy, setApprovalBusy] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sessionIdRef = useRef<string>('');
   const abortRef = useRef<AbortController | null>(null);
@@ -101,6 +105,15 @@ export function useAgentChat() {
       setLoadedFromDb(true);
     })();
   }, [refreshSessions, loadMessagesFor]);
+
+  // Pending approvals are durable. Reloading the desktop app after a backend
+  // restart should restore the same human decision point rather than rerunning.
+  useEffect(() => {
+    getPendingAgentApprovals().then((response) => {
+      const pending = response.success ? response.data?.approvals[0] : null;
+      if (pending) setPendingApproval(pending);
+    }).catch(() => { /* chat remains usable if the new-Agent endpoint is unavailable */ });
+  }, []);
 
   // 卸载时中断进行中的流
   useEffect(() => {
@@ -193,6 +206,30 @@ export function useAgentChat() {
     setIsLoading(false);
     setLive(null);
   }, [persistMsg, refreshSessions]);
+
+  const resolveApproval = useCallback(async (decision: 'approve' | 'reject') => {
+    const approval = pendingApproval;
+    if (!approval || approvalBusy) return;
+    setApprovalBusy(true);
+    const response = decision === 'approve'
+      ? await approveAgentApproval(approval.approval_id)
+      : await rejectAgentApproval(approval.approval_id);
+    if (!response.success) {
+      showToast(response.error || '审批处理失败，请重试', 'error');
+      setApprovalBusy(false);
+      return;
+    }
+    const reply = decision === 'reject' ? '已拒绝执行' : (response.data?.reply || '已批准执行');
+    const sid = sessionIdRef.current;
+    if (sid) {
+      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+      await persistMsg('assistant', reply, sid);
+      await refreshSessions();
+    }
+    setPendingApproval(null);
+    setApprovalBusy(false);
+    showToast(decision === 'approve' ? '已批准执行' : '已拒绝执行', decision === 'approve' ? 'success' : 'info');
+  }, [approvalBusy, pendingApproval, persistMsg, refreshSessions, showToast]);
 
   const sendMessage = useCallback(async (text: string, selectedIds: number[], uploadedFile?: string): Promise<string | null> => {
     if (!text.trim() || isLoading) return null;
@@ -360,6 +397,9 @@ export function useAgentChat() {
                   : t
               ),
             });
+            if (evt.blocked && evt.approval) {
+              setPendingApproval({ ...evt.approval, tool_name: evt.name });
+            }
             break;
           case 'delta':
             finalReply += evt.content;
@@ -451,5 +491,8 @@ export function useAgentChat() {
     messages, isLoading, live, sendMessage, messagesEndRef, loadedFromDb,
     sessions, currentSessionId, switchSession, newSession, deleteSessionById, deleteSessions, refreshSessions,
     stopGenerating,
+    pendingApproval, approvalBusy,
+    approvePendingApproval: () => resolveApproval('approve'),
+    rejectPendingApproval: () => resolveApproval('reject'),
   };
 }

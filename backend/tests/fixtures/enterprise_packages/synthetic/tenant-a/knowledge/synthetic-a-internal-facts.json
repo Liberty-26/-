@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "synthetic": true,
+  "tenant_id": "synthetic-a",
+  "disclaimer": "Controlled synthetic internal information for tests only; not a real customer.",
+  "facts": [
+    {
+      "fact_id": "a-retention-window",
+      "source_id": "synthetic-a-policy-001",
+      "topic": "document_retention",
+      "statement": "Synthetic A retains draft procurement packets for 45 days.",
+      "fields": {
+        "retention_days": 45,
+        "record_type": "draft procurement packets"
+      }
+    },
+    {
+      "fact_id": "a-review-route",
+      "source_id": "synthetic-a-policy-002",
+      "topic": "review_route",
+      "statement": "Synthetic A routes unresolved reviews to the Operations Steward after 6 hours.",
+      "fields": {
+        "owner_role": "Operations Steward",
+        "escalation_after_hours": 6
+      }
+    }
+  ]
+}

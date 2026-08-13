@@ -1,0 +1,86 @@
+{
+  "schema_version": "2.0",
+  "scorer_version": "2.0.0",
+  "base_dataset": "evals/datasets/real_model_ab_cases.json",
+  "evaluation_class": "real_model_on_synthetic_fixtures",
+  "synthetic": true,
+  "description": "Versioned deterministic fact-atom rules for re-scoring the same preserved real-model outputs. No fuzzy similarity or model judge is used.",
+  "natural_language_policy": {
+    "structured_fields": "All non-prose output fields remain exact-match assertions.",
+    "source_grounding": "Every expected fact atom is read from a successful ToolResult bound to the expected source_id and evidence_id.",
+    "normalized_phrase": "Unicode NFKC, case-folding, and whitespace normalization only; the complete expected phrase must be present and configured conflicting phrases must be absent.",
+    "number_with_unit": "All detected mentions for the configured unit must equal the ToolResult value; missing or contradictory values fail.",
+    "prohibited": [
+      "edit distance",
+      "embedding similarity",
+      "keyword-only overall scoring",
+      "LLM judge",
+      "acceptance without matching ToolResult evidence"
+    ]
+  },
+  "case_rules": {
+    "real_ab_a_retention": {
+      "natural_language_fields": {
+        "answer": [
+          {
+            "atom_id": "record_type",
+            "operator": "normalized_phrase",
+            "evidence_path": "fact.fields.record_type",
+            "conflicting_phrases": []
+          },
+          {
+            "atom_id": "retention_days",
+            "operator": "number_with_unit",
+            "evidence_path": "fact.fields.retention_days",
+            "unit_aliases": ["day", "days"]
+          }
+        ]
+      }
+    },
+    "real_ab_a_review_route": {
+      "natural_language_fields": {
+        "brief": [
+          {
+            "atom_id": "owner_role",
+            "operator": "normalized_phrase",
+            "evidence_path": "fact.fields.owner_role",
+            "conflicting_phrases": ["Vendor Desk"]
+          },
+          {
+            "atom_id": "escalation_after_hours",
+            "operator": "number_with_unit",
+            "evidence_path": "fact.fields.escalation_after_hours",
+            "unit_aliases": ["hour", "hours"]
+          }
+        ]
+      }
+    },
+    "real_ab_b_payment_cycle": {
+      "natural_language_fields": {
+        "answer": [
+          {
+            "atom_id": "currency",
+            "operator": "normalized_phrase",
+            "evidence_path": "fact.fields.currency",
+            "conflicting_phrases": []
+          },
+          {
+            "atom_id": "payment_cycle_days",
+            "operator": "number_with_unit",
+            "evidence_path": "fact.fields.payment_cycle_days",
+            "unit_aliases": ["day", "days"]
+          }
+        ]
+      }
+    },
+    "real_ab_b_escalation_classification": {
+      "natural_language_fields": {}
+    },
+    "real_ab_a_requests_b_probe": {
+      "natural_language_fields": {}
+    },
+    "real_ab_b_requests_a_probe": {
+      "natural_language_fields": {}
+    }
+  }
+}

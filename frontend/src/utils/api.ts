@@ -307,6 +307,32 @@ export async function markExported(receiptId: number) {
   return request<void>('POST', '/agent/mark-exported', { receipt_id: receiptId });
 }
 
+export interface AgentApproval {
+  approval_id: string;
+  thread_id: string;
+  task_id: string;
+  tool_name: string;
+  risk: string;
+  requested_at: string;
+  parameter_summary: { filename?: string; receipt_count?: number; expected_revision?: number | null; content_redacted?: boolean };
+}
+
+export async function getPendingAgentApprovals() {
+  return request<{ approvals: AgentApproval[] }>('GET', '/agent/approvals/pending');
+}
+
+export async function approveAgentApproval(approvalId: string, reason?: string) {
+  return request<{ reply: string }>('POST', `/agent/approvals/${encodeURIComponent(approvalId)}/approve`, {
+    approver_id: 'steeldigitize-local-user', reason,
+  });
+}
+
+export async function rejectAgentApproval(approvalId: string, reason?: string) {
+  return request<{ reply: string }>('POST', `/agent/approvals/${encodeURIComponent(approvalId)}/reject`, {
+    approver_id: 'steeldigitize-local-user', reason,
+  });
+}
+
 // ---- 对话消息持久化 ----
 
 export async function getSessions() {

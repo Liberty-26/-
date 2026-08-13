@@ -1,0 +1,32 @@
+schema_version: "1.0"
+package_id: synthetic-tenant-a
+tenant_id: synthetic-a
+version: "1.0.0"
+name: Synthetic Tenant A
+description: Controlled fixture; not a real customer.
+model:
+  provider: fake
+  model: fake-model-v1
+  max_steps: 8
+  timeout_seconds: 30
+  retry_count: 1
+skills:
+  - skills/a-brief.md
+  - skills/a-lookup.md
+tools:
+  - tenant_a_lookup
+knowledge:
+  - knowledge/synthetic-a-internal-facts.json
+policy:
+  version: "1.0"
+  allow_tools:
+    - tenant_a_lookup
+  deny_tools: []
+  require_approval_for: []
+  require_approval_for_writes: true
+recording:
+  input_mode: full
+  output_mode: full
+graph_template: generic_agent_v1
+synthetic: true
+evaluation_mode: deterministic_framework_test

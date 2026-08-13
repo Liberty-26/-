@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "synthetic": true,
+  "disclaimer": "Controlled synthetic fixtures only; these are not real customers or customer results.",
+  "tenants": [
+    {
+      "tenant_id": "synthetic-a",
+      "package_id": "synthetic-tenant-a",
+      "package_path": "packages/synthetic/tenant-a",
+      "skill_ids": ["synthetic-a-brief", "synthetic-a-lookup"],
+      "tool_names": ["tenant_a_lookup"],
+      "permission_scopes": ["synthetic:a:read"],
+      "knowledge_refs": ["knowledge/synthetic-a-internal-facts.json"],
+      "source_ids": ["synthetic-a-policy-001", "synthetic-a-policy-002"],
+      "forbidden_resources": [
+        "synthetic-b-classify",
+        "synthetic-b-lookup",
+        "tenant_b_lookup",
+        "knowledge/synthetic-b-internal-facts.json",
+        "synthetic-b-policy-101",
+        "synthetic-b-policy-102"
+      ]
+    },
+    {
+      "tenant_id": "synthetic-b",
+      "package_id": "synthetic-tenant-b",
+      "package_path": "packages/synthetic/tenant-b",
+      "skill_ids": ["synthetic-b-classify", "synthetic-b-lookup"],
+      "tool_names": ["tenant_b_lookup"],
+      "permission_scopes": ["synthetic:b:read"],
+      "knowledge_refs": ["knowledge/synthetic-b-internal-facts.json"],
+      "source_ids": ["synthetic-b-policy-101", "synthetic-b-policy-102"],
+      "forbidden_resources": [
+        "synthetic-a-brief",
+        "synthetic-a-lookup",
+        "tenant_a_lookup",
+        "knowledge/synthetic-a-internal-facts.json",
+        "synthetic-a-policy-001",
+        "synthetic-a-policy-002"
+      ]
+    }
+  ]
+}

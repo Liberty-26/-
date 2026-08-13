@@ -5,6 +5,7 @@ import { useToast } from '../hooks/useToast';
 import { useNav } from '../contexts/NavContext';
 import { useQueue } from '../contexts/QueueContext';
 import SkillModal from '../components/SkillModal';
+import ApprovalDialog from '../components/ApprovalDialog';
 import { Table2, CalendarRange, Boxes, Upload, ArrowUp, ArrowUpRight, Sparkles, Square } from 'lucide-react';
 import {
   saveReceipt,
@@ -170,6 +171,7 @@ export default function WorkbenchPage() {
   const {
     messages, isLoading, live, sendMessage, messagesEndRef,
     sessions, currentSessionId, switchSession, newSession, deleteSessions, stopGenerating,
+    pendingApproval, approvalBusy, approvePendingApproval, rejectPendingApproval,
   } = useAgentChat();
   const [flow, setFlow] = useState<'stream' | 'sessions'>('stream');
   const [flowItems, setFlowItems] = useState<FlowItem[]>([]);
@@ -833,6 +835,7 @@ export default function WorkbenchPage() {
       </aside>
 
       <SkillModal open={skillOpen} onClose={() => setSkillOpen(false)} onRun={handleRunSkill} onOpenSettings={() => { setSkillOpen(false); setPage('settings'); }} />
+      <ApprovalDialog approval={pendingApproval} busy={approvalBusy} onApprove={approvePendingApproval} onReject={rejectPendingApproval} />
     </div>
   );
 }

@@ -1,0 +1,32 @@
+schema_version: "1.0"
+package_id: real-model-synthetic-tenant-a
+tenant_id: real-model-synthetic-a
+version: "1.0.0"
+name: Real Model on Synthetic Tenant A
+description: Dedicated real-API evaluation Package over controlled synthetic facts; not a real customer.
+model:
+  provider: openai_compatible
+  model: deepseek-v4-flash
+  max_steps: 8
+  timeout_seconds: 30
+  retry_count: 1
+skills:
+  - skills/a-fact-answer.md
+  - skills/a-evidence-brief.md
+tools:
+  - tenant_a_lookup
+knowledge:
+  - knowledge/synthetic-a-internal-facts.json
+policy:
+  version: "1.0"
+  allow_tools:
+    - tenant_a_lookup
+  deny_tools: []
+  require_approval_for: []
+  require_approval_for_writes: true
+recording:
+  input_mode: full
+  output_mode: full
+graph_template: generic_agent_v1
+synthetic: true
+evaluation_mode: real_model_on_synthetic_fixtures
